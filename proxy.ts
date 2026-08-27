@@ -52,6 +52,8 @@ export default async function proxy(request: NextRequest) {
         { status: 429 }
       );
     }
+
+    return NextResponse.next();
   }
 
   const sessionResult = await auth.getSession();
@@ -61,7 +63,7 @@ export default async function proxy(request: NextRequest) {
 
   const response = await neonAuthMiddleware(request);
 
-  if (sessionResult?.data?.user && !isUnauthenticatedPath(pathname) && pathname.startsWith('/api/')) {
+  if (sessionResult?.data?.user && pathname.startsWith('/api/')) {
     const key = `user:${sessionResult.data.user.id}:${pathname}`;
     const result = await apiRateLimiter.check(key, 100, 60);
     if (!result.success) {
