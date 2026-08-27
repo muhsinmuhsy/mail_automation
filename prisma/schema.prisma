@@ -1,0 +1,288 @@
+generator client {
+  provider   = "prisma-client"
+  output     = "../lib/generated/prisma"
+  engineType = "client"
+  runtime    = "cloudflare"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum EmailProvider {
+  gmail
+  microsoft
+  yahoo
+  custom_smtp
+}
+
+enum AuthMethod {
+  app_password
+  oauth2
+  password
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum EmailJobStatus {
+  SCHEDULED
+  QUEUED
+  PROCESSING
+  RETRY_WAIT
+  SENT
+  FAILED
+  CANCELLED
+  DELIVERY_UNKNOWN
+}
+
+enum ReservationStatus {
+  RESERVED
+  COMMITTED
+  RELEASED
+  UNKNOWN
+}
+
+model User {
+  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                     String   @unique @db.VarChar(255)
+  name                      String?  @db.VarChar(255)
+  role                      UserRole @default(USER)
+  is_active                 Boolean  @default(true)
+  daily_email_limit_override Int?
+  created_at                DateTime @default(now()) @db.Timestamptz
+
+  email_accounts    EmailAccount[]
+  resumes           Resume[]
+  contacts          Contact[]
+  templates         Template[]
+  campaigns         Campaign[]
+  email_jobs        EmailJob[]
+  email_usage_daily EmailUsageDaily[]
+  reservations      EmailSendReservation[]
+
+  @@map("users")
+}
+
+model EmailAccount {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                String    @db.Uuid
+  user                   User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  provider               EmailProvider
+  email                  String    @db.VarChar(255)
+  auth_method            AuthMethod
+  encrypted_secret       String?
+  encrypted_refresh_token String?
+  access_token_expires_at DateTime? @db.Timestamptz
+  is_active              Boolean   @default(true)
+  created_at             DateTime  @default(now()) @db.Timestamptz
+  updated_at             DateTime  @updatedAt @default(now()) @db.Timestamptz
+
+  campaigns   Campaign[]
+  email_jobs  EmailJob[]
+
+  @@unique([user_id, provider, email], map: "unique_email_accounts_user_provider_email")
+  @@map("email_accounts")
+}
+
+model Resume {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  filename   String   @db.VarChar(255)
+  r2_key     String   @db.VarChar(1024)
+  size_bytes Int?
+  is_default Boolean  @default(false)
+  deleted_at DateTime? @db.Timestamptz
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  campaigns  Campaign[]
+  email_jobs EmailJob[]
+
+  @@index([user_id], map: "idx_resumes_user_id")
+  @@map("resumes")
+}
+
+model Contact {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  name       String   @db.VarChar(100)
+  email      String   @db.VarChar(255)
+  company    String?  @db.VarChar(200)
+  job_title  String?  @db.VarChar(200)
+  notes      String?  @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @default(now()) @db.Timestamptz
+
+  email_jobs EmailJob[]
+
+  @@index([user_id, email], map: "idx_contacts_user_id_email")
+  @@map("contacts")
+}
+
+model Template {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  name       String   @db.VarChar(100)
+  subject    String   @db.VarChar(200)
+  body       String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @default(now()) @db.Timestamptz
+
+  campaigns  Campaign[]
+  email_jobs EmailJob[]
+
+  @@index([user_id], map: "idx_templates_user_id")
+  @@map("templates")
+}
+
+model Campaign {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String           @db.Uuid
+  user               User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  email_account_id   String           @db.Uuid
+  email_account      EmailAccount     @relation(fields: [email_account_id], references: [id])
+  resume_id          String           @db.Uuid
+  resume             Resume           @relation(fields: [resume_id], references: [id])
+  template_id        String           @db.Uuid
+  template           Template         @relation(fields: [template_id], references: [id])
+  name               String           @db.VarChar(255)
+  start_at           DateTime         @db.Timestamptz
+  timezone           String           @default("UTC") @db.VarChar(64)
+  interval_minutes   Int              @default(5)
+  daily_limit        Int?
+  status             CampaignStatus   @default(DRAFT)
+  created_at         DateTime         @default(now()) @db.Timestamptz
+  updated_at         DateTime         @updatedAt @default(now()) @db.Timestamptz
+
+  email_jobs    EmailJob[]
+  usage_daily   CampaignUsageDaily[]
+  reservations  EmailSendReservation[]
+
+  @@index([user_id, status], map: "idx_campaigns_user_id_status")
+  @@map("campaigns")
+}
+
+model EmailJob {
+  id                      String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                 String        @db.Uuid
+  user                    User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  campaign_id             String?       @db.Uuid
+  campaign                Campaign?     @relation(fields: [campaign_id], references: [id])
+  contact_id              String        @db.Uuid
+  contact                 Contact       @relation(fields: [contact_id], references: [id])
+  email_account_id        String        @db.Uuid
+  email_account           EmailAccount  @relation(fields: [email_account_id], references: [id])
+  resume_id               String        @db.Uuid
+  resume                  Resume        @relation(fields: [resume_id], references: [id])
+  template_id             String        @db.Uuid
+  template                Template      @relation(fields: [template_id], references: [id])
+  to_email                String        @db.VarChar(255)
+  subject                 String        @db.VarChar(255)
+  body                    String        @db.Text
+  scheduled_at            DateTime      @db.Timestamptz
+  status                  EmailJobStatus @default(SCHEDULED)
+  attempt_count           Int           @default(0)
+  processing_started_at   DateTime?     @db.Timestamptz
+  next_attempt_at         DateTime?     @db.Timestamptz
+  sent_at                 DateTime?     @db.Timestamptz
+  error_message           String?
+  created_at              DateTime      @default(now()) @db.Timestamptz
+  updated_at              DateTime      @updatedAt @default(now()) @db.Timestamptz
+
+  email_logs     EmailLog[]
+  reservations   EmailSendReservation[]
+
+  @@index([status, scheduled_at], map: "idx_email_jobs_status_scheduled_at")
+  @@index([user_id, status], map: "idx_email_jobs_user_id_status")
+  @@index([campaign_id], map: "idx_email_jobs_campaign_id")
+  @@index([email_account_id], map: "idx_email_jobs_email_account_id")
+  @@index([next_attempt_at], map: "idx_email_jobs_next_attempt_at")
+  @@map("email_jobs")
+}
+
+model EmailLog {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email_job_id String   @db.Uuid
+  email_job    EmailJob @relation(fields: [email_job_id], references: [id], onDelete: Cascade)
+  status       String   @db.VarChar(50)
+  smtp_response String?
+  error_message String?
+  created_at   DateTime @default(now()) @db.Timestamptz
+
+  @@index([email_job_id], map: "idx_email_logs_email_job_id")
+  @@map("email_logs")
+}
+
+model SystemSetting {
+  id                        Int     @id @default(1)
+  default_daily_email_limit Int     @default(20)
+  global_daily_email_limit  Int     @default(500)
+  email_sending_enabled     Boolean @default(true)
+  updated_at                DateTime @updatedAt @default(now()) @db.Timestamptz
+
+  @@map("system_settings")
+}
+
+model EmailUsageDaily {
+  user_id       String   @db.Uuid
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  usage_date    DateTime @db.Date
+  sent_count    Int      @default(0)
+  reserved_count Int     @default(0)
+
+  @@id([user_id, usage_date])
+  @@map("email_usage_daily")
+}
+
+model CampaignUsageDaily {
+  campaign_id   String   @db.Uuid
+  campaign      Campaign @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+  usage_date    DateTime @db.Date
+  sent_count    Int      @default(0)
+  reserved_count Int     @default(0)
+
+  @@id([campaign_id, usage_date])
+  @@map("campaign_usage_daily")
+}
+
+model EmailSendReservation {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email_job_id   String        @db.Uuid
+  email_job      EmailJob      @relation(fields: [email_job_id], references: [id], onDelete: Cascade)
+  attempt_number Int           @default(1)
+  user_id        String        @db.Uuid
+  user           User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  campaign_id    String?       @db.Uuid
+  campaign       Campaign?     @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+  usage_date     DateTime      @db.Date
+  status         ReservationStatus @default(RESERVED)
+  created_at     DateTime      @default(now()) @db.Timestamptz
+  resolved_at    DateTime?     @db.Timestamptz
+
+  @@unique([email_job_id, attempt_number], map: "unique_reservations_job_attempt")
+  @@index([email_job_id], map: "idx_reservations_email_job_id")
+  @@index([user_id, usage_date], map: "idx_reservations_user_id_usage_date")
+  @@index([campaign_id], map: "idx_reservations_campaign_id")
+  @@map("email_send_reservations")
+}
+
+model SystemUsageDaily {
+  usage_date     DateTime @id @db.Date
+  sent_count     Int      @default(0)
+  reserved_count Int      @default(0)
+
+  @@map("system_usage_daily")
+}

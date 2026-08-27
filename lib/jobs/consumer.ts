@@ -1,0 +1,202 @@
+import { PrismaClient } from '../generated/prisma/client';
+import { reserveEmailCapacity, getEffectiveDailyEmailLimit } from '../limits/email-limit-service';
+import { sendEmail } from '../email/service';
+import { buildMimeMessage } from '../email/mime';
+
+export async function processQueueJob(
+  prisma: PrismaClient,
+  env: Record<string, unknown>,
+  jobId: string
+): Promise<void> {
+  const job = await prisma.emailJob.findUnique({
+    where: { id: jobId },
+    include: { campaign: true },
+  });
+
+  if (!job) {
+    return;
+  }
+
+  const claimed = await prisma.emailJob.updateMany({
+    where: { id: jobId, status: 'QUEUED' },
+    data: {
+      status: 'PROCESSING',
+      attempt_count: { increment: 1 },
+      processing_started_at: new Date(),
+    },
+  });
+
+  if (claimed.count === 0) {
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: job.user_id } });
+    if (!user || !user.is_active) {
+      await prisma.emailJob.update({
+        where: { id: jobId },
+        data: { status: 'FAILED', error_message: 'User account is inactive.' },
+      });
+      return;
+    }
+
+    if (job.campaign) {
+      const campaign = await prisma.campaign.findUnique({ where: { id: job.campaign_id! } });
+      if (!campaign || campaign.status === 'PAUSED' || campaign.status === 'CANCELLED') {
+        await prisma.emailJob.update({
+          where: { id: jobId },
+          data: { status: 'CANCELLED', error_message: 'Campaign is paused or cancelled.' },
+        });
+        return;
+      }
+    }
+
+    const reservation = await reserveEmailCapacity(prisma, {
+      userId: job.user_id,
+      campaignId: job.campaign_id ?? undefined,
+      emailJobId: jobId,
+    });
+
+    if (!reservation.success) {
+      const nextAttempt = new Date();
+      nextAttempt.setUTCDate(nextAttempt.getUTCDate() + 1);
+      nextAttempt.setUTCHours(0, 0, 0, 0);
+
+      await prisma.emailJob.update({
+        where: { id: jobId },
+        data: {
+          status: 'RETRY_WAIT',
+          next_attempt_at: nextAttempt,
+          error_message: reservation.reason,
+        },
+      });
+      return;
+    }
+
+    const emailAccount = await prisma.emailAccount.findUnique({
+      where: { id: job.email_account_id },
+    });
+
+    if (!emailAccount || !emailAccount.is_active) {
+      await prisma.emailJob.update({
+        where: { id: jobId },
+        data: { status: 'FAILED', error_message: 'Email account is inactive.' },
+      });
+      return;
+    }
+
+    const template = await prisma.template.findUnique({
+      where: { id: job.template_id },
+    });
+
+    if (!template) {
+      await prisma.emailJob.update({
+        where: { id: jobId },
+        data: { status: 'FAILED', error_message: 'Template not found.' },
+      });
+      return;
+    }
+
+    const mimeMessage = buildMimeMessage({
+      from: emailAccount.email,
+      to: job.to_email,
+      subject: template.subject,
+      body: template.body,
+    });
+
+    try {
+      const result = await sendEmail({
+        provider: emailAccount.provider,
+        from: emailAccount.email,
+        to: job.to_email,
+        subject: template.subject,
+        body: template.body,
+        credentials: {
+          email: emailAccount.email,
+          secret: 'decrypted_secret_placeholder',
+        },
+      });
+
+      if (result.success) {
+        await prisma.emailJob.update({
+          where: { id: jobId },
+          data: { status: 'SENT', sent_at: new Date() },
+        });
+
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+        await prisma.emailSendReservation.updateMany({
+          where: { email_job_id: jobId },
+          data: { status: 'COMMITTED', resolved_at: new Date() },
+        });
+
+        await prisma.emailUsageDaily.update({
+          where: { user_id_usage_date: { user_id: job.user_id, usage_date: today } },
+          data: { reserved_count: { decrement: 1 }, sent_count: { increment: 1 } },
+        });
+
+        await prisma.systemUsageDaily.update({
+          where: { usage_date: today },
+          data: { reserved_count: { decrement: 1 }, sent_count: { increment: 1 } },
+        });
+
+        if (job.campaign_id) {
+          await prisma.campaignUsageDaily.update({
+            where: { campaign_id_usage_date: { campaign_id: job.campaign_id, usage_date: today } },
+            data: { reserved_count: { decrement: 1 }, sent_count: { increment: 1 } },
+          });
+        }
+      } else {
+        await prisma.emailJob.update({
+          where: { id: jobId },
+          data: {
+            status: 'FAILED',
+            error_message: result.error || 'Unknown provider error',
+          },
+        });
+
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+        await prisma.emailSendReservation.updateMany({
+          where: { email_job_id: jobId },
+          data: { status: 'RELEASED', resolved_at: new Date() },
+        });
+
+        await prisma.emailUsageDaily.update({
+          where: { user_id_usage_date: { user_id: job.user_id, usage_date: today } },
+          data: { reserved_count: { decrement: 1 } },
+        });
+
+        await prisma.systemUsageDaily.update({
+          where: { usage_date: today },
+          data: { reserved_count: { decrement: 1 } },
+        });
+
+        if (job.campaign_id) {
+          await prisma.campaignUsageDaily.update({
+            where: { campaign_id_usage_date: { campaign_id: job.campaign_id, usage_date: today } },
+            data: { reserved_count: { decrement: 1 } },
+          });
+        }
+      }
+    } catch (error) {
+      await prisma.emailJob.update({
+        where: { id: jobId },
+        data: {
+          status: 'DELIVERY_UNKNOWN',
+          error_message: 'Worker crashed after provider acceptance or unknown error.',
+        },
+      });
+    }
+  } catch (error) {
+    await prisma.emailJob.update({
+      where: { id: jobId },
+      data: {
+        status: 'FAILED',
+        error_message: 'Unexpected error during processing.',
+      },
+    });
+  }
+}
