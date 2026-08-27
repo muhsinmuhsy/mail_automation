@@ -3,7 +3,7 @@ import { PrismaClient } from '@/lib/generated/prisma/client';
 import { generateCampaignJobs } from '@/lib/campaigns/scheduler';
 
 describe('lib/campaigns/scheduler', () => {
-  it('should generate jobs with correct scheduled_at', async () => {
+  it('should generate jobs with correct scheduled_at in UTC', async () => {
     const mockContact = { id: 'contact-1', email: 'test@example.com', user_id: 'user-1' };
     const createMany = vi.fn().mockResolvedValue({ count: 1 });
     const prisma = {
@@ -15,6 +15,7 @@ describe('lib/campaigns/scheduler', () => {
       id: 'campaign-1',
       user_id: 'user-1',
       start_at: new Date('2024-01-15T09:00:00Z'),
+      timezone: 'UTC',
       interval_minutes: 10,
       daily_limit: 20,
       email_account_id: 'account-1',
@@ -61,6 +62,7 @@ describe('lib/campaigns/scheduler', () => {
       id: 'campaign-1',
       user_id: 'user-1',
       start_at: new Date('2024-01-15T09:00:00Z'),
+      timezone: 'UTC',
       interval_minutes: 10,
       daily_limit: 20,
       email_account_id: 'account-1',
@@ -77,5 +79,35 @@ describe('lib/campaigns/scheduler', () => {
     expect(jobs[0].scheduled_at.getUTCDate()).toBe(15);
     expect(jobs[19].scheduled_at.getUTCDate()).toBe(15);
     expect(jobs[20].scheduled_at.getUTCDate()).toBe(16);
+  });
+
+  it('should convert wall-clock time to UTC based on timezone', async () => {
+    const mockContact = { id: 'contact-1', email: 'test@example.com', user_id: 'user-1' };
+    const createMany = vi.fn().mockResolvedValue({ count: 1 });
+    const prisma = {
+      contact: { findMany: vi.fn().mockResolvedValue([mockContact]) },
+      emailJob: { createMany },
+    } as unknown as PrismaClient;
+
+    const campaign = {
+      id: 'campaign-1',
+      user_id: 'user-1',
+      start_at: new Date('2024-01-15T09:00:00Z'),
+      timezone: 'America/New_York',
+      interval_minutes: 10,
+      daily_limit: 20,
+      email_account_id: 'account-1',
+      resume_id: 'resume-1',
+      template_id: 'template-1',
+    };
+
+    await generateCampaignJobs(prisma, campaign, ['contact-1']);
+
+    const call = createMany.mock.calls[0];
+    const jobs = call[0].data as Array<{ scheduled_at: Date }>;
+
+    expect(jobs.length).toBe(1);
+    const scheduledAt = jobs[0].scheduled_at;
+    expect(scheduledAt.getUTCHours()).toBe(14);
   });
 });

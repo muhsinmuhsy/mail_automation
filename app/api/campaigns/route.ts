@@ -4,14 +4,16 @@ import { requireVerifiedSession } from '@/lib/auth/neon-auth';
 import { failure, success } from '@/lib/errors/error-handler';
 import { createCampaignSchema } from '@/lib/validation/campaign';
 import { generateCampaignJobs } from '@/lib/campaigns/scheduler';
+import { checkApiRateLimit } from '@/lib/rate-limit/api';
 
 export async function GET(request: NextRequest) {
   void request;
   const prisma = createPrisma(process.env.DATABASE_URL!);
+  const requestId = crypto.randomUUID();
   try {
     const sessionResult = await requireVerifiedSession();
     if ('error' in sessionResult) {
-      return NextResponse.json(sessionResult.error, { status: 401 });
+      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
     }
 
     const campaigns = await prisma.campaign.findMany({
@@ -19,9 +21,9 @@ export async function GET(request: NextRequest) {
       select: { id: true, name: true, status: true, created_at: true },
     });
 
-    return NextResponse.json(success(campaigns));
+    return withRequestId(NextResponse.json(success(campaigns)), requestId);
   } catch {
-    return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
+    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
   } finally {
     await prisma.$disconnect();
   }
@@ -35,6 +37,10 @@ export async function POST(request: NextRequest) {
     if ('error' in sessionResult) {
       return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
     }
+
+    const session = sessionResult.session;
+    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'campaign-create');
+    if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();
     const parsed = createCampaignSchema.safeParse(body);
@@ -51,9 +57,9 @@ export async function POST(request: NextRequest) {
     }
 
     const [emailAccount, resume, template] = await Promise.all([
-      prisma.emailAccount.findFirst({ where: { id: parsed.data.email_account_id, user_id: sessionResult.session.user.id } }),
-      prisma.resume.findFirst({ where: { id: parsed.data.resume_id, user_id: sessionResult.session.user.id, deleted_at: null } }),
-      prisma.template.findFirst({ where: { id: parsed.data.template_id, user_id: sessionResult.session.user.id } }),
+      prisma.emailAccount.findFirst({ where: { id: parsed.data.email_account_id, user_id: session.user.id } }),
+      prisma.resume.findFirst({ where: { id: parsed.data.resume_id, user_id: session.user.id, deleted_at: null } }),
+      prisma.template.findFirst({ where: { id: parsed.data.template_id, user_id: session.user.id } }),
     ]);
 
     if (!emailAccount) {
@@ -67,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     const contactCount = await prisma.contact.count({
-      where: { id: { in: parsed.data.contact_ids }, user_id: sessionResult.session.user.id },
+      where: { id: { in: parsed.data.contact_ids }, user_id: session.user.id },
     });
 
     if (contactCount !== parsed.data.contact_ids.length) {
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     const campaign = await prisma.campaign.create({
       data: {
-        user_id: sessionResult.session.user.id,
+        user_id: session.user.id,
         name: parsed.data.name,
         email_account_id: parsed.data.email_account_id,
         resume_id: parsed.data.resume_id,
@@ -91,8 +97,9 @@ export async function POST(request: NextRequest) {
 
     await generateCampaignJobs(prisma, {
       id: campaign.id,
-      user_id: sessionResult.session.user.id,
+      user_id: session.user.id,
       start_at: parsed.data.start_at,
+      timezone: parsed.data.timezone,
       interval_minutes: parsed.data.interval_minutes,
       daily_limit: parsed.data.daily_limit,
       email_account_id: parsed.data.email_account_id,

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createPrisma } from '@/lib/db/prisma';
 import { getSession } from '@/lib/auth/neon-auth';
 import { failure, success } from '@/lib/errors/error-handler';
+import { adminSettingsSchema } from '@/lib/validation/admin';
+import { checkApiRateLimit } from '@/lib/rate-limit/api';
 
 export async function GET(request: NextRequest) {
   void request;
@@ -31,15 +33,29 @@ export async function PATCH(request: NextRequest) {
       return withRequestId(NextResponse.json(failure('AUTHORIZATION_ERROR', 'Admin access required.'), { status: 403 }), requestId);
     }
 
-    const body = await request.json() as Record<string, unknown>;
-    const { default_daily_email_limit, global_daily_email_limit, email_sending_enabled } = body;
+    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'admin-settings');
+    if (rateLimitResult) return rateLimitResult;
+
+    const body = await request.json();
+    const parsed = adminSettingsSchema.safeParse(body);
+    if (!parsed.success) {
+      return withRequestId(
+        NextResponse.json(
+          failure('VALIDATION_ERROR', 'Please correct the highlighted fields.', {
+            fields: Object.fromEntries(parsed.error.errors.map((e) => [e.path.join('.'), e.message])),
+          }),
+          { status: 400 }
+        ),
+        requestId
+      );
+    }
 
     const settings = await prisma.systemSetting.update({
       where: { id: 1 },
       data: {
-        default_daily_email_limit: default_daily_email_limit as number | undefined,
-        global_daily_email_limit: global_daily_email_limit as number | undefined,
-        email_sending_enabled: email_sending_enabled as boolean | undefined,
+        default_daily_email_limit: parsed.data.default_daily_email_limit,
+        global_daily_email_limit: parsed.data.global_daily_email_limit,
+        email_sending_enabled: parsed.data.email_sending_enabled,
       },
     });
 

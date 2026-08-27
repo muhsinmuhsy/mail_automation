@@ -2,6 +2,7 @@ import { PrismaClient } from '../generated/prisma/client';
 import { reserveEmailCapacity } from '../limits/email-limit-service';
 import { sendEmail } from '../email/service';
 import { decryptSecret } from '../security/encryption';
+import { getResume } from '../storage/r2';
 
 export async function processQueueJob(
   prisma: PrismaClient,
@@ -147,6 +148,26 @@ export async function processQueueJob(
       return;
     }
 
+    const resume = await prisma.resume.findUnique({
+      where: { id: job.resume_id, user_id: job.user_id, deleted_at: null },
+    });
+
+    let attachment:
+      | { filename: string; content: ArrayBuffer; contentType: string }
+      | undefined;
+
+    if (resume && env.R2_BUCKET) {
+      const r2Bucket = env.R2_BUCKET as R2Bucket;
+      const resumeContent = await getResume(r2Bucket, resume.r2_key);
+      if (resumeContent) {
+        attachment = {
+          filename: resume.filename,
+          content: resumeContent,
+          contentType: 'application/pdf',
+        };
+      }
+    }
+
     try {
       const decryptedSecret = emailAccount.encrypted_secret
         ? await decryptSecret(emailAccount.encrypted_secret, (env.SMTP_ENCRYPTION_KEY as string) || process.env.SMTP_ENCRYPTION_KEY!)
@@ -158,6 +179,7 @@ export async function processQueueJob(
         to: job.to_email,
         subject: template.subject,
         body: template.body,
+        attachment,
         credentials: {
           email: emailAccount.email,
           secret: decryptedSecret,

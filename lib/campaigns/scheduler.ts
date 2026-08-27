@@ -1,11 +1,52 @@
 import { PrismaClient } from '../generated/prisma/client';
 
+function wallClockToUTC(wallClock: Date, timezone: string): Date {
+  const year = wallClock.getUTCFullYear();
+  const month = wallClock.getUTCMonth();
+  const day = wallClock.getUTCDate();
+  const hour = wallClock.getUTCHours();
+  const minute = wallClock.getUTCMinutes();
+
+  const tzFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const naiveDate = new Date(Date.UTC(year, month, day, hour, minute, 0));
+  const parts = tzFormatter.formatToParts(naiveDate);
+  const values: Record<string, string> = {};
+  for (const part of parts) {
+    if (part.type !== 'literal') {
+      values[part.type] = part.value;
+    }
+  }
+
+  const naiveUTC = naiveDate.getTime();
+  const adjustedUTC = Date.UTC(
+    parseInt(values.year),
+    parseInt(values.month) - 1,
+    parseInt(values.day),
+    parseInt(values.hour),
+    parseInt(values.minute),
+    parseInt(values.second || '0')
+  );
+
+  return new Date(naiveUTC + (naiveUTC - adjustedUTC));
+}
+
 export async function generateCampaignJobs(
   prisma: PrismaClient,
   campaign: {
     id: string;
     user_id: string;
     start_at: Date;
+    timezone: string;
     interval_minutes: number;
     daily_limit?: number | null;
     email_account_id: string;
@@ -21,12 +62,13 @@ export async function generateCampaignJobs(
   if (contacts.length === 0) return;
 
   const maxPerDay = campaign.daily_limit ?? Infinity;
+  const utcStartAt = wallClockToUTC(campaign.start_at, campaign.timezone);
+
   const jobs = contacts.map((contact, index) => {
     const dayIndex = Math.floor(index / maxPerDay);
     const slotInDay = index % maxPerDay;
 
-    const startDate = new Date(campaign.start_at);
-    const scheduledAt = new Date(startDate);
+    const scheduledAt = new Date(utcStartAt);
     scheduledAt.setUTCDate(scheduledAt.getUTCDate() + dayIndex);
     scheduledAt.setUTCMinutes(scheduledAt.getUTCMinutes() + slotInDay * campaign.interval_minutes);
     scheduledAt.setUTCSeconds(0, 0);

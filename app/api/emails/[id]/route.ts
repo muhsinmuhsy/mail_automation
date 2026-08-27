@@ -10,16 +10,17 @@ export async function GET(
 ) {
   void request;
   const prisma = createPrisma(process.env.DATABASE_URL!);
+  const requestId = crypto.randomUUID();
   try {
     const sessionResult = await requireVerifiedSession();
     if ('error' in sessionResult) {
-      return NextResponse.json(sessionResult.error, { status: 401 });
+      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
     }
 
     const { id } = await params;
     const parsed = idParamSchema.safeParse({ id });
     if (!parsed.success) {
-      return NextResponse.json(failure('VALIDATION_ERROR', 'Invalid ID.'), { status: 400 });
+      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'Invalid ID.'), { status: 400 }), requestId);
     }
 
     const emailJob = await prisma.emailJob.findFirst({
@@ -28,13 +29,18 @@ export async function GET(
     });
 
     if (!emailJob) {
-      return NextResponse.json(failure('NOT_FOUND', 'Email not found.'), { status: 404 });
+      return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Email not found.'), { status: 404 }), requestId);
     }
 
-    return NextResponse.json(success(emailJob));
+    return withRequestId(NextResponse.json(success(emailJob)), requestId);
   } catch {
-    return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
+    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
   } finally {
     await prisma.$disconnect();
   }
+}
+
+function withRequestId(response: NextResponse, requestId: string): NextResponse {
+  response.headers.set('X-Request-ID', requestId);
+  return response;
 }

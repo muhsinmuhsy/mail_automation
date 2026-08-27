@@ -6,10 +6,11 @@ import { failure, success } from '@/lib/errors/error-handler';
 export async function GET(request: NextRequest) {
   void request;
   const prisma = createPrisma(process.env.DATABASE_URL!);
+  const requestId = crypto.randomUUID();
   try {
     const sessionResult = await requireVerifiedSession();
     if ('error' in sessionResult) {
-      return NextResponse.json(sessionResult.error, { status: 401 });
+      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
     }
 
     const emails = await prisma.emailJob.findMany({
@@ -19,11 +20,15 @@ export async function GET(request: NextRequest) {
       take: 50,
     });
 
-    return NextResponse.json(success(emails));
+    return withRequestId(NextResponse.json(success(emails)), requestId);
   } catch {
-    return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
+    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
   } finally {
     await prisma.$disconnect();
   }
 }
 
+function withRequestId(response: NextResponse, requestId: string): NextResponse {
+  response.headers.set('X-Request-ID', requestId);
+  return response;
+}

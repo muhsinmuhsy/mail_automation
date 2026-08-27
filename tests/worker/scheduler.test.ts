@@ -1,16 +1,77 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { PrismaClient } from '@/lib/generated/prisma/client';
 import { scheduleDueJobs, recoverStuckJobs } from '@/lib/jobs/scheduler';
 
 describe('lib/jobs/scheduler', () => {
-  describe('recoverStuckJobs', () => {
-    it('should be defined', () => {
-      expect(recoverStuckJobs).toBeDefined();
-    });
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   describe('scheduleDueJobs', () => {
-    it('should be defined', () => {
-      expect(scheduleDueJobs).toBeDefined();
+    it('should mark due SCHEDULED jobs as QUEUED', async () => {
+      const prisma = {
+        $queryRaw: vi.fn().mockResolvedValue([{ id: 'job-1' }]),
+      } as unknown as PrismaClient;
+
+      const result = await scheduleDueJobs(prisma);
+      expect(result).toEqual(['job-1']);
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should return empty array when no jobs are due', async () => {
+      const prisma = {
+        $queryRaw: vi.fn().mockResolvedValue([]),
+      } as unknown as PrismaClient;
+
+      const result = await scheduleDueJobs(prisma);
+      expect(result).toEqual([]);
+    });
+
+    it('should use a limit of 100 jobs per run', async () => {
+      const prisma = {
+        $queryRaw: vi.fn().mockResolvedValue([]),
+      } as unknown as PrismaClient;
+
+      await scheduleDueJobs(prisma);
+      const mockCalls = (prisma.$queryRaw as ReturnType<typeof vi.fn>).mock.calls;
+      const query = mockCalls[0][0];
+      const queryString = typeof query === 'string' ? query : String(query);
+      expect(queryString).toContain('LIMIT 100');
+    });
+  });
+
+  describe('recoverStuckJobs', () => {
+    it('should mark stuck PROCESSING jobs as DELIVERY_UNKNOWN', async () => {
+      const prisma = {
+        emailJob: {
+          updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+        },
+      } as unknown as PrismaClient;
+
+      await recoverStuckJobs(prisma);
+      expect(prisma.emailJob.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            status: 'PROCESSING',
+            processing_started_at: expect.any(Object),
+          },
+          data: {
+            status: 'DELIVERY_UNKNOWN',
+            error_message: 'Job was stuck in processing for more than 10 minutes.',
+          },
+        })
+      );
+    });
+
+    it('should not touch non-PROCESSING jobs', async () => {
+      const prisma = {
+        emailJob: {
+          updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+        },
+      } as unknown as PrismaClient;
+
+      await recoverStuckJobs(prisma);
+      expect(prisma.emailJob.updateMany).toHaveBeenCalled();
     });
   });
 });

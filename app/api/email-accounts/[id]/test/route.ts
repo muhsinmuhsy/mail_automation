@@ -4,6 +4,7 @@ import { requireVerifiedSession } from '@/lib/auth/neon-auth';
 import { failure, success } from '@/lib/errors/error-handler';
 import { idParamSchema } from '@/lib/validation/common';
 import { decryptSecret } from '@/lib/security/encryption';
+import { checkApiRateLimit } from '@/lib/rate-limit/api';
 
 export async function POST(
   request: NextRequest,
@@ -17,6 +18,10 @@ export async function POST(
       return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
     }
 
+    const session = sessionResult.session;
+    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'smtp-test');
+    if (rateLimitResult) return rateLimitResult;
+
     const { id } = await params;
     const parsed = idParamSchema.safeParse({ id });
     if (!parsed.success) {
@@ -27,7 +32,7 @@ export async function POST(
       where: { id: parsed.data.id },
     });
 
-    if (!account || account.user_id !== sessionResult.session.user.id) {
+    if (!account || account.user_id !== session.user.id) {
       return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Email account not found.'), { status: 404 }), requestId);
     }
 
