@@ -39,5 +39,6 @@ declare global {
     DATABASE_URL: string;
     R2_BUCKET: R2Bucket;
     EMAIL_QUEUE: Queue;
+    SMTP_ENCRYPTION_KEY?: string;
   }
 }

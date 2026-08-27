@@ -10,6 +10,10 @@ export interface SendEmailInput {
   subject: string;
   body: string;
   mimeMessage: string;
+  credentials?: {
+    email: string;
+    secret: string;
+  };
 }
 
 export interface SendEmailResult {
@@ -17,6 +21,7 @@ export interface SendEmailResult {
   messageId?: string;
   smtpResponse?: string;
   error?: string;
+  errorType?: 'temporary' | 'permanent';
 }
 
 export interface ProviderCapabilities {

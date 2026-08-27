@@ -1,6 +1,7 @@
 import { PrismaClient } from '../generated/prisma/client';
 import { reserveEmailCapacity } from '../limits/email-limit-service';
 import { sendEmail } from '../email/service';
+import { decryptSecret } from '../security/encryption';
 
 export async function processQueueJob(
   prisma: PrismaClient,
@@ -81,6 +82,31 @@ export async function processQueueJob(
         where: { id: jobId },
         data: { status: 'FAILED', error_message: 'Email account is inactive.' },
       });
+
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      await prisma.emailSendReservation.updateMany({
+        where: { email_job_id: jobId },
+        data: { status: 'RELEASED', resolved_at: new Date() },
+      });
+
+      await prisma.emailUsageDaily.update({
+        where: { user_id_usage_date: { user_id: job.user_id, usage_date: today } },
+        data: { reserved_count: { decrement: 1 } },
+      });
+
+      await prisma.systemUsageDaily.update({
+        where: { usage_date: today },
+        data: { reserved_count: { decrement: 1 } },
+      });
+
+      if (job.campaign_id) {
+        await prisma.campaignUsageDaily.update({
+          where: { campaign_id_usage_date: { campaign_id: job.campaign_id, usage_date: today } },
+          data: { reserved_count: { decrement: 1 } },
+        });
+      }
       return;
     }
 
@@ -93,10 +119,39 @@ export async function processQueueJob(
         where: { id: jobId },
         data: { status: 'FAILED', error_message: 'Template not found.' },
       });
+
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      await prisma.emailSendReservation.updateMany({
+        where: { email_job_id: jobId },
+        data: { status: 'RELEASED', resolved_at: new Date() },
+      });
+
+      await prisma.emailUsageDaily.update({
+        where: { user_id_usage_date: { user_id: job.user_id, usage_date: today } },
+        data: { reserved_count: { decrement: 1 } },
+      });
+
+      await prisma.systemUsageDaily.update({
+        where: { usage_date: today },
+        data: { reserved_count: { decrement: 1 } },
+      });
+
+      if (job.campaign_id) {
+        await prisma.campaignUsageDaily.update({
+          where: { campaign_id_usage_date: { campaign_id: job.campaign_id, usage_date: today } },
+          data: { reserved_count: { decrement: 1 } },
+        });
+      }
       return;
     }
 
     try {
+      const decryptedSecret = emailAccount.encrypted_secret
+        ? await decryptSecret(emailAccount.encrypted_secret, (env.SMTP_ENCRYPTION_KEY as string) || process.env.SMTP_ENCRYPTION_KEY!)
+        : '';
+
       const result = await sendEmail({
         provider: emailAccount.provider,
         from: emailAccount.email,
@@ -105,7 +160,7 @@ export async function processQueueJob(
         body: template.body,
         credentials: {
           email: emailAccount.email,
-          secret: 'decrypted_secret_placeholder',
+          secret: decryptedSecret,
         },
       });
 
@@ -140,13 +195,31 @@ export async function processQueueJob(
           });
         }
       } else {
-        await prisma.emailJob.update({
-          where: { id: jobId },
-          data: {
-            status: 'FAILED',
-            error_message: result.error || 'Unknown provider error',
-          },
-        });
+        const isPermanent = result.errorType === 'permanent';
+        const maxAttempts = 3;
+
+        if (!isPermanent && job.attempt_count < maxAttempts) {
+          const backoffMinutes = job.attempt_count === 1 ? 2 : 5;
+          const nextAttempt = new Date();
+          nextAttempt.setUTCMinutes(nextAttempt.getUTCMinutes() + backoffMinutes);
+
+          await prisma.emailJob.update({
+            where: { id: jobId },
+            data: {
+              status: 'RETRY_WAIT',
+              next_attempt_at: nextAttempt,
+              error_message: result.error || 'Temporary failure, will retry.',
+            },
+          });
+        } else {
+          await prisma.emailJob.update({
+            where: { id: jobId },
+            data: {
+              status: 'FAILED',
+              error_message: result.error || 'Max attempts reached or permanent failure.',
+            },
+          });
+        }
 
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);

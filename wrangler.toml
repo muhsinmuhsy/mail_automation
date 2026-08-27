@@ -18,5 +18,13 @@ queue = "email-queue"
 queue = "email-queue"
 max_batch_size = 10
 
+[[unsafe.bindings]]
+type = "ratelimit"
+name = "RATE_LIMITER_AUTH"
+
+[[unsafe.bindings]]
+type = "ratelimit"
+name = "RATE_LIMITER_API"
+
 [triggers]
 crons = ["* * * * *"]

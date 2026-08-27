@@ -34,5 +34,6 @@ export async function sendEmail(params: SendEmailParams) {
     subject: params.subject,
     body: params.body,
     mimeMessage,
+    credentials: params.credentials,
   });
 }
