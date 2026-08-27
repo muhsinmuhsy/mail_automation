@@ -61,5 +61,14 @@ describe('worker/consumer', () => {
         }),
       })
     );
+
+    expect(prisma.emailLog.create).toHaveBeenCalledWith({
+      data: {
+        email_job_id: 'job-1',
+        status: 'SENT',
+        smtp_response: null,
+        error_message: null,
+      },
+    });
   });
 });

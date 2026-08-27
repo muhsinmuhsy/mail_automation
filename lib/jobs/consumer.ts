@@ -192,6 +192,15 @@ export async function processQueueJob(
           data: { status: 'SENT', sent_at: new Date() },
         });
 
+        await prisma.emailLog.create({
+          data: {
+            email_job_id: jobId,
+            status: 'SENT',
+            smtp_response: result.smtpResponse || null,
+            error_message: null,
+          },
+        });
+
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
 
@@ -243,6 +252,15 @@ export async function processQueueJob(
           });
         }
 
+        await prisma.emailLog.create({
+          data: {
+            email_job_id: jobId,
+            status: result.errorType === 'permanent' ? 'SMTP_AUTH_FAILED' : 'SMTP_TEMPORARY_FAILURE',
+            smtp_response: result.error || null,
+            error_message: result.error || 'Max attempts reached or permanent failure.',
+          },
+        });
+
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
 
@@ -273,6 +291,15 @@ export async function processQueueJob(
         where: { id: jobId },
         data: {
           status: 'DELIVERY_UNKNOWN',
+          error_message: 'Worker crashed after provider acceptance or unknown error.',
+        },
+      });
+
+      await prisma.emailLog.create({
+        data: {
+          email_job_id: jobId,
+          status: 'UNKNOWN',
+          smtp_response: null,
           error_message: 'Worker crashed after provider acceptance or unknown error.',
         },
       });

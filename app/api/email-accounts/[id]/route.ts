@@ -28,6 +28,31 @@ export async function DELETE(
       return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'Invalid ID.'), { status: 400 }), requestId);
     }
 
+    const emailAccount = await prisma.emailAccount.findFirst({
+      where: { id: parsed.data.id, user_id: session.user.id },
+    });
+
+    if (!emailAccount) {
+      return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Email account not found.'), { status: 404 }), requestId);
+    }
+
+    const pendingJobCount = await prisma.emailJob.count({
+      where: {
+        email_account_id: parsed.data.id,
+        status: { in: ['SCHEDULED', 'QUEUED', 'PROCESSING', 'RETRY_WAIT'] },
+      },
+    });
+
+    if (pendingJobCount > 0) {
+      return withRequestId(
+        NextResponse.json(
+          failure('BUSINESS_ERROR', 'Cannot deactivate email account while it has pending email jobs. Please cancel the associated campaign first.'),
+          { status: 400 }
+        ),
+        requestId
+      );
+    }
+
     await prisma.emailAccount.update({
       where: { id: parsed.data.id, user_id: session.user.id },
       data: { is_active: false },
