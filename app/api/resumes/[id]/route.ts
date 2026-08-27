@@ -8,6 +8,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  void request;
   const prisma = createPrisma(process.env.DATABASE_URL!);
   try {
     const sessionResult = await requireVerifiedSession();
@@ -27,7 +28,7 @@ export async function DELETE(
     });
 
     return NextResponse.json(success(null, 'Resume deleted.'));
-  } catch (error) {
+  } catch {
     return NextResponse.json(failure('NOT_FOUND', 'Resume not found.'), { status: 404 });
   } finally {
     await prisma.$disconnect();

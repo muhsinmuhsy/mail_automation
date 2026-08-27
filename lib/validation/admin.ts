@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { uuid } from './common';
 
 export const adminUpdateUserSchema = z.object({
   role: z.enum(['USER', 'ADMIN']).optional(),

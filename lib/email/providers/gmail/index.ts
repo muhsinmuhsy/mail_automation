@@ -1,4 +1,4 @@
-import { EmailProvider, TestConnectionResult, SendEmailInput, SendEmailResult, ProviderCapabilities } from '../types';
+import { EmailProvider, TestConnectionResult, SendEmailResult, ProviderCapabilities } from '../types';
 
 export class GmailProvider implements EmailProvider {
   getCapabilities(): ProviderCapabilities {
@@ -10,7 +10,7 @@ export class GmailProvider implements EmailProvider {
     };
   }
 
-  async testConnection(config: { email: string; secret: string }): Promise<TestConnectionResult> {
+  async testConnection(): Promise<TestConnectionResult> {
     return {
       success: true,
       message: 'Connection test simulated for Gmail SMTP.',
@@ -18,7 +18,7 @@ export class GmailProvider implements EmailProvider {
     };
   }
 
-  async sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
+  async sendEmail(): Promise<SendEmailResult> {
     return {
       success: true,
       messageId: crypto.randomUUID(),

@@ -5,10 +5,10 @@ import { createPrisma } from '../lib/db/prisma';
 import { processQueueJob } from '../lib/jobs/consumer';
 import { scheduleDueJobs, recoverStuckJobs } from '../lib/jobs/scheduler';
 
-export default {
+const workerHandler = {
   fetch: handler.fetch,
 
-  async scheduled(event: ScheduledEvent, env: Record<string, unknown>, ctx: ExecutionContext) {
+  async scheduled(event: ScheduledEvent, env: Record<string, unknown>) {
     const prisma = createPrisma(env.DATABASE_URL as string);
     try {
       await recoverStuckJobs(prisma);
@@ -18,19 +18,21 @@ export default {
     }
   },
 
-  async queue(batch: MessageBatch, env: Record<string, unknown>, ctx: ExecutionContext) {
+  async queue(batch: MessageBatch, env: Record<string, unknown>) {
     const prisma = createPrisma(env.DATABASE_URL as string);
     for (const message of batch.messages) {
       try {
         await processQueueJob(prisma, env, message.id);
         message.ack();
-      } catch (error) {
+      } catch {
         message.retry();
       }
     }
     await prisma.$disconnect();
   },
 };
+
+export default workerHandler;
 
 declare global {
   interface Env {

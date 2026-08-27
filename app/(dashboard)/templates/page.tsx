@@ -1,9 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-
 export default function TemplatesPage() {
-  const [templates, setTemplates] = useState<Array<{ id: string; name: string; subject: string }>>([]);
 
   return (
     <div className="flex flex-col gap-8">

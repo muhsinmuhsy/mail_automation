@@ -1,9 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Array<{ id: string; name: string; email: string }>>([]);
 
   return (
     <div className="flex flex-col gap-8">

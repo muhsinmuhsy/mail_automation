@@ -1,9 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-
 export default function EmailAccountsPage() {
-  const [accounts, setAccounts] = useState<Array<{ id: string; email: string; provider: string }>>([]);
 
   return (
     <div className="flex flex-col gap-8">

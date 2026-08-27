@@ -1,7 +1,7 @@
 import { createPrisma } from '../lib/db/prisma';
 import { processQueueJob } from '../lib/jobs/consumer';
 
-export async function handleQueue(batch: MessageBatch, env: Record<string, unknown>, ctx: ExecutionContext) {
+export async function handleQueue(batch: MessageBatch, env: Record<string, unknown>) {
   const prisma = createPrisma(env.DATABASE_URL as string);
   for (const message of batch.messages) {
     try {

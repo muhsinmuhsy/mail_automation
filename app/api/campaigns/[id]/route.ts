@@ -8,6 +8,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  void request;
   const prisma = createPrisma(process.env.DATABASE_URL!);
   try {
     const sessionResult = await requireVerifiedSession();
@@ -30,7 +31,7 @@ export async function GET(
     }
 
     return NextResponse.json(success(campaign));
-  } catch (error) {
+  } catch {
     return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
   } finally {
     await prisma.$disconnect();

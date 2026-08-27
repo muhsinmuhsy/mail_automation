@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { email, nonEmptyString, uuid } from './common';
+import { email, nonEmptyString } from './common';
 
 export const registerSchema = z.object({
   name: nonEmptyString.max(100),

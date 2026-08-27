@@ -1,8 +1,6 @@
 import { PrismaClient } from '../generated/prisma/client';
 
 export async function scheduleDueJobs(prisma: PrismaClient): Promise<string[]> {
-  const now = new Date();
-
   const dueJobs = await prisma.$queryRaw<Array<{ id: string }>>`
     UPDATE email_jobs
     SET status = 'QUEUED', updated_at = now()

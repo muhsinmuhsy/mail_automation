@@ -4,6 +4,7 @@ import { requireVerifiedSession } from '@/lib/auth/neon-auth';
 import { failure, success } from '@/lib/errors/error-handler';
 
 export async function POST(request: NextRequest) {
+  void request;
   const prisma = createPrisma(process.env.DATABASE_URL!);
   try {
     const sessionResult = await requireVerifiedSession();
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(success({ imported: 0, duplicate: 0, invalid: 0, skipped: 0 }, 'Contacts imported successfully.'));
-  } catch (error) {
+  } catch {
     return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
   } finally {
     await prisma.$disconnect();

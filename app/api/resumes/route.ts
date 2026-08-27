@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createPrisma } from '@/lib/db/prisma';
 import { requireVerifiedSession } from '@/lib/auth/neon-auth';
 import { failure, success } from '@/lib/errors/error-handler';
-import { idParamSchema } from '@/lib/validation/common';
 
 export async function GET(request: NextRequest) {
+  void request;
   const prisma = createPrisma(process.env.DATABASE_URL!);
   try {
     const sessionResult = await requireVerifiedSession();
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(success(resumes));
-  } catch (error) {
+  } catch {
     return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
   } finally {
     await prisma.$disconnect();
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(success(null, 'Resume uploaded successfully.'), { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
   } finally {
     await prisma.$disconnect();

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { uuid, email, positiveInt, nonEmptyString, idParamSchema, paginationSchema } from '@/lib/validation/common';
+import { uuid, email, positiveInt, idParamSchema, paginationSchema } from '@/lib/validation/common';
 
 describe('lib/validation/common', () => {
   describe('uuid', () => {

@@ -5,6 +5,7 @@ import { failure, success } from '@/lib/errors/error-handler';
 import { createContactSchema } from '@/lib/validation/contact';
 
 export async function GET(request: NextRequest) {
+  void request;
   const prisma = createPrisma(process.env.DATABASE_URL!);
   try {
     const sessionResult = await requireVerifiedSession();
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(success(contacts));
-  } catch (error) {
+  } catch {
     return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
   } finally {
     await prisma.$disconnect();
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(success(contact, 'Contact added successfully.'), { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
   } finally {
     await prisma.$disconnect();

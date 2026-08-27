@@ -1,7 +1,6 @@
 import { PrismaClient } from '../generated/prisma/client';
-import { reserveEmailCapacity, getEffectiveDailyEmailLimit } from '../limits/email-limit-service';
+import { reserveEmailCapacity } from '../limits/email-limit-service';
 import { sendEmail } from '../email/service';
-import { buildMimeMessage } from '../email/mime';
 
 export async function processQueueJob(
   prisma: PrismaClient,
@@ -97,13 +96,6 @@ export async function processQueueJob(
       return;
     }
 
-    const mimeMessage = buildMimeMessage({
-      from: emailAccount.email,
-      to: job.to_email,
-      subject: template.subject,
-      body: template.body,
-    });
-
     try {
       const result = await sendEmail({
         provider: emailAccount.provider,
@@ -181,7 +173,7 @@ export async function processQueueJob(
           });
         }
       }
-    } catch (error) {
+    } catch {
       await prisma.emailJob.update({
         where: { id: jobId },
         data: {
@@ -190,7 +182,7 @@ export async function processQueueJob(
         },
       });
     }
-  } catch (error) {
+  } catch {
     await prisma.emailJob.update({
       where: { id: jobId },
       data: {

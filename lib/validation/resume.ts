@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { nonEmptyString, uuid } from './common';
+import { uuid } from './common';
 
 export const createResumeSchema = z.object({
   filename: z.string().max(255),

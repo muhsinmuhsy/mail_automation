@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { nonEmptyString, uuid } from './common';
+import { nonEmptyString } from './common';
 
 export const createTemplateSchema = z.object({
   name: nonEmptyString.max(100),

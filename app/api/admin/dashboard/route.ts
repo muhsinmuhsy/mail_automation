@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/neon-auth';
 import { failure, success } from '@/lib/errors/error-handler';
 
 export async function GET(request: NextRequest) {
+  void request;
   const prisma = createPrisma(process.env.DATABASE_URL!);
   try {
     const session = await getSession();
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
       totalUsers: users,
       settings,
     }));
-  } catch (error) {
+  } catch {
     return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
   } finally {
     await prisma.$disconnect();

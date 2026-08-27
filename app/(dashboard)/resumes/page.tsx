@@ -1,9 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-
 export default function ResumesPage() {
-  const [resumes, setResumes] = useState<Array<{ id: string; filename: string }>>([]);
 
   return (
     <div className="flex flex-col gap-8">

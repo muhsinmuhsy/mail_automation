@@ -8,6 +8,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  void request;
   const prisma = createPrisma(process.env.DATABASE_URL!);
   try {
     const sessionResult = await requireVerifiedSession();
@@ -31,13 +32,10 @@ export async function POST(
 
     const { GmailProvider } = await import('@/lib/email/providers/gmail');
     const provider = new GmailProvider();
-    const result = await provider.testConnection({
-      email: account.email,
-      secret: 'test_secret_placeholder',
-    });
+    const result = await provider.testConnection();
 
     return NextResponse.json(success({ connected: result.success, message: result.message }));
-  } catch (error) {
+  } catch {
     return NextResponse.json(failure('PROVIDER_ERROR', 'We couldn\'t connect to your email account. Please check your credentials.'), { status: 502 });
   } finally {
     await prisma.$disconnect();

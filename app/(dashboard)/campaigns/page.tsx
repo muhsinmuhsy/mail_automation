@@ -1,9 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string; status: string }>>([]);
 
   return (
     <div className="flex flex-col gap-8">

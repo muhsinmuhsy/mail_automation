@@ -1,6 +1,3 @@
-import { auth } from '@/lib/auth/neon-auth';
-import { redirect } from 'next/navigation';
-
 export default async function LoginPage() {
   return (
     <div className="flex flex-col gap-6">

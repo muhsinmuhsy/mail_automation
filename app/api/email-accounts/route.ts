@@ -5,6 +5,7 @@ import { failure, success } from '@/lib/errors/error-handler';
 import { createEmailAccountSchema } from '@/lib/validation/email-account';
 
 export async function GET(request: NextRequest) {
+  void request;
   const prisma = createPrisma(process.env.DATABASE_URL!);
   try {
     const sessionResult = await requireVerifiedSession();
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(success(accounts));
-  } catch (error) {
+  } catch {
     return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
   } finally {
     await prisma.$disconnect();
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(success(account, 'Email account connected successfully.'), { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 });
   } finally {
     await prisma.$disconnect();

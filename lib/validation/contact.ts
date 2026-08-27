@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { email, nonEmptyString, uuid } from './common';
+import { nonEmptyString } from './common';
 
 export const createContactSchema = z.object({
   name: nonEmptyString.max(100),

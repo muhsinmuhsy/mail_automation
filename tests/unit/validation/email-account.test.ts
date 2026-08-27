@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createEmailAccountSchema, testEmailAccountSchema } from '@/lib/validation/email-account';
+import { createEmailAccountSchema } from '@/lib/validation/email-account';
 
 describe('lib/validation/email-account', () => {
   describe('createEmailAccountSchema', () => {
