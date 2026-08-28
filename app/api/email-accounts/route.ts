@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
     });
 
     return withRequestId(NextResponse.json(success(accounts)), requestId);
-  } catch {
+  } catch (error) {
+    console.error('GET /api/email-accounts error:', error);
     return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
   } finally {
     await prisma.$disconnect();
@@ -70,7 +71,13 @@ export async function POST(request: NextRequest) {
     });
 
     return withRequestId(NextResponse.json(success(account, 'Email account connected successfully.'), { status: 201 }), requestId);
-  } catch {
+  } catch (error) {
+    console.error('POST /api/email-accounts error:', error);
+    
+    if ((error as { code?: string })?.code === 'P2002') {
+      return withRequestId(NextResponse.json(failure('BUSINESS_ERROR', 'This email account is already connected.'), { status: 409 }), requestId);
+    }
+    
     return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
   } finally {
     await prisma.$disconnect();
