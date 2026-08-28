@@ -11,7 +11,7 @@ const navItems = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex">
-      <aside className="w-64 border-r border-gray-200 bg-surface">
+      <aside className="w-64 border-r border-gray-200 bg-surface flex flex-col">
         <div className="p-4">
           <h2 className="text-lg font-semibold">Admin</h2>
         </div>

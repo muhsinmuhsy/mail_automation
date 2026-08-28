@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -19,7 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen flex">
-      <aside className="w-64 border-r border-gray-200 bg-surface flex flex-col">
+      <aside className="w-64 shrink-0 border-r border-gray-200 bg-surface flex flex-col">
         <div className="p-6">
           <h2 className="text-lg font-semibold tracking-tight">Mail Automation</h2>
         </div>
@@ -46,7 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <p className="text-xs text-text-secondary">© 2026 Mail Automation</p>
         </div>
       </aside>
-      <main className="flex-1 p-8 overflow-auto">
+      <main className="flex-1 min-w-0 p-8 overflow-auto">
         {children}
       </main>
     </div>
