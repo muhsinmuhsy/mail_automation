@@ -28,7 +28,7 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
           <p className="mt-2 text-text-secondary">Here&apos;s what&apos;s happening today.</p>
         </div>
-        <Button variant="primary" size="md" onClick={() => router.push('/dashboard/campaigns/new')}>
+        <Button variant="primary" size="md" onClick={() => router.push('/campaigns/new')}>
           Create campaign
         </Button>
       </div>
@@ -53,7 +53,7 @@ export default function DashboardPage() {
             title="No campaigns yet"
             description="Create your first campaign to get started."
             action={
-              <Button variant="primary" onClick={() => router.push('/dashboard/campaigns/new')}>
+              <Button variant="primary" onClick={() => router.push('/campaigns/new')}>
                 Create campaign
               </Button>
             }

@@ -5,12 +5,12 @@ import { usePathname } from 'next/navigation';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/dashboard/email-accounts', label: 'Email Accounts', icon: '📧' },
-  { href: '/dashboard/resumes', label: 'Resumes', icon: '📄' },
-  { href: '/dashboard/contacts', label: 'Contacts', icon: '👥' },
-  { href: '/dashboard/templates', label: 'Templates', icon: '📝' },
-  { href: '/dashboard/campaigns', label: 'Campaigns', icon: '🚀' },
-  { href: '/dashboard/emails', label: 'Emails', icon: '✉️' },
+  { href: '/email-accounts', label: 'Email Accounts', icon: '📧' },
+  { href: '/resumes', label: 'Resumes', icon: '📄' },
+  { href: '/contacts', label: 'Contacts', icon: '👥' },
+  { href: '/templates', label: 'Templates', icon: '📝' },
+  { href: '/campaigns', label: 'Campaigns', icon: '🚀' },
+  { href: '/emails', label: 'Emails', icon: '✉️' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
