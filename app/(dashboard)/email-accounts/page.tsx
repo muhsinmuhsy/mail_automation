@@ -1,6 +1,13 @@
 'use client';
 
+import { ProviderSelector } from '@/components/email-accounts/ProviderSelector';
+import { ProviderConnectionDialog } from '@/components/email-accounts/ProviderConnectionDialog';
+import { useState } from 'react';
+import { Button } from '@/components/ui/Button';
+
 export default function EmailAccountsPage() {
+  const [selectedProvider, setSelectedProvider] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-8">
@@ -10,45 +17,32 @@ export default function EmailAccountsPage() {
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-semibold">Connect Gmail</h2>
-          <form className="mt-4 flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <label htmlFor="email" className="text-sm font-medium">Email</label>
-              <input
-                id="email"
-                type="email"
-                required
-                className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label htmlFor="secret" className="text-sm font-medium">App Password</label>
-              <input
-                id="secret"
-                type="password"
-                required
-                className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
-              />
-            </div>
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center justify-center rounded-md bg-information px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
-            >
-              Connect
-            </button>
-          </form>
+        <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
+          <h2 className="text-lg font-semibold text-text-primary">Connect email account</h2>
+          <ProviderSelector selected={selectedProvider} onSelect={setSelectedProvider} />
+          <div className="mt-4">
+            <Button onClick={() => setDialogOpen(true)} disabled={!selectedProvider}>
+              Continue
+            </Button>
+          </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white">
+        <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background">
           <div className="p-4">
-            <h3 className="font-medium">Connected accounts</h3>
+            <h3 className="font-medium text-text-primary">Connected accounts</h3>
           </div>
           <div className="p-4 text-center text-sm text-text-secondary">
             No email accounts connected yet.
           </div>
         </div>
       </div>
+
+      <ProviderConnectionDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        provider={selectedProvider}
+        onConnect={() => {}}
+      />
     </div>
   );
 }

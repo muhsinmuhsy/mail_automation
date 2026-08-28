@@ -22,14 +22,14 @@ export function Toast({ message, type = 'information', onClose }: ToastProps) {
   if (!visible) return null;
 
   const colors: Record<string, string> = {
-    success: 'bg-green-50 text-green-800 border-green-200',
-    error: 'bg-red-50 text-red-800 border-red-200',
-    warning: 'bg-yellow-50 text-yellow-800 border-yellow-200',
-    information: 'bg-blue-50 text-blue-800 border-blue-200',
+    success: 'bg-success-light text-success-text border-success/20',
+    error: 'bg-error-light text-error-text border-error/20',
+    warning: 'bg-warning-light text-warning-text border-warning/20',
+    information: 'bg-information-light text-information-text border-information/20',
   };
 
   return (
-    <div className={`fixed bottom-4 right-4 z-50 rounded-md border px-4 py-3 shadow-lg ${colors[type]}`}>
+    <div className={`fixed bottom-4 right-4 z-50 rounded-[var(--radius-md)] border px-4 py-3 shadow-[var(--shadow-overlay)] ${colors[type]}`}>
       <p className="text-sm font-medium">{message}</p>
     </div>
   );

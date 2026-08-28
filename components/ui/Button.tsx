@@ -4,9 +4,9 @@ type ButtonVariant = 'primary' | 'secondary' | 'destructive';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-information text-white hover:bg-blue-600',
-  secondary: 'bg-surface border border-gray-200 text-text-primary hover:bg-selected',
-  destructive: 'bg-error text-white hover:bg-red-600',
+  primary: 'bg-information text-white hover:bg-information/90',
+  secondary: 'bg-surface border border-neutral-200 text-text-primary hover:bg-selected',
+  destructive: 'bg-error text-white hover:bg-error/90',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -28,7 +28,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={[
-          'inline-flex items-center justify-center rounded-md font-medium transition-colors',
+          'inline-flex items-center justify-center rounded-[var(--radius-md)] font-medium transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-information focus:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           variantStyles[variant],

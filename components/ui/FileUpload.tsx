@@ -20,7 +20,7 @@ export function FileUpload({ onFileChange, accept = '.pdf', maxSizeMB = 5, error
           }
           onFileChange(file);
         }}
-        className="text-sm"
+        className="text-sm text-text-primary"
       />
       {error && <p className="text-xs text-error">{error}</p>}
     </div>

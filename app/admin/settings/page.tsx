@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { FormMessage } from '@/components/ui/FormMessage';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
 interface SystemSettings {
   id: number;
@@ -64,43 +66,35 @@ export default function AdminSettingsPage() {
         <p className="mt-2 text-text-secondary">Global system configuration.</p>
       </div>
 
-      <div className="max-w-lg rounded-lg border border-gray-200 bg-white p-6">
+      <div className="max-w-lg rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
         {success && <FormMessage type="success" message={success} />}
         {error && <FormMessage type="error" message={error} />}
 
         <div className="flex flex-col gap-4">
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium">Default daily email limit</span>
-            <input
-              type="number"
-              value={settings.default_daily_email_limit}
-              onChange={(e) => setSettings({ ...settings, default_daily_email_limit: Number(e.target.value) })}
-              className="rounded-md border border-gray-300 px-3 py-2"
-            />
-          </label>
-
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium">Global daily email limit</span>
-            <input
-              type="number"
-              value={settings.global_daily_email_limit}
-              onChange={(e) => setSettings({ ...settings, global_daily_email_limit: Number(e.target.value) })}
-              className="rounded-md border border-gray-300 px-3 py-2"
-            />
-          </label>
-
+          <Input
+            label="Default daily email limit"
+            type="number"
+            value={String(settings.default_daily_email_limit)}
+            onChange={(e) => setSettings({ ...settings, default_daily_email_limit: Number(e.target.value) })}
+          />
+          <Input
+            label="Global daily email limit"
+            type="number"
+            value={String(settings.global_daily_email_limit)}
+            onChange={(e) => setSettings({ ...settings, global_daily_email_limit: Number(e.target.value) })}
+          />
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
               checked={settings.email_sending_enabled}
               onChange={(e) => setSettings({ ...settings, email_sending_enabled: e.target.checked })}
             />
-            <span className="text-sm font-medium">Enable email sending</span>
+            <span className="text-sm font-medium text-text-primary">Enable email sending</span>
           </label>
 
-          <button onClick={save} disabled={saving} className="self-start rounded-md bg-black px-4 py-2 text-sm text-white disabled:opacity-50">
+          <Button onClick={save} disabled={saving}>
             {saving ? 'Saving...' : 'Save settings'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

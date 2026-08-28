@@ -58,7 +58,7 @@ export default async function proxy(request: NextRequest) {
 
   const sessionResult = await auth.getSession();
   if (sessionResult?.data?.user) {
-    ensureUserProfile(sessionResult.data.user.id, sessionResult.data.user.email, sessionResult.data.user.name).catch(() => {});
+    ensureUserProfile(process.env.DATABASE_URL!, sessionResult.data.user.id, sessionResult.data.user.email, sessionResult.data.user.name).catch(() => {});
 
     if (!sessionResult.data.user.emailVerified) {
       const verifyUrl = new URL('/verify-email', request.url);

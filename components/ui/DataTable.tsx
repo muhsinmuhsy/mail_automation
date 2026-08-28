@@ -11,10 +11,10 @@ interface DataTableProps<T> {
 
 export function DataTable<T>({ data, columns }: DataTableProps<T>) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+    <div className="overflow-x-auto rounded-[var(--radius-md)] border border-neutral-200 bg-background">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200">
+          <tr className="border-b border-neutral-200">
             {columns.map((col) => (
               <th key={col.key} className="px-4 py-3 text-left font-medium text-text-secondary">
                 {col.header}
@@ -31,7 +31,7 @@ export function DataTable<T>({ data, columns }: DataTableProps<T>) {
             </tr>
           ) : (
             data.map((item, index) => (
-              <tr key={index} className="border-b border-gray-100 last:border-0">
+              <tr key={index} className="border-b border-neutral-100 last:border-0">
                 {columns.map((col) => (
                   <td key={col.key} className="px-4 py-3">
                     {col.render ? col.render(item) : (item as Record<string, unknown>)[col.key] as React.ReactNode}

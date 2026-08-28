@@ -3,7 +3,7 @@ import { createPrisma } from '@/lib/db/prisma';
 import { requireVerifiedSession } from '@/lib/auth/neon-auth';
 import { failure, success } from '@/lib/errors/error-handler';
 import { createCampaignSchema } from '@/lib/validation/campaign';
-import { generateCampaignJobs } from '@/lib/campaigns/scheduler';
+import { generateCampaignJobs } from '@/lib/jobs/scheduler';
 import { checkApiRateLimit } from '@/lib/rate-limit/api';
 
 export async function GET(request: NextRequest) {

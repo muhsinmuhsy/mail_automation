@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { PrismaClient } from '@/lib/generated/prisma/client';
-import { generateCampaignJobs } from '@/lib/campaigns/scheduler';
+import { generateCampaignJobs } from '@/lib/jobs/scheduler';
 
 describe('lib/campaigns/scheduler', () => {
   it('should generate jobs with correct scheduled_at in UTC', async () => {

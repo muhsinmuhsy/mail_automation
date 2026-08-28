@@ -14,7 +14,7 @@ export function ErrorState({ title = 'Something went wrong', message, onRetry }:
       {onRetry && (
         <button
           onClick={onRetry}
-          className="mt-4 inline-flex h-10 items-center justify-center rounded-md bg-information px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
+          className="mt-4 inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
         >
           Try again
         </button>

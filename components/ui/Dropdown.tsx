@@ -25,7 +25,7 @@ export function Dropdown({ trigger, items }: DropdownProps) {
     <div ref={ref} className="relative">
       <div onClick={() => setOpen(!open)}>{trigger}</div>
       {open && (
-        <div className="absolute right-0 mt-2 w-48 rounded-md border border-gray-200 bg-white py-1 shadow-lg z-50">
+        <div className="absolute right-0 mt-2 w-48 rounded-[var(--radius-md)] border border-neutral-200 bg-background py-1 shadow-[var(--shadow-elevated)] z-50">
           {items.map((item, index) => (
             <button
               key={index}
@@ -33,7 +33,7 @@ export function Dropdown({ trigger, items }: DropdownProps) {
                 item.onClick?.();
                 setOpen(false);
               }}
-              className="block w-full text-left px-4 py-2 text-sm hover:bg-selected"
+              className="block w-full text-left px-4 py-2 text-sm text-text-primary hover:bg-selected"
             >
               {item.label}
             </button>

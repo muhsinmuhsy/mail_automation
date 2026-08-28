@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 interface EmailJob {
   id: string;
@@ -39,9 +40,9 @@ export default function AdminEmailsPage() {
         <p className="mt-2 text-text-secondary">Recent email jobs across all users.</p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-neutral-200 bg-background">
+        <table className="min-w-full divide-y divide-neutral-200">
+          <thead className="bg-neutral-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">To</th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">Subject</th>
@@ -50,18 +51,16 @@ export default function AdminEmailsPage() {
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">Sent At</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-neutral-200 bg-background">
             {jobs.map((job) => (
               <tr key={job.id}>
-                <td className="px-4 py-4 text-sm">{job.to_email}</td>
-                <td className="px-4 py-4 text-sm">{job.subject}</td>
+                <td className="px-4 py-4 text-sm text-text-primary">{job.to_email}</td>
+                <td className="px-4 py-4 text-sm text-text-primary">{job.subject}</td>
                 <td className="px-4 py-4 text-sm">
-                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(job.status)}`}>
-                    {job.status}
-                  </span>
+                  <StatusBadge status={job.status} />
                 </td>
-                <td className="px-4 py-4 text-sm">{job.user.email}</td>
-                <td className="px-4 py-4 text-sm">{job.sent_at ? new Date(job.sent_at).toLocaleString() : '-'}</td>
+                <td className="px-4 py-4 text-sm text-text-primary">{job.user.email}</td>
+                <td className="px-4 py-4 text-sm text-text-secondary">{job.sent_at ? new Date(job.sent_at).toLocaleString() : '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -69,15 +68,4 @@ export default function AdminEmailsPage() {
       </div>
     </div>
   );
-}
-
-function getStatusColor(status: string): string {
-  switch (status) {
-    case 'SENT': return 'bg-green-50 text-green-700';
-    case 'FAILED': return 'bg-red-50 text-red-700';
-    case 'QUEUED': return 'bg-blue-50 text-blue-700';
-    case 'PROCESSING': return 'bg-yellow-50 text-yellow-700';
-    case 'RETRY_WAIT': return 'bg-orange-50 text-orange-700';
-    default: return 'bg-gray-50 text-gray-700';
-  }
 }

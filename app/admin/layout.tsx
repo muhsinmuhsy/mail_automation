@@ -11,7 +11,7 @@ const navItems = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex">
-      <aside className="w-64 border-r border-gray-200 bg-surface flex flex-col">
+      <aside className="w-64 shrink-0 border-r border-neutral-200 bg-surface flex flex-col">
         <div className="p-4">
           <h2 className="text-lg font-semibold">Admin</h2>
         </div>
@@ -20,14 +20,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-md px-3 py-2 text-sm hover:bg-selected"
+              className="rounded-[var(--radius-md)] px-3 py-2 text-sm hover:bg-selected text-text-primary"
             >
               {item.label}
             </Link>
           ))}
         </nav>
       </aside>
-      <main className="flex-1 p-8">
+      <main className="flex-1 min-w-0 p-8 overflow-auto">
         {children}
       </main>
     </div>

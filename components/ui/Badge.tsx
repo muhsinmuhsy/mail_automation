@@ -5,10 +5,10 @@ interface BadgeProps {
 
 const variantStyles: Record<string, string> = {
   default: 'bg-selected text-text-primary',
-  success: 'bg-green-50 text-green-700',
-  warning: 'bg-yellow-50 text-yellow-700',
-  error: 'bg-red-50 text-red-700',
-  information: 'bg-blue-50 text-blue-700',
+  success: 'bg-success-light text-success-text',
+  warning: 'bg-warning-light text-warning-text',
+  error: 'bg-error-light text-error-text',
+  information: 'bg-information-light text-information-text',
 };
 
 export function Badge({ children, variant = 'default' }: BadgeProps) {

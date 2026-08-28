@@ -13,10 +13,12 @@ vi.mock('@/lib/db/prisma', () => ({
 }));
 
 describe('lib/auth/user-provisioning', () => {
+  const dbUrl = 'postgresql://test:test@localhost:5432/test';
+
   it('creates user profile when missing', async () => {
     mockPrisma.user.upsert.mockResolvedValue({ id: 'user-1', email: 'test@example.com', name: 'Test' });
 
-    await ensureUserProfile('user-1', 'test@example.com', 'Test');
+    await ensureUserProfile(dbUrl, 'user-1', 'test@example.com', 'Test');
 
     expect(mockPrisma.user.upsert).toHaveBeenCalledWith({
       where: { id: 'user-1' },
@@ -28,7 +30,7 @@ describe('lib/auth/user-provisioning', () => {
   it('updates email when profile exists', async () => {
     mockPrisma.user.upsert.mockResolvedValue({ id: 'user-1', email: 'new@example.com', name: 'Test' });
 
-    await ensureUserProfile('user-1', 'new@example.com', 'Test');
+    await ensureUserProfile(dbUrl, 'user-1', 'new@example.com', 'Test');
 
     expect(mockPrisma.user.upsert).toHaveBeenCalledWith({
       where: { id: 'user-1' },
@@ -40,7 +42,7 @@ describe('lib/auth/user-provisioning', () => {
   it('creates profile without name', async () => {
     mockPrisma.user.upsert.mockResolvedValue({ id: 'user-1', email: 'test@example.com' });
 
-    await ensureUserProfile('user-1', 'test@example.com');
+    await ensureUserProfile(dbUrl, 'user-1', 'test@example.com');
 
     expect(mockPrisma.user.upsert).toHaveBeenCalledWith({
       where: { id: 'user-1' },

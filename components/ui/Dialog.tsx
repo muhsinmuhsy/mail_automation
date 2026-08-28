@@ -27,11 +27,11 @@ export function Dialog({ open, onOpenChange, title, description, children }: Dia
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="fixed inset-0 bg-black/50"
+        className="fixed inset-0 bg-neutral-900/50"
         onClick={() => onOpenChange(false)}
       />
-      <div className="relative z-50 w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-lg">
-        <h2 className="text-lg font-semibold">{title}</h2>
+      <div className="relative z-50 w-full max-w-md rounded-[var(--radius-dialog)] border border-neutral-200 bg-background p-6 shadow-[var(--shadow-overlay)]">
+        <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
         {description && <p className="mt-2 text-sm text-text-secondary">{description}</p>}
         <div className="mt-4">{children}</div>
       </div>

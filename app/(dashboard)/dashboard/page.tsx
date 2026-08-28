@@ -35,10 +35,10 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {mockStats.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-gray-200 bg-white p-6">
+          <div key={stat.label} className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
             <p className="text-sm text-text-secondary">{stat.label}</p>
             <div className="mt-2 flex items-baseline gap-2">
-              <p className="text-3xl font-semibold">{stat.value}</p>
+              <p className="text-3xl font-semibold text-text-primary">{stat.value}</p>
               {stat.variant === 'error' && <StatusBadge status="FAILED" />}
             </div>
             <p className="mt-1 text-xs text-text-secondary">{stat.subtext}</p>
@@ -47,7 +47,7 @@ export default function DashboardPage() {
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold">Recent campaigns</h2>
+        <h2 className="text-xl font-semibold text-text-primary">Recent campaigns</h2>
         {mockCampaigns.length === 0 ? (
           <EmptyState
             title="No campaigns yet"
@@ -59,7 +59,7 @@ export default function DashboardPage() {
             }
           />
         ) : (
-          <div className="mt-4 rounded-lg border border-gray-200 bg-white divide-y divide-gray-200">
+          <div className="mt-4 rounded-[var(--radius-lg)] border border-neutral-200 bg-background divide-y divide-neutral-200">
             {mockCampaigns.map((campaign) => (
               <div key={campaign.id} className="p-4 flex items-center justify-between hover:bg-surface transition-colors">
                 <div>

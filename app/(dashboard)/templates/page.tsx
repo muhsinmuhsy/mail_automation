@@ -1,61 +1,50 @@
 'use client';
 
+import { TemplateCard } from '@/components/templates/TemplateCard';
+import { TemplateForm } from '@/components/templates/TemplateForm';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { useState } from 'react';
+
 export default function TemplatesPage() {
+  const [templates, setTemplates] = useState<Array<{ id: string; name: string; subject: string }>>([]);
+  const [showForm, setShowForm] = useState(false);
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Templates</h1>
-        <p className="mt-2 text-text-secondary">Create and manage email templates.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Templates</h1>
+          <p className="mt-2 text-text-secondary">Create and manage email templates.</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
+        >
+          {showForm ? 'Cancel' : 'New template'}
+        </button>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold">Create template</h2>
-        <form className="mt-4 flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="name" className="text-sm font-medium">Name</label>
-            <input
-              id="name"
-              type="text"
-              required
-              className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="subject" className="text-sm font-medium">Subject</label>
-            <input
-              id="subject"
-              type="text"
-              required
-              className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="body" className="text-sm font-medium">Body</label>
-            <textarea
-              id="body"
-              required
-              rows={6}
-              className="flex w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
-            />
-          </div>
-          <button
-            type="submit"
-            className="inline-flex h-10 items-center justify-center rounded-md bg-information px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
-          >
-            Create template
-          </button>
-        </form>
-      </div>
+      {showForm && (
+        <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
+          <TemplateForm onSubmit={(data) => {
+            setTemplates((prev) => [...prev, { id: Date.now().toString(), ...data }]);
+            setShowForm(false);
+          }} />
+        </div>
+      )}
 
-      <div className="rounded-lg border border-gray-200 bg-white">
-        <div className="p-4">
-          <h3 className="font-medium">Your templates</h3>
+      {templates.length === 0 ? (
+        <EmptyState
+          title="No templates yet"
+          description="Create your first email template to get started."
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {templates.map((template) => (
+            <TemplateCard key={template.id} template={template} />
+          ))}
         </div>
-        <div className="p-4 text-center text-sm text-text-secondary">
-          No templates yet.
-        </div>
-      </div>
+      )}
     </div>
   );
 }
