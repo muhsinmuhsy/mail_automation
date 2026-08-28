@@ -16,7 +16,8 @@ export default function RegisterPage() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <form action="/api/auth/sign-in/social/google" method="GET">
+        <form action="/api/auth/sign-in/social" method="POST" className="flex flex-col gap-3">
+          <input type="hidden" name="provider" value="google" />
           <button
             type="submit"
             className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-surface active:scale-[0.98] transition-all"
