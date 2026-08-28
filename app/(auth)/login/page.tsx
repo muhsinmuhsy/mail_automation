@@ -1,6 +1,11 @@
+'use client';
 import Link from 'next/link';
+import { useActionState } from 'react';
+import { signInWithEmail } from './actions';
 
-export default async function LoginPage() {
+export default function LoginPage() {
+  const [state, action, isPending] = useActionState(signInWithEmail, null);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
@@ -31,7 +36,10 @@ export default async function LoginPage() {
         <div className="h-px flex-1 bg-gray-200" />
       </div>
 
-      <form className="flex flex-col gap-4" action="/api/auth/sign-in/email" method="POST">
+      <form action={action} className="flex flex-col gap-4">
+        {state?.error && (
+          <p className="text-sm text-red-600">{state.error}</p>
+        )}
         <div className="flex flex-col gap-2">
           <label htmlFor="email" className="text-sm font-medium text-text-primary">
             Email
@@ -60,9 +68,10 @@ export default async function LoginPage() {
 
         <button
           type="submit"
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-information px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 active:scale-[0.98] transition-all"
+          disabled={isPending}
+          className="inline-flex h-10 items-center justify-center rounded-lg bg-information px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 active:scale-[0.98] transition-all disabled:opacity-50"
         >
-          Sign in
+          {isPending ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
 
