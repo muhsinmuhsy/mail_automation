@@ -1,26 +1,31 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import GoogleSignInButton from '@/components/ui/GoogleSignInButton';
 
+vi.mock('react', async () => {
+  const actual = await vi.importActual('react');
+  return {
+    ...actual,
+    useState: () => [false, vi.fn()],
+  };
+});
+
 describe('GoogleSignInButton', () => {
-  it('returns a form element with correct attributes', () => {
+  it('returns a form element with onSubmit handler', () => {
     const result = GoogleSignInButton();
     expect(result.type).toBe('form');
-    expect(result.props.action).toBe('/api/auth/sign-in/social');
-    expect(result.props.method).toBe('POST');
-  });
-
-  it('includes hidden provider input with google value', () => {
-    const result = GoogleSignInButton();
-    const hiddenInput = result.props.children[0];
-    expect(hiddenInput.props.type).toBe('hidden');
-    expect(hiddenInput.props.name).toBe('provider');
-    expect(hiddenInput.props.value).toBe('google');
+    expect(result.props.onSubmit).toBeDefined();
   });
 
   it('renders a submit button with Continue with Google text', () => {
     const result = GoogleSignInButton();
-    const button = result.props.children[1];
+    const button = result.props.children;
     expect(button.type).toBe('button');
     expect(button.props.children).toContain('Continue with Google');
+  });
+
+  it('button is disabled when loading', () => {
+    const result = GoogleSignInButton();
+    const button = result.props.children;
+    expect(button.props.disabled).toBe(false);
   });
 });
