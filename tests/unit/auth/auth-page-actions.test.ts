@@ -8,11 +8,16 @@ const mockAuth = {
     email: vi.fn(),
   },
   sendVerificationEmail: vi.fn(),
+  emailOtp: {
+    verifyEmail: vi.fn(),
+  },
 };
+
+const mockGetSession = vi.fn();
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   auth: mockAuth,
-  getSession: vi.fn(),
+  getSession: mockGetSession,
 }));
 
 vi.mock('next/navigation', () => ({
@@ -22,6 +27,7 @@ vi.mock('next/navigation', () => ({
 describe('auth page server actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSession.mockReset();
   });
 
   describe('signUpWithEmail', () => {
@@ -37,9 +43,11 @@ describe('auth page server actions', () => {
       expect(mockAuth.signUp.email).not.toHaveBeenCalled();
     });
 
-    it('calls auth.signUp.email with form data', async () => {
+    it('calls auth.signUp.email with form data and sends verification email', async () => {
       const { signUpWithEmail } = await import('@/app/(auth)/register/actions');
+      const { redirect } = await import('next/navigation');
       mockAuth.signUp.email.mockResolvedValue({ data: null, error: null });
+      mockAuth.sendVerificationEmail.mockResolvedValue({ data: null, error: null });
       const formData = new FormData();
       formData.append('email', 'test@example.com');
       formData.append('name', 'Test User');
@@ -51,6 +59,10 @@ describe('auth page server actions', () => {
         name: 'Test User',
         password: 'password123',
       });
+      expect(mockAuth.sendVerificationEmail).toHaveBeenCalledWith({
+        email: 'test@example.com',
+      });
+      expect(redirect).toHaveBeenCalledWith('/verify-email');
       expect(result).toBeUndefined();
     });
 
@@ -64,6 +76,22 @@ describe('auth page server actions', () => {
 
       const result = await signUpWithEmail(null, formData);
       expect(result.error).toBe('Email already exists');
+    });
+
+    it('returns error when verification email send fails', async () => {
+      const { signUpWithEmail } = await import('@/app/(auth)/register/actions');
+      mockAuth.signUp.email.mockResolvedValue({ data: null, error: null });
+      mockAuth.sendVerificationEmail.mockResolvedValue({ data: null, error: { message: 'SMTP error' } });
+      const formData = new FormData();
+      formData.append('email', 'test@example.com');
+      formData.append('name', 'Test User');
+      formData.append('password', 'password123');
+
+      const result = await signUpWithEmail(null, formData);
+      expect(result.error).toBe('SMTP error');
+      expect(mockAuth.sendVerificationEmail).toHaveBeenCalledWith({
+        email: 'test@example.com',
+      });
     });
   });
 
@@ -106,13 +134,60 @@ describe('auth page server actions', () => {
     });
   });
 
+  describe('verifyOtp', () => {
+    it('returns error when not logged in', async () => {
+      mockGetSession.mockResolvedValue(null);
+
+      const { verifyOtp } = await import('@/app/(auth)/verify-email/actions');
+      const result = await verifyOtp(null, new FormData());
+      expect(result.error).toBe('You must be logged in to verify your email.');
+      expect(mockAuth.emailOtp.verifyEmail).not.toHaveBeenCalled();
+    });
+
+    it('returns error when token is missing', async () => {
+      mockGetSession.mockResolvedValue({ user: { email: 'test@example.com' } });
+
+      const { verifyOtp } = await import('@/app/(auth)/verify-email/actions');
+      const result = await verifyOtp(null, new FormData());
+      expect(result.error).toBe('Please enter the verification code.');
+      expect(mockAuth.emailOtp.verifyEmail).not.toHaveBeenCalled();
+    });
+
+    it('verifies OTP and redirects to dashboard', async () => {
+      const { verifyOtp } = await import('@/app/(auth)/verify-email/actions');
+      const { redirect } = await import('next/navigation');
+      mockGetSession.mockResolvedValue({ user: { email: 'test@example.com' } });
+      mockAuth.emailOtp.verifyEmail.mockResolvedValue({ data: null, error: null });
+
+      const formData = new FormData();
+      formData.append('token', '7431888');
+      const result = await verifyOtp(null, formData);
+      expect(mockAuth.emailOtp.verifyEmail).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        otp: '7431888',
+      });
+      expect(redirect).toHaveBeenCalledWith('/dashboard');
+      expect(result).toBeUndefined();
+    });
+
+    it('returns error for invalid OTP', async () => {
+      const { verifyOtp } = await import('@/app/(auth)/verify-email/actions');
+      mockGetSession.mockResolvedValue({ user: { email: 'test@example.com' } });
+      mockAuth.emailOtp.verifyEmail.mockResolvedValue({ data: null, error: { message: 'Invalid code' } });
+
+      const formData = new FormData();
+      formData.append('token', '000000');
+      const result = await verifyOtp(null, formData);
+      expect(result.error).toBe('Invalid code');
+    });
+  });
+
   describe('sendVerificationEmail', () => {
     it('returns error when not logged in', async () => {
-      const { sendVerificationEmail } = await import('@/app/(auth)/verify-email/actions');
-      const neonAuth = await import('@/lib/auth/neon-auth');
-      vi.mocked(neonAuth.getSession).mockResolvedValue(null);
+      mockGetSession.mockResolvedValue(null);
 
-      const result = await sendVerificationEmail(new FormData());
+      const { sendVerificationEmail } = await import('@/app/(auth)/verify-email/actions');
+      const result = await sendVerificationEmail();
       expect(result.error).toBe('You must be logged in to request a verification email.');
       expect(mockAuth.sendVerificationEmail).not.toHaveBeenCalled();
     });
@@ -120,14 +195,10 @@ describe('auth page server actions', () => {
     it('calls auth.sendVerificationEmail with user email and redirects', async () => {
       const { sendVerificationEmail } = await import('@/app/(auth)/verify-email/actions');
       const { redirect } = await import('next/navigation');
-      const neonAuth = await import('@/lib/auth/neon-auth');
-      vi.mocked(neonAuth.getSession).mockResolvedValue({
-        user: { email: 'test@example.com' },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+      mockGetSession.mockResolvedValue({ user: { email: 'test@example.com' } });
       mockAuth.sendVerificationEmail.mockResolvedValue({ data: null, error: null });
 
-      const result = await sendVerificationEmail(new FormData());
+      const result = await sendVerificationEmail();
       expect(mockAuth.sendVerificationEmail).toHaveBeenCalledWith({
         email: 'test@example.com',
       });
@@ -137,14 +208,10 @@ describe('auth page server actions', () => {
 
     it('returns error when sending fails', async () => {
       const { sendVerificationEmail } = await import('@/app/(auth)/verify-email/actions');
-      const neonAuth = await import('@/lib/auth/neon-auth');
-      vi.mocked(neonAuth.getSession).mockResolvedValue({
-        user: { email: 'test@example.com' },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+      mockGetSession.mockResolvedValue({ user: { email: 'test@example.com' } });
       mockAuth.sendVerificationEmail.mockResolvedValue({ data: null, error: { message: 'Too many requests' } });
 
-      const result = await sendVerificationEmail(new FormData());
+      const result = await sendVerificationEmail();
       expect(result.error).toBe('Too many requests');
     });
   });

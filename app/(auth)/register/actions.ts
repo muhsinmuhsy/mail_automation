@@ -24,5 +24,13 @@ export async function signUpWithEmail(
     return { error: error.message || 'Failed to create account' };
   }
 
-  redirect('/dashboard');
+  const { error: verifyError } = await auth.sendVerificationEmail({
+    email,
+  });
+
+  if (verifyError) {
+    return { error: verifyError.message || 'Failed to send verification email' };
+  }
+
+  redirect('/verify-email');
 }
