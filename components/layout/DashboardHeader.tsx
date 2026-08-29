@@ -1,24 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import { Dropdown } from '@/components/ui/Dropdown';
 
 export function DashboardHeader() {
-  const [greeting, setGreeting] = useState('');
-
-  if (!greeting) {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Good morning');
-    else if (hour < 18) setGreeting('Good afternoon');
-    else setGreeting('Good evening');
-  }
-
   return (
     <header className="flex items-center justify-between border-b border-neutral-200 bg-background px-8 py-4">
       <div>
         <h1 className="text-lg font-semibold text-text-primary">Mail Automation</h1>
         <p className="text-sm text-text-secondary">
-          {greeting}. Here&apos;s what&apos;s happening today.
+          Welcome. Here&apos;s what&apos;s happening today.
         </p>
       </div>
       <Dropdown
