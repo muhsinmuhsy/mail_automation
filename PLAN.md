@@ -15,44 +15,68 @@
 
   ## Final Architecture
 
-  ```
-                      YOUR DOMAIN
-                          │
-                          ▼
-                ┌─────────────────────┐
-                │   ONE Cloudflare    │
-                │       Worker        │
-                │                     │
-                │     Next.js         │
-                │     fetch()         │
-                │     scheduled()     │
-                │     queue()         │
-                └──────────┬──────────┘
-                          │
-            ┌──────────────┼──────────────┐
-            ▼              ▼              ▼
-        Neon DB        Neon Auth        R2
-            │                            │
-            │                            ▼
-            │                    Resume PDFs
-            │
-            ▼
-        Email Jobs
-            │
-            ▼
-        Queue
-            │
-            ▼
-      Queue Consumer
-            │
-            ▼
-        Email Provider
-            │
-            ▼
-        Gmail SMTP
-  ```
+   ```
+                       YOUR DOMAIN
+                           │
+                           ▼
+                 ┌─────────────────────┐
+                 │   ONE Cloudflare    │
+                 │       Worker        │
+                 │                     │
+                 │     Next.js         │
+                 │     fetch()         │
+                 │     scheduled()     │
+                 │     queue()         │
+                 └──────────┬──────────┘
+                           │
+             ┌──────────────┼──────────────┐
+             ▼              ▼              ▼
+         Neon DB        Neon Auth      Backblaze B2
+             │          (private)         │
+             │                           │
+             │                           ▼
+             │                   Resume PDFs (PDF)
+             │
+             ▼
+         Email Jobs
+             │
+             ▼
+         Queue
+             │
+             ▼
+       Queue Consumer
+             │
+             ▼
+         Email Provider
+             │
+             ▼
+         Gmail SMTP
+   ```
 
-  **Note:** Single Worker deployment. Cloudflare supports one Worker being both a Queue producer and consumer, with `fetch()`, `scheduled()`, and `queue()` handlers in the same runtime. The email sending layer is provider-neutral; Gmail is the only implemented provider for MVP.
+   **Storage abstraction:** The application never talks to Backblaze B2
+   directly. It depends on a `StorageService` interface; `B2StorageService`
+   is the current implementation backed by Backblaze's S3-Compatible API.
+
+   ```
+                         APPLICATION
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │ Storage Service  │
+                    │    Interface     │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │ Backblaze B2     │
+                    │ S3-Compatible API│
+                    └────────┬─────────┘
+                             │
+                             ▼
+                       Resume PDFs
+   ```
+
+   **Note:** Single Worker deployment. Cloudflare supports one Worker being both a Queue producer and consumer, with `fetch()`, `scheduled()`, and `queue()` handlers in the same runtime. The email sending layer is provider-neutral; Gmail is the only implemented provider for MVP. The file storage layer is also provider-neutral through a `StorageService` interface; Backblaze B2 (S3-Compatible API) is the only implemented storage provider for MVP.
 
   ---
 
@@ -62,14 +86,34 @@
   |-------|-----------|
   | Frontend | Next.js + TypeScript + Tailwind CSS |
   | Next.js Runtime | Cloudflare Workers via OpenNext adapter |
-  | Database | Neon PostgreSQL |
-  | Auth | Neon Auth |
-  | File Storage | Cloudflare R2 |
-  | Queue | Cloudflare Queues |
-  | Scheduler | Cloudflare Cron |
-  | Email | Gmail SMTP port 587 (STARTTLS) |
+   | Database | Neon PostgreSQL |
+   | Auth | Neon Auth |
+   | File Storage | Backblaze B2 Cloud Storage (S3-Compatible API) |
+   | Queue | Cloudflare Queues |
+   | Scheduler | Cloudflare Cron |
+   | Email | Gmail SMTP port 587 (STARTTLS) |
 
-  ---
+   ### Storage Provider Decision
+
+   The original architecture selected Cloudflare R2 for file storage.
+
+   Before implementation/deployment, the storage provider was changed
+   from Cloudflare R2 to Backblaze B2 Cloud Storage.
+
+   Current implementation:
+   - Backblaze B2 Cloud Storage
+   - S3-Compatible API
+   - AWS SDK for JavaScript v3
+   - Private bucket
+   - Server-side access only
+   - Storage access isolated behind an application storage interface
+
+   Cloudflare R2 is no longer used for application file storage.
+
+   The application must not depend directly on Backblaze-specific APIs
+   outside the storage adapter.
+
+   ---
 
   ## Authentication
 
@@ -302,28 +346,57 @@
   NEON_AUTH_BASE_URL=
   NEON_AUTH_COOKIE_SECRET=
 
-  # Database
-  DATABASE_URL=
+   # Database
+   DATABASE_URL=
 
-  # R2
-  R2_BUCKET_NAME=
+   # Backblaze B2
+   B2_BUCKET_NAME=
+   B2_REGION=
+   B2_ENDPOINT=
+   B2_KEY_ID=
+   B2_APPLICATION_KEY=
 
-  # Application
-  NEXT_PUBLIC_APP_URL=
-  ```
+   # Application
+   NEXT_PUBLIC_APP_URL=
+   ```
 
-  ### R2 Access
+   Meaning:
+   - `B2_BUCKET_NAME` → Your bucket name
+   - `B2_REGION` → Region of that bucket (e.g. `us-west-004`)
+   - `B2_ENDPOINT` → The exact Endpoint shown in the B2 bucket details
+   - `B2_KEY_ID` → Backblaze application key ID
+   - `B2_APPLICATION_KEY` → Backblaze application key secret
 
-  Use a Cloudflare R2 binding for Worker access. Do not expose R2 access keys to client code.
+   Create the bucket in the B2 console and copy the **Endpoint** shown in
+   the bucket details, then use that exact endpoint and the bucket's
+   matching region. Do not hand-construct the endpoint format; use the
+   value Backblaze provides for the bucket.
 
-  ```toml
-  # wrangler.toml
-  [[r2_buckets]]
-  binding = "R2_BUCKET"
-  bucket_name = "resume-bucket"
-  ```
+   Backblaze officially maps the B2 `keyID` to the S3 `AWS_ACCESS_KEY_ID`
+   and `applicationKey` to the S3 `AWS_SECRET_ACCESS_KEY`.
 
-  Worker code uses the `R2_BUCKET` binding directly. S3-compatible credentials may be used only for external tooling, not for normal Worker-to-R2 operations.
+   ### Backblaze B2 Access
+
+   B2 is an external S3-compatible service, not a Cloudflare binding. Its
+   credentials/configuration belong in Worker secrets/environment
+   configuration, and the B2 adapter creates the S3 client using the B2
+   endpoint. The `wrangler.toml` must NOT contain an `[[r2_buckets]]`
+   block — that configuration is specifically for Cloudflare R2 and is no
+   longer used.
+
+   ```toml
+   # wrangler.toml
+   # No [[r2_buckets]] block. B2 is configured via Worker secrets:
+   # B2_BUCKET_NAME, B2_REGION, B2_ENDPOINT, B2_KEY_ID, B2_APPLICATION_KEY
+   ```
+
+   The B2 storage adapter builds an AWS SDK `S3Client` with:
+   - `endpoint` = `B2_ENDPOINT`
+   - `region` = `B2_REGION`
+   - `credentials.accessKeyId` = `B2_KEY_ID`
+   - `credentials.secretAccessKey` = `B2_APPLICATION_KEY`
+
+   Do not expose B2 credentials to client code.
 
   ### Worker `.dev.vars` / Secrets
 
@@ -340,18 +413,273 @@
   - `NEON_AUTH_COOKIE_SECRET` must be at least 32 characters.
   - `SMTP_ENCRYPTION_KEY` must be stored separately from the database and never committed.
 
-  ---
+   ---
 
-  ## OpenNext Worker Integration
+   ## File Storage — Backblaze B2 (S3-Compatible API)
+
+   Resume PDFs are stored in Backblaze B2 Cloud Storage using the
+   S3-Compatible API. The application must depend only on a storage
+   abstraction, never on Backblaze-specific APIs outside the B2 adapter.
+
+   ### Storage Abstraction
+
+   The application depends on a `StorageService` interface, not on
+   `B2StorageService` directly.
+
+   ```
+   Application
+        ↓
+   StorageService
+        ↓
+   B2StorageService
+        ↓
+   Backblaze B2
+   ```
+
+   ```ts
+   // lib/storage/storage.types.ts
+   interface UploadInput {
+     key: string;
+     body: ReadableStream | Buffer | Uint8Array;
+     contentType: string;
+     contentLength?: number;
+     metadata?: Record<string, string>;
+   }
+
+   interface StoredObject {
+     key: string;
+     size: number;
+     contentType: string;
+     metadata: ObjectMetadata;
+   }
+
+   interface ObjectMetadata {
+     key: string;
+     sizeBytes: number;
+     contentType: string;
+     eTag?: string;
+     uploadedAt?: string;
+   }
+
+   interface StorageService {
+     upload(input: UploadInput): Promise<StoredObject>;
+     download(key: string): Promise<ReadableStream>;
+     delete(key: string): Promise<void>;
+     exists(key: string): Promise<boolean>;
+     getMetadata(key: string): Promise<ObjectMetadata>;
+   }
+   ```
+
+   `lib/storage/storage.factory.ts` resolves the configured implementation:
+
+   ```ts
+   // lib/storage/storage.factory.ts
+   export function createStorageService(env: StorageEnv): StorageService {
+     // Currently: Backblaze B2. Swap implementations without touching callers.
+     return new B2StorageService(b2ClientFromEnv(env));
+   }
+   ```
+
+   The B2 implementation lives behind `lib/storage/b2/`:
+   - `b2.client.ts` builds the AWS SDK `S3Client`
+   - `b2.storage.ts` implements `StorageService` using the S3 client
+   - `b2.errors.ts` maps B2/S3 errors to application error types
+
+   ### B2 Implementation (S3-Compatible API)
+
+   Use Backblaze's S3-Compatible API, not the B2 Native API. Backblaze
+   explicitly recommends the S3-compatible API for most new integrations
+   and supports the AWS SDK for JavaScript v3.
+
+   Use `@aws-sdk/client-s3`. Backblaze's official JavaScript
+   documentation demonstrates `S3Client` with `endpoint`, `region`, and
+   `credentials` for B2.
+
+   ```ts
+   // lib/storage/b2/b2.client.ts (conceptual)
+   import { S3Client } from "@aws-sdk/client-s3";
+
+   const client = new S3Client({
+     endpoint: B2_ENDPOINT,          // exact Endpoint copied from the B2 bucket details
+     region: B2_REGION,              // region of that bucket, e.g. us-west-004
+     credentials: {
+       accessKeyId: B2_KEY_ID,                 // maps to B2 keyID
+       secretAccessKey: B2_APPLICATION_KEY,     // maps to B2 applicationKey
+     },
+     forcePathStyle: false,
+   });
+   ```
+
+   Backblaze's S3 endpoint follows `https://s3.<region>.backblazeb2.com`
+   and uses HTTPS.
+
+   ### Backblaze B2 Security
+
+   B2 credentials are server-side secrets only.
+
+   Never expose to browser/client code:
+   - `B2_KEY_ID`
+   - `B2_APPLICATION_KEY`
+   - `B2_ENDPOINT` credentials
+   - any storage credentials
+
+   All B2 operations are performed by the server/Worker storage adapter.
+   The B2 bucket is private. The client never receives permanent B2
+   credentials. For a resume application this is critical.
+
+   ### Scoped B2 Application Key
+
+   Do not use an unrestricted master credential. Backblaze supports scoped
+   application keys restricted to a specific bucket, access type, and even
+   a file-name prefix.
+
+   ```
+   B2 Application Key
+        │
+        ▼
+   Resume bucket only
+        │
+        ├── Read
+        ├── Write
+        └── Delete
+   ```
+
+   The key may also be prefix-restricted when appropriate. This is much
+   better than account-wide access.
+
+   ### Resume Storage Flow
+
+   ```
+   User
+    ↓
+   Upload Resume
+    ↓
+   Backend validation
+    ├── authentication
+    ├── authorization
+    ├── MIME validation
+    ├── extension validation
+    ├── PDF validation
+    ├── size limit
+    └── quota validation
+    ↓
+   Generate storage key
+    ↓
+   StorageService.upload()
+    ↓
+   B2StorageService
+    ↓
+   Backblaze B2
+    ↓
+   Store storage_key in Neon
+   ```
+
+   The database stores `storage_key`, not a public URL.
+
+   ### Resume Download Flow (Email Sending)
+
+   ```
+   Queue job
+    ↓
+   Load resume metadata from Neon
+    ↓
+   storage_key
+    ↓
+   StorageService.download()
+    ↓
+   Backblaze B2
+    ↓
+   PDF bytes
+    ↓
+   SMTP provider
+    ↓
+   Email attachment
+   ```
+
+   Load the resume from Backblaze B2 through the storage abstraction.
+
+   ### Private Bucket
+
+   The B2 bucket must be PRIVATE. Users must not access resumes directly
+   via a public B2 URL. The application authorizes:
+
+   ```
+   currentUser.id
+        ↓
+   resume.user_id
+        ↓
+   storage_key
+        ↓
+   B2
+   ```
+
+   This matches the existing security rule that users cannot retrieve
+   another user's object.
+
+   ### Presigned URLs
+
+   Backblaze's S3-compatible API supports presigned URLs for upload and
+   download. For the initial implementation, do NOT make browser-direct
+   presigned uploads the default. Keep it simple:
+
+   ```
+   Browser
+    ↓
+   Next.js / Worker
+    ↓
+   B2
+   ```
+
+   Later, if large-file uploads become a performance concern, a
+   short-lived presigned URL can be introduced behind the same
+   `StorageService`:
+
+   ```
+   Browser
+    ↓
+   short-lived presigned URL
+    ↓
+   B2
+   ```
+
+   That keeps the first implementation simpler and secure.
+
+   ### B2 Lifecycle / Old Versions
+
+   Because B2 buckets are versioned, deleting a resume object must not be
+   assumed to immediately remove every stored version.
+
+   Configure an appropriate B2 lifecycle policy to remove old/hidden
+   versions after the defined retention period.
+
+   The application must treat a deleted resume as unavailable immediately,
+   even if an older B2 version still exists internally.
+
+   ### B2 CORS
+
+   Because uploads/downloads are server-side initially
+   (`Browser → Application → B2`), broad public CORS is not required for
+   normal resume operations.
+
+   If direct browser uploads/downloads using presigned URLs are
+   introduced later, configure B2 S3-compatible CORS for the production
+   origin only. Backblaze supports CORS configuration for the
+   S3-compatible API.
+
+   ---
+
+   ## OpenNext Worker Integration
 
   Use the current `@opennextjs/cloudflare` deployment model.
 
-  Wrangler uses:
-  ```toml
-  main = "worker/index.ts"
-  compatibility_date = "2026-08-22"
-  compatibility_flags = ["nodejs_compat"]
-  ```
+   Wrangler uses:
+   ```toml
+   main = "worker/index.ts"
+   compatibility_date = "2026-08-22"
+   # nodejs_compat is enabled by default for compatibility_date >= 2026-08-04,
+   # so the flag is not strictly required, but it is safe to keep explicit.
+   compatibility_flags = ["nodejs_compat"]
+   ```
 
   `worker/index.ts` imports the generated OpenNext Worker and exposes the
   application's additional handlers:
@@ -468,13 +796,20 @@
   │   │       ├── microsoft/        # future
   │   │       ├── yahoo/            # future
   │   │       └── custom-smtp/      # future
-  │   ├── storage/
-  │   ├── campaigns/
-  │   ├── jobs/
-  │   ├── limits/
-  │   │   └── email-limit-service.ts
-  │   ├── security/
-  │   └── validation/
+   │   ├── storage/
+   │   │   ├── storage.types.ts
+   │   │   ├── storage.service.ts
+   │   │   ├── storage.factory.ts
+   │   │   └── b2/
+   │   │       ├── b2.client.ts
+   │   │       ├── b2.storage.ts
+   │   │       └── b2.errors.ts
+   │   ├── campaigns/
+   │   ├── jobs/
+   │   ├── limits/
+   │   │   └── email-limit-service.ts
+   │   ├── security/
+   │   └── validation/
   │       ├── common.ts
   │       ├── auth.ts
   │       ├── email-account.ts
@@ -500,7 +835,7 @@
   └── README.md
   ```
 
-  **Note:** Single Worker deployment using Next.js on Cloudflare Workers via OpenNext. The `worker/` directory contains handlers for scheduled jobs and Queue consumption. The `lib/email/providers/` directory contains a provider-neutral email sending layer; only `gmail/` is implemented for MVP. Database access goes through Prisma ORM in `lib/db/prisma.ts`.
+   **Note:** Single Worker deployment using Next.js on Cloudflare Workers via OpenNext. The `worker/` directory contains handlers for scheduled jobs and Queue consumption. The `lib/email/providers/` directory contains a provider-neutral email sending layer; only `gmail/` is implemented for MVP. The `lib/storage/` directory contains a provider-neutral `StorageService` interface; only `b2/` (Backblaze B2 S3-Compatible API) is implemented for MVP. Database access goes through Prisma ORM in `lib/db/prisma.ts`.
 
   ---
 
@@ -608,16 +943,16 @@
     @@map("email_accounts")
   }
 
-  model Resume {
-    id         UUID    @id @default(dbgenerated("gen_random_uuid()"))
-    user_id    UUID    @db.Uuid
-    user       User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-    filename   String  @db.VarChar(255)
-    r2_key     String  @db.VarChar(1024)
-    size_bytes Int?
-    is_default Boolean @default(false)
-    deleted_at DateTime? @db.Timestamptz
-    created_at DateTime @default(now()) @db.Timestamptz
+   model Resume {
+     id          UUID      @id @default(dbgenerated("gen_random_uuid()"))
+     user_id     UUID      @db.Uuid
+     user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+     filename    String    @db.VarChar(255)
+     storage_key String    @db.VarChar(1024)
+     size_bytes  Int?
+     is_default  Boolean   @default(false)
+     deleted_at  DateTime? @db.Timestamptz
+     created_at  DateTime  @default(now()) @db.Timestamptz
 
     campaigns  Campaign[]
     email_jobs EmailJob[]
@@ -1889,12 +2224,12 @@
   Atomically claim job (QUEUED -> PROCESSING)
       |
       v
-  Load job from Neon
-      |
-      v
-  Load resume from R2
-      |
-      v
+   Load job from Neon
+       |
+       v
+   Load resume from Backblaze B2 through the storage abstraction
+       |
+       v
   Resolve email provider via factory
       |
       v
@@ -2660,9 +2995,9 @@
   - Queue behavior
   - Worker behavior
   - provider behavior
-  - SMTP behavior
-  - R2 behavior
-  - UI behavior
+   - SMTP behavior
+   - Backblaze B2 storage behavior
+   - UI behavior
   - complete end-to-end workflows
 
   ### Testing Stack
@@ -2970,20 +3305,39 @@
 
   This should never run automatically on every CI build.
 
-  **R2 tests**
+   **Backblaze B2 Storage Tests**
 
-  Test:
+   Test the storage abstraction and the B2 adapter.
 
-  - upload PDF
-  - download/read object
-  - delete/soft-delete
-  - missing object
-  - invalid object
-  - size limit
-  - wrong MIME type
-  - fake PDF
-  - R2 failure
-  - users cannot retrieve another user's R2 object
+   Unit tests:
+   - upload validation
+   - generated storage key
+   - download
+   - delete
+   - metadata lookup
+   - missing object
+   - invalid object
+   - size limit
+   - wrong MIME type
+   - fake PDF
+   - B2 error mapping
+   - timeout/error handling
+   - authorization
+   - cross-user object access prevention
+
+   Integration tests:
+   - upload real PDF to a controlled B2 test bucket
+   - download object
+   - verify object metadata
+   - delete object
+   - verify deleted object is unavailable
+   - verify lifecycle/versioning behavior where applicable
+
+   Security tests:
+   - B2 credentials never reach the client
+   - private bucket cannot be accessed anonymously
+   - user A cannot access user B's resume
+   - expired/invalid access cannot retrieve objects
 
   **UI component tests with Vitest**
 
@@ -3193,7 +3547,7 @@
 
   - Neon Auth
   - Gmail SMTP
-  - Cloudflare R2
+   - Backblaze B2 (storage adapter)
   - Cloudflare Queue
   - Cloudflare Rate Limiting
 
@@ -3267,34 +3621,36 @@
   ### Deployment Smoke Tests
 
   After deployment to a staging/preview environment, run a separate
-  smoke suite against the real Cloudflare Worker + Neon + R2 + Queue
+   smoke suite against the real Cloudflare Worker + Neon + Backblaze B2 + Queue
   + Cron environment. Local Playwright tests do not prove the deployed
   Worker and bindings are configured correctly.
 
   Deployment pipeline:
 
-  ```
-  Build
-    ↓
-  Deploy to staging/preview
-    ↓
-  Smoke test deployed Worker
-    ↓
-    - GET /
-    - Auth/session check
-    - Protected API check
-    - R2 access check
-    - Queue binding check
-    - Cron configuration check
-    - Database connectivity check
-    ↓
-  Playwright staging E2E
-    ↓
-  Production deployment
-  ```
+   ```
+   Build
+     ↓
+   Deploy to staging/preview
+     ↓
+   Smoke test deployed Worker
+     ↓
+   GET /
+     ↓
+   Auth/session
+     ↓
+   Database
+     ↓
+   B2 connectivity
+     ↓
+   Queue
+     ↓
+   Cron
+   ```
 
-  Do not send a real email on every deployment. Keep real Gmail SMTP
-  testing as the opt-in integration test (`REAL_GMAIL_SMTP_TEST=true`).
+   The smoke test must verify the deployed Worker can reach Backblaze B2,
+   but must not expose B2 credentials or detailed B2 errors publicly.
+   Keep real Gmail SMTP testing as the opt-in integration test
+   (`REAL_GMAIL_SMTP_TEST=true`).
 
   ### Test Commands
 
@@ -3339,7 +3695,7 @@
   │   │   ├── migrations.test.ts
   │   │   └── queries.test.ts
   │   ├── auth/
-  │   ├── r2/
+   │   ├── b2/
   │   ├── smtp/
   │   └── worker/
   │
@@ -3398,7 +3754,7 @@
   - Return generic healthy/unhealthy status only.
   - Use this endpoint for deployment smoke tests and monitoring.
 
-  Detailed dependency checks (`database`, `r2`, `queue`, `cron`)
+   Detailed dependency checks (`database`, `b2`, `queue`, `cron`)
   must remain internal/admin-only and must not be exposed on the
   public health endpoint.
 
@@ -3413,7 +3769,7 @@
   - Gmail authentication failures increase
   - Repeated provider failures
   - Database connectivity failures
-  - R2 failures
+   - B2 failures
   - Free-tier usage approaches limits
   - Cron stops processing due jobs
 
@@ -3464,7 +3820,7 @@
   - Email account disconnect
 
   ### Milestone 4 — Resume
-  - R2 configuration
+   - Backblaze B2 configuration
   - Upload resume
   - List resumes
   - Delete resume
@@ -3591,7 +3947,7 @@
   ## Cost Target
 
   Target hosting/service cost: **₹0/month** while usage remains within
-  the documented free tiers of Cloudflare, Neon, R2, Queue, and
+   the documented free tiers of Cloudflare, Neon, Backblaze B2, Queue, and
   other required services.
 
   The application enforces its own email quotas and includes admin
@@ -3602,7 +3958,7 @@
 
   - Cloudflare Workers: 100,000 requests/day
   - Cloudflare Queue: 10,000 operations/day
-  - R2: 10 GB storage, 1M Class A ops/month, 10M Class B ops/month
+   - Backblaze B2: 10 GB storage, 1M Class A ops/month, 10M Class B ops/month
   - Neon: current documented Free-plan compute/storage limits
 
   Free-tier limits must be verified against the current provider
@@ -3614,12 +3970,81 @@
   - `default_daily_email_limit` = 20
   - `global_daily_email_limit` = 500
 
-  Raise limits after observing actual resource usage and confirming
-  headroom remains within free tiers.
+   Raise limits after observing actual resource usage and confirming
+   headroom remains within free tiers.
 
-  ---
+   ---
 
-  ## Definition of Done
+   ## Cloudflare Is Still Used
+
+   Only the storage provider changed (Cloudflare R2 → Backblaze B2).
+   Cloudflare remains the compute/runtime platform:
+
+   - Cloudflare Workers
+   - Cloudflare Queues
+   - Cloudflare Cron
+   - Cloudflare Rate Limiting
+
+   ```
+                         Cloudflare
+                    ┌──────────────────┐
+                    │ Workers          │
+                    │ Queues           │
+                    │ Cron             │
+                    │ Rate Limiting    │
+                    └────────┬─────────┘
+                             │
+               ┌─────────────┼──────────────┐
+               ▼             ▼              ▼
+           Neon DB       Neon Auth      Backblaze B2
+                                          │
+                                          ▼
+                                      Resume PDFs
+   ```
+
+   Cloudflare Workers can make outbound HTTPS requests. Current Workers
+   runtimes also have substantially expanded Node.js compatibility for
+   compatible dates from August 2026 onward, which supports running the
+   AWS SDK for JavaScript v3 (`@aws-sdk/client-s3`) against Backblaze's
+   S3-Compatible API.
+
+   ### One Important Correction
+
+   The `wrangler.toml` must no longer contain an `[[r2_buckets]]` block.
+   That configuration is specifically for Cloudflare R2. Instead, B2 is an
+   external S3-compatible service, so its credentials/configuration belong
+   in Worker secrets/environment configuration, and the B2 adapter creates
+   the S3 client using the B2 endpoint. Backblaze's official implementation
+   uses exactly this endpoint/region/credential model.
+
+   ---
+
+   ## Final Storage Decision
+
+   ```
+   ORIGINAL PLAN
+   Cloudflare R2
+         │
+         │  DECISION CHANGED
+         ▼
+   CURRENT PLAN
+   Backblaze B2 Cloud Storage
+         │
+         ├── S3-Compatible API
+         ├── AWS SDK for JavaScript v3
+         ├── Private bucket
+         ├── Scoped application key
+         ├── Server-side only
+         ├── Lifecycle rules
+         └── Storage abstraction
+   ```
+
+   This preserves the provider-ready architecture instead of hard-coding B2
+   everywhere, while making Backblaze B2 the actual storage provider now.
+
+   ---
+
+   ## Definition of Done
 
   A user can:
   1. Register and log in
