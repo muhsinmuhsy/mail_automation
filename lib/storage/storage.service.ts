@@ -5,4 +5,3 @@ export type {
   ObjectMetadata,
   StorageEnv,
 } from './storage.types';
-export { isStorageEnv } from './storage.types';

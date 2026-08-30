@@ -36,17 +36,3 @@ export interface StorageEnv {
   B2_KEY_ID: string;
   B2_APPLICATION_KEY: string;
 }
-
-export function isStorageEnv(value: unknown): value is StorageEnv {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.B2_BUCKET_NAME === 'string' &&
-    typeof candidate.B2_REGION === 'string' &&
-    typeof candidate.B2_ENDPOINT === 'string' &&
-    typeof candidate.B2_KEY_ID === 'string' &&
-    typeof candidate.B2_APPLICATION_KEY === 'string'
-  );
-}
