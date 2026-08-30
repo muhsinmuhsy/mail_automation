@@ -18,6 +18,7 @@ const mockPrismaResume = {
   resume: {
     findFirst: vi.fn(),
     update: vi.fn(),
+    delete: vi.fn(),
   },
   emailJob: {
     count: vi.fn(),
@@ -33,11 +34,18 @@ vi.mock('@/lib/db/prisma', () => ({
   createPrisma: vi.fn(() => mockPrismaResume),
 }));
 
+const storageDelete = vi.fn().mockResolvedValue(undefined);
+vi.mock('@/lib/storage/storage.factory', () => ({
+  createStorageService: vi.fn(() => ({ delete: storageDelete })),
+}));
+
 describe('api/resumes/[id] DELETE auth guards', () => {
   beforeEach(() => {
     mockPrismaResume.resume.findFirst.mockClear();
     mockPrismaResume.emailJob.count.mockClear();
     mockPrismaResume.resume.update.mockClear();
+    mockPrismaResume.resume.delete.mockClear();
+    storageDelete.mockClear();
   });
 
   async function loadRoute(requireVerifiedSessionResult: unknown) {
@@ -91,7 +99,7 @@ describe('api/resumes/[id] DELETE auth guards', () => {
 
     mockPrismaResume.resume.findFirst.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1', filename: 'test.pdf', storage_key: 'key', deleted_at: null });
     mockPrismaResume.emailJob.count.mockResolvedValue(0);
-    mockPrismaResume.resume.update.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', deleted_at: new Date() });
+    mockPrismaResume.resume.delete.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' });
 
     const request = new NextRequest('http://localhost/api/resumes/07314147-25ec-4cf2-ae63-388e40add7b8');
     const response = await DELETE(request, { params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }) });
@@ -99,9 +107,7 @@ describe('api/resumes/[id] DELETE auth guards', () => {
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(mockPrismaResume.resume.update).toHaveBeenCalledWith({
-      where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1' },
-      data: { deleted_at: expect.any(Date) },
-    });
+    expect(storageDelete).toHaveBeenCalledWith('key');
+    expect(mockPrismaResume.resume.delete).toHaveBeenCalledWith({ where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8' } });
   });
 });

@@ -264,7 +264,7 @@ export async function recoverReservations(
 
   let reconciled = 0;
   for (const r of leaked) {
-    const terminal = ['SENT', 'FAILED', 'CANCELLED', 'DELIVERY_UNKNOWN'].includes(
+    const terminal = ['SENT', 'FAILED', 'CANCELLED'].includes(
       r.email_job?.status ?? ''
     );
     const nextStatus: 'RELEASED' | 'UNKNOWN' = terminal ? 'RELEASED' : 'UNKNOWN';
@@ -273,6 +273,13 @@ export async function recoverReservations(
       where: { id: r.id },
       data: { status: nextStatus, resolved_at: new Date() },
     });
+
+    // UNKNOWN preserves the reservation and counters for admin review. It is
+    // deliberately not treated as released capacity.
+    if (!terminal) {
+      reconciled += 1;
+      continue;
+    }
 
     await prisma.emailUsageDaily.update({
       where: {

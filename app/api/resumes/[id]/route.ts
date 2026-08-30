@@ -4,6 +4,7 @@ import { requireVerifiedSession } from '@/lib/auth/neon-auth';
 import { failure, success } from '@/lib/errors/error-handler';
 import { idParamSchema } from '@/lib/validation/common';
 import { checkApiRateLimit } from '@/lib/rate-limit/api';
+import { createStorageService } from '@/lib/storage/storage.factory';
 
 export async function DELETE(
   request: NextRequest,
@@ -43,19 +44,12 @@ export async function DELETE(
     });
 
     if (pendingJobCount > 0) {
-      return withRequestId(
-        NextResponse.json(
-          failure('BUSINESS_ERROR', 'Cannot delete resume while it has pending email jobs. Please cancel the associated campaign first.'),
-          { status: 400 }
-        ),
-        requestId
-      );
+      await prisma.resume.update({ where: { id: resume.id }, data: { deleted_at: new Date(), is_default: false } });
+      return withRequestId(NextResponse.json(success(null, 'Resume removed and retained for pending emails.')), requestId);
     }
 
-    await prisma.resume.update({
-      where: { id: parsed.data.id, user_id: session.user.id },
-      data: { deleted_at: new Date() },
-    });
+    await createStorageService(process.env).delete(resume.storage_key);
+    await prisma.resume.delete({ where: { id: resume.id } });
 
     return withRequestId(NextResponse.json(success(null, 'Resume deleted.')), requestId);
   } catch {

@@ -3,10 +3,21 @@
 import { ResumeCard } from '@/components/resumes/ResumeCard';
 import { ResumeUpload } from '@/components/resumes/ResumeUpload';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
+type Resume = { id: string; filename: string; size_bytes: number; is_default: boolean };
+type ApiResponse<T> = { data: T; message?: string };
 
 export default function ResumesPage() {
-  const [resumes, setResumes] = useState<Array<{ id: string; filename: string; size_bytes: number; is_default: boolean }>>([]);
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    const response = await fetch('/api/resumes');
+    const payload = await response.json() as ApiResponse<Resume[]>;
+    if (!response.ok) throw new Error(payload.message || 'Unable to load resumes.');
+    setResumes(payload.data);
+  }, []);
+  useEffect(() => { load().catch((cause: Error) => setError(cause.message)); }, [load]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -19,11 +30,18 @@ export default function ResumesPage() {
         <h2 className="text-lg font-semibold text-text-primary">Upload resume</h2>
         <p className="text-sm text-text-secondary">PDF files only, max 5MB.</p>
         <div className="mt-4">
-          <ResumeUpload onUpload={(file) => {
-            setResumes((prev) => [...prev, { id: Date.now().toString(), filename: file.name, size_bytes: file.size, is_default: prev.length === 0 }]);
+          <ResumeUpload onUpload={async (file) => {
+            setError(null);
+            const formData = new FormData(); formData.append('file', file);
+            const response = await fetch('/api/resumes', { method: 'POST', body: formData });
+            const payload = await response.json() as ApiResponse<Resume>;
+            if (!response.ok) { const message = payload.message || 'Unable to upload resume.'; setError(message); throw new Error(message); }
+            setResumes((previous) => [...previous, payload.data]);
           }} />
         </div>
       </div>
+
+      {error && <p role="alert" className="text-sm text-error">{error}</p>}
 
       {resumes.length === 0 ? (
         <EmptyState

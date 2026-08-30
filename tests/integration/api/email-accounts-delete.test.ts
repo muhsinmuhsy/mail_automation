@@ -57,7 +57,7 @@ describe('email-accounts/[id] DELETE', () => {
     });
   });
 
-  it('should reject deactivation when pending jobs exist', async () => {
+  it('deactivates the account when pending jobs exist so it cannot send again', async () => {
     mockPrismaDelete.emailAccount.findFirst.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1' });
     mockPrismaDelete.emailJob.count.mockResolvedValue(3);
 
@@ -65,9 +65,11 @@ describe('email-accounts/[id] DELETE', () => {
     const response = await DELETE(request, { params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }) });
     const body = (await response.json()) as ApiResponse;
 
-    expect(response.status).toBe(400);
-    expect(body.success).toBe(false);
-    expect(body.error?.type).toBe('BUSINESS_ERROR');
-    expect(mockPrismaDelete.emailAccount.update).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(mockPrismaDelete.emailAccount.update).toHaveBeenCalledWith({
+      where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8' },
+      data: { is_active: false },
+    });
   });
 });

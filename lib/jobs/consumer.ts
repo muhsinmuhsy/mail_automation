@@ -135,23 +135,20 @@ export async function processQueueJob(
       where: { id: job.resume_id, user_id: job.user_id, deleted_at: null },
     });
 
-    if (resume) {
-      try {
-        const storage = createStorageService(env);
-        const stream = await storage.download(resume.storage_key);
-        if (stream) {
-          const content = new Uint8Array(await new Response(stream).arrayBuffer());
-          attachment = {
-            filename: resume.filename,
-            content,
-            contentType: contentTypeForFilename(resume.filename),
-          };
-        }
-      } catch {
-        // Storage failure must not crash the job; send without attachment.
-        attachment = undefined;
-      }
+    if (!resume) {
+      throw new Error('Resume is unavailable for this email job.');
     }
+    const storage = createStorageService(env);
+    const stream = await storage.download(resume.storage_key);
+    if (!stream) {
+      throw new Error('Resume object is unavailable for this email job.');
+    }
+    const content = new Uint8Array(await new Response(stream).arrayBuffer());
+    attachment = {
+      filename: resume.filename,
+      content,
+      contentType: contentTypeForFilename(resume.filename),
+    };
 
     try {
       const decryptedSecret = emailAccount.encrypted_secret
@@ -254,20 +251,24 @@ export async function processQueueJob(
           error_message: 'Worker crashed after provider acceptance or unknown error.',
         },
       });
-
-      await releaseReservation(prisma, {
-        userId: job.user_id,
-        campaignId: job.campaign_id ?? undefined,
-        emailJobId: jobId,
-      });
     }
   } catch {
+    // Failures before the provider call (for example B2 retrieval) are known
+    // not to have delivered a message, so their reservation is safe to release.
+    await releaseReservation(prisma, {
+      userId: job.user_id,
+      campaignId: job.campaign_id ?? undefined,
+      emailJobId: jobId,
+    }).catch(() => {});
     await prisma.emailJob
       .update({
         where: { id: jobId },
         data: {
-          status: 'FAILED',
-          error_message: 'Unexpected error during processing.',
+          status: attemptNumber < MAX_ATTEMPTS ? 'RETRY_WAIT' : 'FAILED',
+          next_attempt_at: attemptNumber < MAX_ATTEMPTS
+            ? new Date(Date.now() + (attemptNumber === 1 ? 2 : 5) * 60_000)
+            : null,
+          error_message: 'A required email resource could not be loaded.',
         },
       })
       .catch(() => {});

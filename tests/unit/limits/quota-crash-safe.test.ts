@@ -151,7 +151,8 @@ describe('lib/limits/email-limit-service (crash-safe)', () => {
     const result = await recoverReservations(prisma, { stuckMinutes: 15 });
     expect(result.reconciled).toBe(1);
     expect(models.emailSendReservation.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: 'RELEASED' }) })
+      expect.objectContaining({ data: expect.objectContaining({ status: 'UNKNOWN' }) })
     );
+    expect(models.emailUsageDaily.update).not.toHaveBeenCalled();
   });
 });

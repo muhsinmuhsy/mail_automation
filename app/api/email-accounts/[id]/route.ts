@@ -107,13 +107,11 @@ export async function DELETE(
     });
 
     if (pendingJobCount > 0) {
-      return withRequestId(
-        NextResponse.json(
-          failure('BUSINESS_ERROR', 'Cannot deactivate email account while it has pending email jobs. Please cancel the associated campaign first.'),
-          { status: 400 }
-        ),
-        requestId
-      );
+      await prisma.emailAccount.update({
+        where: { id: emailAccount.id },
+        data: { is_active: false },
+      });
+      return withRequestId(NextResponse.json(success(null, 'Email account deactivated and retained for pending email jobs.')), requestId);
     }
 
     await prisma.emailAccount.update({
