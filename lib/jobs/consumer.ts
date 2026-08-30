@@ -1,8 +1,40 @@
 import { PrismaClient } from '../generated/prisma/client';
-import { reserveEmailCapacity } from '../limits/email-limit-service';
+import {
+  reserveEmailCapacity,
+  commitReservation,
+  releaseReservation,
+} from '../limits/email-limit-service';
 import { sendEmail } from '../email/service';
 import { decryptSecret } from '../security/encryption';
 import { createStorageService } from '../storage/storage.factory';
+
+const MAX_ATTEMPTS = 3;
+
+function contentTypeForFilename(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+  switch (ext) {
+    case 'pdf':
+      return 'application/pdf';
+    case 'docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    case 'doc':
+      return 'application/msword';
+    case 'txt':
+      return 'text/plain';
+    case 'rtf':
+      return 'application/rtf';
+    default:
+      return 'application/octet-stream';
+  }
+}
+
+function encryptionKey(env: Record<string, unknown>): string {
+  const key = (env.SMTP_ENCRYPTION_KEY as string) ?? process.env.SMTP_ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error('SMTP_ENCRYPTION_KEY is not configured.');
+  }
+  return key;
+}
 
 export async function processQueueJob(
   prisma: PrismaClient,
@@ -31,6 +63,10 @@ export async function processQueueJob(
     return;
   }
 
+  const attemptNumber = job.attempt_count + 1;
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
   try {
     const user = await prisma.user.findUnique({ where: { id: job.user_id } });
     if (!user || !user.is_active) {
@@ -42,8 +78,7 @@ export async function processQueueJob(
     }
 
     if (job.campaign) {
-      const campaign = await prisma.campaign.findUnique({ where: { id: job.campaign_id! } });
-      if (!campaign || campaign.status === 'PAUSED' || campaign.status === 'CANCELLED') {
+      if (job.campaign.status === 'PAUSED' || job.campaign.status === 'CANCELLED') {
         await prisma.emailJob.update({
           where: { id: jobId },
           data: { status: 'CANCELLED', error_message: 'Campaign is paused or cancelled.' },
@@ -56,6 +91,7 @@ export async function processQueueJob(
       userId: job.user_id,
       campaignId: job.campaign_id ?? undefined,
       emailJobId: jobId,
+      attemptNumber,
     });
 
     if (!reservation.success) {
@@ -83,109 +119,52 @@ export async function processQueueJob(
         where: { id: jobId },
         data: { status: 'FAILED', error_message: 'Email account is inactive.' },
       });
-
-      const today = new Date();
-      today.setUTCHours(0, 0, 0, 0);
-
-      await prisma.emailSendReservation.updateMany({
-        where: { email_job_id: jobId },
-        data: { status: 'RELEASED', resolved_at: new Date() },
+      await releaseReservation(prisma, {
+        userId: job.user_id,
+        campaignId: job.campaign_id ?? undefined,
+        emailJobId: jobId,
       });
-
-      await prisma.emailUsageDaily.update({
-        where: { user_id_usage_date: { user_id: job.user_id, usage_date: today } },
-        data: { reserved_count: { decrement: 1 } },
-      });
-
-      await prisma.systemUsageDaily.update({
-        where: { usage_date: today },
-        data: { reserved_count: { decrement: 1 } },
-      });
-
-      if (job.campaign_id) {
-        await prisma.campaignUsageDaily.update({
-          where: { campaign_id_usage_date: { campaign_id: job.campaign_id, usage_date: today } },
-          data: { reserved_count: { decrement: 1 } },
-        });
-      }
       return;
     }
 
-    const template = await prisma.template.findUnique({
-      where: { id: job.template_id },
-    });
-
-    if (!template) {
-      await prisma.emailJob.update({
-        where: { id: jobId },
-        data: { status: 'FAILED', error_message: 'Template not found.' },
-      });
-
-      const today = new Date();
-      today.setUTCHours(0, 0, 0, 0);
-
-      await prisma.emailSendReservation.updateMany({
-        where: { email_job_id: jobId },
-        data: { status: 'RELEASED', resolved_at: new Date() },
-      });
-
-      await prisma.emailUsageDaily.update({
-        where: { user_id_usage_date: { user_id: job.user_id, usage_date: today } },
-        data: { reserved_count: { decrement: 1 } },
-      });
-
-      await prisma.systemUsageDaily.update({
-        where: { usage_date: today },
-        data: { reserved_count: { decrement: 1 } },
-      });
-
-      if (job.campaign_id) {
-        await prisma.campaignUsageDaily.update({
-          where: { campaign_id_usage_date: { campaign_id: job.campaign_id, usage_date: today } },
-          data: { reserved_count: { decrement: 1 } },
-        });
-      }
-      return;
-    }
+    let attachment:
+      | { filename: string; content: Uint8Array; contentType: string }
+      | undefined;
 
     const resume = await prisma.resume.findUnique({
       where: { id: job.resume_id, user_id: job.user_id, deleted_at: null },
     });
-
-    let attachment:
-      | { filename: string; content: ArrayBuffer; contentType: string }
-      | undefined;
 
     if (resume) {
       try {
         const storage = createStorageService(env);
         const stream = await storage.download(resume.storage_key);
         if (stream) {
-          const content = await new Response(stream).arrayBuffer();
+          const content = new Uint8Array(await new Response(stream).arrayBuffer());
           attachment = {
             filename: resume.filename,
             content,
-            contentType: 'application/pdf',
+            contentType: contentTypeForFilename(resume.filename),
           };
         }
       } catch {
-        // Storage failure must not crash the whole job; send without attachment.
+        // Storage failure must not crash the job; send without attachment.
         attachment = undefined;
       }
     }
 
     try {
       const decryptedSecret = emailAccount.encrypted_secret
-        ? await decryptSecret(emailAccount.encrypted_secret, (env.SMTP_ENCRYPTION_KEY as string) || process.env.SMTP_ENCRYPTION_KEY!)
+        ? await decryptSecret(emailAccount.encrypted_secret, encryptionKey(env))
         : '';
 
       const result = await sendEmail({
         provider: emailAccount.provider,
         from: emailAccount.email,
         to: job.to_email,
-        subject: template.subject,
-        body: template.body,
-        attachment,
+        subject: job.subject,
+        body: job.body,
+        attachment: attachment ? attachment : undefined,
         credentials: {
           email: emailAccount.email,
           secret: decryptedSecret,
@@ -207,92 +186,58 @@ export async function processQueueJob(
           },
         });
 
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
-
-        await prisma.emailSendReservation.updateMany({
-          where: { email_job_id: jobId },
-          data: { status: 'COMMITTED', resolved_at: new Date() },
+        await commitReservation(prisma, {
+          userId: job.user_id,
+          campaignId: job.campaign_id ?? undefined,
+          emailJobId: jobId,
         });
+        return;
+      }
 
-        await prisma.emailUsageDaily.update({
-          where: { user_id_usage_date: { user_id: job.user_id, usage_date: today } },
-          data: { reserved_count: { decrement: 1 }, sent_count: { increment: 1 } },
-        });
+      const isPermanent = result.errorType === 'permanent';
+      const reachedMax = attemptNumber >= MAX_ATTEMPTS;
 
-        await prisma.systemUsageDaily.update({
-          where: { usage_date: today },
-          data: { reserved_count: { decrement: 1 }, sent_count: { increment: 1 } },
-        });
+      if (!isPermanent && !reachedMax) {
+        const backoffMinutes = attemptNumber === 1 ? 2 : 5;
+        const nextAttempt = new Date();
+        nextAttempt.setUTCMinutes(nextAttempt.getUTCMinutes() + backoffMinutes);
 
-        if (job.campaign_id) {
-          await prisma.campaignUsageDaily.update({
-            where: { campaign_id_usage_date: { campaign_id: job.campaign_id, usage_date: today } },
-            data: { reserved_count: { decrement: 1 }, sent_count: { increment: 1 } },
-          });
-        }
-      } else {
-        const isPermanent = result.errorType === 'permanent';
-        const maxAttempts = 3;
-
-        if (!isPermanent && job.attempt_count < maxAttempts) {
-          const backoffMinutes = job.attempt_count === 1 ? 2 : 5;
-          const nextAttempt = new Date();
-          nextAttempt.setUTCMinutes(nextAttempt.getUTCMinutes() + backoffMinutes);
-
-          await prisma.emailJob.update({
-            where: { id: jobId },
-            data: {
-              status: 'RETRY_WAIT',
-              next_attempt_at: nextAttempt,
-              error_message: result.error || 'Temporary failure, will retry.',
-            },
-          });
-        } else {
-          await prisma.emailJob.update({
-            where: { id: jobId },
-            data: {
-              status: 'FAILED',
-              error_message: result.error || 'Max attempts reached or permanent failure.',
-            },
-          });
-        }
-
-        await prisma.emailLog.create({
+        await prisma.emailJob.update({
+          where: { id: jobId },
           data: {
-            email_job_id: jobId,
-            status: result.errorType === 'permanent' ? 'SMTP_AUTH_FAILED' : 'SMTP_TEMPORARY_FAILURE',
-            smtp_response: result.error || null,
+            status: 'RETRY_WAIT',
+            next_attempt_at: nextAttempt,
+            error_message: result.error || 'Temporary failure, will retry.',
+          },
+        });
+      } else {
+        await prisma.emailJob.update({
+          where: { id: jobId },
+          data: {
+            status: 'FAILED',
             error_message: result.error || 'Max attempts reached or permanent failure.',
           },
         });
-
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
-
-        await prisma.emailSendReservation.updateMany({
-          where: { email_job_id: jobId },
-          data: { status: 'RELEASED', resolved_at: new Date() },
-        });
-
-        await prisma.emailUsageDaily.update({
-          where: { user_id_usage_date: { user_id: job.user_id, usage_date: today } },
-          data: { reserved_count: { decrement: 1 } },
-        });
-
-        await prisma.systemUsageDaily.update({
-          where: { usage_date: today },
-          data: { reserved_count: { decrement: 1 } },
-        });
-
-        if (job.campaign_id) {
-          await prisma.campaignUsageDaily.update({
-            where: { campaign_id_usage_date: { campaign_id: job.campaign_id, usage_date: today } },
-            data: { reserved_count: { decrement: 1 } },
-          });
-        }
       }
+
+      await prisma.emailLog.create({
+        data: {
+          email_job_id: jobId,
+          status: isPermanent ? 'SMTP_AUTH_FAILED' : 'SMTP_TEMPORARY_FAILURE',
+          smtp_response: result.error || null,
+          error_message: result.error || 'Delivery attempt failed.',
+        },
+      });
+
+      await releaseReservation(prisma, {
+        userId: job.user_id,
+        campaignId: job.campaign_id ?? undefined,
+        emailJobId: jobId,
+      });
     } catch {
+      // Worker crashed during/after the provider call — we cannot know the
+      // outcome, so mark DELIVERY_UNKNOWN and free the reservation. A later
+      // reconciliation pass will settle the counters.
       await prisma.emailJob.update({
         where: { id: jobId },
         data: {
@@ -309,14 +254,22 @@ export async function processQueueJob(
           error_message: 'Worker crashed after provider acceptance or unknown error.',
         },
       });
+
+      await releaseReservation(prisma, {
+        userId: job.user_id,
+        campaignId: job.campaign_id ?? undefined,
+        emailJobId: jobId,
+      });
     }
   } catch {
-    await prisma.emailJob.update({
-      where: { id: jobId },
-      data: {
-        status: 'FAILED',
-        error_message: 'Unexpected error during processing.',
-      },
-    });
+    await prisma.emailJob
+      .update({
+        where: { id: jobId },
+        data: {
+          status: 'FAILED',
+          error_message: 'Unexpected error during processing.',
+        },
+      })
+      .catch(() => {});
   }
 }

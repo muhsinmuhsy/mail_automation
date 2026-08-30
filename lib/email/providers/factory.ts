@@ -1,15 +1,15 @@
 import { EmailProvider } from './types';
 import { ENABLED_PROVIDERS, PROVIDER_CAPABILITIES } from './registry';
-import { GmailProvider } from './gmail';
+import { GmailProvider, type GmailProviderOptions } from './gmail';
 
 export class EmailProviderFactory {
-  static resolve(provider: string): EmailProvider {
+  static resolve(provider: string, options: GmailProviderOptions = {}): EmailProvider {
     if (!ENABLED_PROVIDERS.has(provider)) {
       throw new Error(`Provider ${provider} is not enabled`);
     }
     switch (provider) {
       case 'gmail':
-        return new GmailProvider();
+        return new GmailProvider(options);
       default:
         throw new Error(`Unknown provider: ${provider}`);
     }

@@ -47,7 +47,11 @@ describe('worker/consumer', () => {
         emailUsageDaily: { upsert: vi.fn().mockResolvedValue({ sent_count: 0, reserved_count: 0 }), update: vi.fn().mockResolvedValue({}) },
         systemUsageDaily: { upsert: vi.fn().mockResolvedValue({ sent_count: 0, reserved_count: 0 }), update: vi.fn().mockResolvedValue({}) },
         campaignUsageDaily: { upsert: vi.fn().mockResolvedValue({}), update: vi.fn().mockResolvedValue({}) },
-        emailSendReservation: { create: vi.fn().mockResolvedValue({}) },
+        emailSendReservation: {
+          create: vi.fn().mockResolvedValue({}),
+          findFirst: vi.fn().mockResolvedValue(null),
+          update: vi.fn().mockResolvedValue({}),
+        },
       };
       return fn(tx);
     });

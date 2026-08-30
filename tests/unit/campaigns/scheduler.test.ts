@@ -8,6 +8,7 @@ describe('lib/campaigns/scheduler', () => {
     const createMany = vi.fn().mockResolvedValue({ count: 1 });
     const prisma = {
       contact: { findMany: vi.fn().mockResolvedValue([mockContact]) },
+      template: { findUnique: vi.fn().mockResolvedValue({ subject: 'Subject', body: 'Body' }) },
       emailJob: { createMany },
     } as unknown as PrismaClient;
 
@@ -35,8 +36,8 @@ describe('lib/campaigns/scheduler', () => {
           resume_id: 'resume-1',
           template_id: 'template-1',
           to_email: 'test@example.com',
-          subject: '',
-          body: '',
+          subject: 'Subject',
+          body: 'Body',
           scheduled_at: new Date('2024-01-15T09:00:00Z'),
           status: 'SCHEDULED',
           attempt_count: 0,
@@ -55,6 +56,7 @@ describe('lib/campaigns/scheduler', () => {
     const createMany = vi.fn().mockResolvedValue({ count: 25 });
     const prisma = {
       contact: { findMany: vi.fn().mockResolvedValue(contacts) },
+      template: { findUnique: vi.fn().mockResolvedValue({ subject: 'S', body: 'B' }) },
       emailJob: { createMany },
     } as unknown as PrismaClient;
 
@@ -86,6 +88,7 @@ describe('lib/campaigns/scheduler', () => {
     const createMany = vi.fn().mockResolvedValue({ count: 1 });
     const prisma = {
       contact: { findMany: vi.fn().mockResolvedValue([mockContact]) },
+      template: { findUnique: vi.fn().mockResolvedValue({ subject: 'S', body: 'B' }) },
       emailJob: { createMany },
     } as unknown as PrismaClient;
 

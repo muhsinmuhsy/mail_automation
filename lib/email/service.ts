@@ -1,39 +1,67 @@
 import { EmailProviderFactory } from './providers/factory';
-import { buildMimeMessage } from './mime';
+import { buildMimeMessage, type Attachment } from './mime';
+import type { GmailProviderOptions } from './providers/gmail';
 
 export interface SendEmailParams {
   provider: string;
   from: string;
+  fromName?: string;
   to: string;
+  toName?: string;
   subject: string;
   body: string;
-  attachment?: {
-    filename: string;
-    content: ArrayBuffer;
-    contentType: string;
-  };
+  attachment?: Attachment;
   credentials: {
     email: string;
     secret: string;
   };
+  /** Threaded to the provider for tests / custom transports. */
+  providerOptions?: GmailProviderOptions;
+  messageId?: string;
 }
 
-export async function sendEmail(params: SendEmailParams) {
-  const provider = EmailProviderFactory.resolve(params.provider);
+export interface SendEmailOutcome {
+  success: boolean;
+  messageId?: string;
+  smtpResponse?: string;
+  error?: string;
+  errorType?: 'temporary' | 'permanent';
+}
+
+/**
+ * Builds a MIME message from the supplied parameters and dispatches it to the
+ * resolved provider. The message body is encoded exactly once here (the
+ * provider sends the already-rendered MIME message).
+ */
+export async function sendEmail(params: SendEmailParams): Promise<SendEmailOutcome> {
+  const provider = EmailProviderFactory.resolve(params.provider, params.providerOptions);
+
   const mimeMessage = buildMimeMessage({
     from: params.from,
+    fromName: params.fromName,
     to: params.to,
+    toName: params.toName,
     subject: params.subject,
     body: params.body,
-    attachment: params.attachment,
+    attachments: params.attachment ? [params.attachment] : undefined,
+    messageId: params.messageId,
   });
 
-  return provider.sendEmail({
+  const result = await provider.sendEmail({
     from: params.from,
     to: params.to,
     subject: params.subject,
     body: params.body,
     mimeMessage,
+    attachments: params.attachment ? [params.attachment] : undefined,
     credentials: params.credentials,
   });
+
+  return {
+    success: result.success,
+    messageId: result.messageId,
+    smtpResponse: result.smtpResponse,
+    error: result.error,
+    errorType: result.errorType,
+  };
 }

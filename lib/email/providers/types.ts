@@ -1,3 +1,5 @@
+import type { Attachment } from '../mime';
+
 export interface TestConnectionResult {
   success: boolean;
   message: string;
@@ -10,6 +12,7 @@ export interface SendEmailInput {
   subject: string;
   body: string;
   mimeMessage: string;
+  attachments?: Attachment[];
   credentials?: {
     email: string;
     secret: string;

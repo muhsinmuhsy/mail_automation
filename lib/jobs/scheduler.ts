@@ -61,6 +61,13 @@ export async function generateCampaignJobs(
 
   if (contacts.length === 0) return;
 
+  const template = await prisma.template.findUnique({
+    where: { id: campaign.template_id },
+  });
+  if (!template) {
+    throw new Error(`Template ${campaign.template_id} not found for campaign ${campaign.id}`);
+  }
+
   const maxPerDay = campaign.daily_limit ?? Infinity;
   const utcStartAt = wallClockToUTC(campaign.start_at, campaign.timezone);
 
@@ -81,8 +88,8 @@ export async function generateCampaignJobs(
       resume_id: campaign.resume_id,
       template_id: campaign.template_id,
       to_email: contact.email,
-      subject: '',
-      body: '',
+      subject: template.subject,
+      body: template.body,
       scheduled_at: scheduledAt,
       status: 'SCHEDULED' as const,
       attempt_count: 0,
