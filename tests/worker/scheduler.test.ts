@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PrismaClient } from '@/lib/generated/prisma/client';
-import { scheduleDueJobs, recoverStuckJobs } from '@/lib/jobs/scheduler';
+import { scheduleDueJobs, recoverStuckJobs, completeFinishedCampaigns } from '@/lib/jobs/scheduler';
 
 describe('lib/jobs/scheduler', () => {
   beforeEach(() => {
@@ -72,6 +72,22 @@ describe('lib/jobs/scheduler', () => {
 
       await recoverStuckJobs(prisma);
       expect(prisma.emailJob.updateMany).toHaveBeenCalled();
+    });
+  });
+
+  describe('completeFinishedCampaigns', () => {
+    it('should mark ACTIVE campaigns with only terminal jobs as COMPLETED', async () => {
+      const prisma = {
+        $queryRaw: vi.fn().mockResolvedValue([{ id: 'c-1' }, { id: 'c-2' }]),
+      } as unknown as PrismaClient;
+
+      const result = await completeFinishedCampaigns(prisma);
+      expect(result).toEqual(['c-1', 'c-2']);
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+      const query = (prisma.$queryRaw as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      const queryString = typeof query === 'string' ? query : String(query);
+      expect(queryString).toContain('COMPLETED');
+      expect(queryString).toContain('NOT EXISTS');
     });
   });
 });

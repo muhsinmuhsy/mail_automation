@@ -1,4 +1,4 @@
-import { PrismaClient } from '../generated/prisma/client';
+import { PrismaClient, Prisma } from '../generated/prisma/client';
 
 function wallClockToUTC(wallClock: Date, timezone: string): Date {
   const year = wallClock.getUTCFullYear();
@@ -132,4 +132,27 @@ export async function recoverStuckJobs(prisma: PrismaClient): Promise<void> {
       error_message: 'Job was stuck in processing for more than 10 minutes.',
     },
   });
+}
+
+const TERMINAL_JOB_STATUSES = ['SENT', 'FAILED', 'CANCELLED', 'DELIVERY_UNKNOWN'];
+
+/**
+ * Marks every `ACTIVE` campaign whose jobs are all in a terminal state as
+ * `COMPLETED`. Paused/cancelled/draft campaigns are intentionally excluded so
+ * a paused campaign can still be resumed. Runs idempotently each minute.
+ */
+export async function completeFinishedCampaigns(prisma: PrismaClient): Promise<string[]> {
+  const finished = await prisma.$queryRaw<Array<{ id: string }>>`
+    UPDATE campaigns
+    SET status = 'COMPLETED', updated_at = now()
+    WHERE status = 'ACTIVE'
+      AND NOT EXISTS (
+        SELECT 1 FROM email_jobs
+        WHERE email_jobs.campaign_id = campaigns.id
+          AND email_jobs.status NOT IN (${Prisma.join(TERMINAL_JOB_STATUSES)})
+      )
+    RETURNING id
+  `;
+
+  return finished.map((row: { id: string }) => row.id);
 }

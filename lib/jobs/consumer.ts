@@ -146,18 +146,22 @@ export async function processQueueJob(
       contentType: contentTypeForFilename(resume.filename),
     };
 
+    let accepted = false;
     try {
       const decryptedSecret = emailAccount.encrypted_secret
         ? await decryptSecret(emailAccount.encrypted_secret, encryptionKey(env))
         : '';
 
+      // `accepted` distinguishes a crash *after* the provider accepted the
+      // message (→ DELIVERY_UNKNOWN, never auto-retry) from a thrown error
+      // before acceptance (→ temporary failure, safe to retry).
       const result = await sendEmail({
         provider: emailAccount.provider,
         from: emailAccount.email,
         to: job.to_email,
         subject: job.subject,
         body: job.body,
-        attachment: attachment ? attachment : undefined,
+        attachment,
         credentials: {
           email: emailAccount.email,
           secret: decryptedSecret,
@@ -165,6 +169,7 @@ export async function processQueueJob(
       });
 
       if (result.success) {
+        accepted = true;
         await prisma.emailJob.update({
           where: { id: jobId },
           data: { status: 'SENT', sent_at: new Date() },
@@ -228,25 +233,58 @@ export async function processQueueJob(
         emailJobId: jobId,
       });
     } catch {
-      // Worker crashed during/after the provider call — we cannot know the
-      // outcome, so mark DELIVERY_UNKNOWN and free the reservation. A later
-      // reconciliation pass will settle the counters.
-      await prisma.emailJob.update({
-        where: { id: jobId },
-        data: {
-          status: 'DELIVERY_UNKNOWN',
-          error_message: 'Worker crashed after provider acceptance or unknown error.',
-        },
-      });
+      if (accepted) {
+        // The provider accepted the message but bookkeeping crashed afterwards.
+        // Treat as potentially-sent: mark DELIVERY_UNKNOWN and keep the
+        // reservation reserved pending admin review (never auto-retry).
+        await prisma.emailJob.update({
+          where: { id: jobId },
+          data: {
+            status: 'DELIVERY_UNKNOWN',
+            error_message: 'Worker crashed after provider acceptance or unknown error.',
+          },
+        });
 
-      await prisma.emailLog.create({
-        data: {
-          email_job_id: jobId,
-          status: 'UNKNOWN',
-          smtp_response: null,
-          error_message: 'Worker crashed after provider acceptance or unknown error.',
-        },
-      });
+        await prisma.emailLog.create({
+          data: {
+            email_job_id: jobId,
+            status: 'UNKNOWN',
+            smtp_response: null,
+            error_message: 'Worker crashed after provider acceptance or unknown error.',
+          },
+        });
+      } else {
+        // The provider call threw before acceptance (network/TLS/timeout). This
+        // is a temporary failure, so release the reservation and retry.
+        await releaseReservation(prisma, {
+          userId: job.user_id,
+          campaignId: job.campaign_id ?? undefined,
+          emailJobId: jobId,
+        }).catch(() => {});
+        await prisma.emailJob
+          .update({
+            where: { id: jobId },
+            data: {
+              status: attemptNumber < MAX_ATTEMPTS ? 'RETRY_WAIT' : 'FAILED',
+              next_attempt_at:
+                attemptNumber < MAX_ATTEMPTS
+                  ? new Date(Date.now() + (attemptNumber === 1 ? 2 : 5) * 60_000)
+                  : null,
+              error_message: 'The email provider could not be reached. Will retry.',
+            },
+          })
+          .catch(() => {});
+        await prisma.emailLog
+          .create({
+            data: {
+              email_job_id: jobId,
+              status: 'SMTP_TEMPORARY_FAILURE',
+              smtp_response: null,
+              error_message: 'The email provider could not be reached. Will retry.',
+            },
+          })
+          .catch(() => {});
+      }
     }
   } catch {
     // Failures before the provider call (for example B2 retrieval) are known

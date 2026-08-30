@@ -3,7 +3,7 @@ import handler from './.open-next/worker.js';
 
 import { createPrisma } from '../lib/db/prisma';
 import { processQueueJob } from '../lib/jobs/consumer';
-import { scheduleDueJobs, recoverStuckJobs } from '../lib/jobs/scheduler';
+import { scheduleDueJobs, recoverStuckJobs, completeFinishedCampaigns } from '../lib/jobs/scheduler';
 import { recoverReservations } from '../lib/limits/email-limit-service';
 
 type QueueEnv = Record<string, unknown> & {
@@ -18,11 +18,22 @@ const workerHandler = {
     try {
       await recoverStuckJobs(prisma);
       await recoverReservations(prisma, { stuckMinutes: 15 });
-      const dueIds = await scheduleDueJobs(prisma);
-      const queue = (env as QueueEnv).EMAIL_QUEUE;
-      if (queue && dueIds.length > 0) {
-        await queue.sendBatch(dueIds.map((id) => ({ body: { jobId: id } })));
+
+      // Emergency kill switch: when global sending is disabled, Cron must not
+      // enqueue new jobs. Stuck-job and reservation recovery above still run so
+      // the system self-heals when sending is re-enabled.
+      const settings = await prisma.systemSetting.findUnique({ where: { id: 1 } });
+      const sendingEnabled = settings ? settings.email_sending_enabled : true;
+
+      if (sendingEnabled) {
+        const dueIds = await scheduleDueJobs(prisma);
+        const queue = (env as QueueEnv).EMAIL_QUEUE;
+        if (queue && dueIds.length > 0) {
+          await queue.sendBatch(dueIds.map((id) => ({ body: { jobId: id } })));
+        }
       }
+
+      await completeFinishedCampaigns(prisma);
     } finally {
       await prisma.$disconnect();
     }
