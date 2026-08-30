@@ -3,6 +3,12 @@ import { dotStuff } from '../../mime';
 export interface SmtpSocket {
   readable: ReadableStream<Uint8Array>;
   writable: WritableStream<Uint8Array>;
+  /**
+   * Upgrades the connection to TLS after a successful SMTP `STARTTLS` reply.
+   * Returns a socket whose streams are already TLS-encrypted. Undefined when
+   * the underlying runtime does not support STARTTLS upgrades.
+   */
+  startTls?: () => Promise<SmtpSocket> | SmtpSocket;
 }
 
 export interface SocketFactory {
@@ -13,20 +19,32 @@ export interface SocketFactory {
   ): Promise<SmtpSocket> | SmtpSocket;
 }
 
+type CfSocket = {
+  readable: ReadableStream<Uint8Array>;
+  writable: WritableStream<Uint8Array>;
+  startTls?: (options?: unknown) => CfSocket;
+  close?: () => void;
+};
+
+function wrapSocket(cfSocket: CfSocket): SmtpSocket {
+  return {
+    readable: cfSocket.readable,
+    writable: cfSocket.writable,
+    startTls: typeof cfSocket.startTls === 'function' ? () => wrapSocket(cfSocket.startTls!()) : undefined,
+  };
+}
+
 /** Default socket factory backed by the Cloudflare Workers `connect` API. */
 export const defaultSocketFactory: SocketFactory = {
   connect(host, port, options) {
     const connectFn = (globalThis as unknown as {
-      connect?: (
-        host: string,
-        port: number,
-        opts?: { tls?: boolean; timeout?: number }
-      ) => SmtpSocket;
+      connect?: (host: string, port: number, opts?: { tls?: boolean }) => CfSocket;
     }).connect;
     if (typeof connectFn !== 'function') {
       throw new Error('No TCP connect() available in this runtime.');
     }
-    return connectFn(host, port, options?.tls ? { tls: true } : undefined);
+    const cfSocket = connectFn(host, port, options?.tls ? { tls: true } : undefined);
+    return wrapSocket(cfSocket);
   },
 };
 
@@ -75,10 +93,18 @@ export class SmtpClient {
   private encoder = new TextEncoder();
   private buffer = '';
   private closed = false;
+  private socket: SmtpSocket;
 
-  constructor(private socket: SmtpSocket, private timeoutMs = 15000) {
+  constructor(socket: SmtpSocket, private timeoutMs = 15000) {
+    this.socket = socket;
     this.reader = socket.readable.getReader();
     this.writer = socket.writable.getWriter();
+  }
+
+  /** Re-binds the reader/writer to the (possibly upgraded) socket streams. */
+  private resetStreams(): void {
+    this.reader = this.socket.readable.getReader();
+    this.writer = this.socket.writable.getWriter();
   }
 
   private async readLine(): Promise<string | null> {
@@ -163,6 +189,12 @@ export class SmtpClient {
     if (!reply.success) {
       throw new SmtpError(`STARTTLS rejected: ${reply.code} ${reply.message}`, reply.code);
     }
+    if (typeof this.socket.startTls !== 'function') {
+      throw new SmtpError('STARTTLS upgrade is not supported by the underlying socket.');
+    }
+    // Upgrade to TLS and rebind the streams before re-negotiating.
+    this.socket = await this.socket.startTls();
+    this.resetStreams();
     return this.sendCommand(`EHLO ${domain}`);
   }
 

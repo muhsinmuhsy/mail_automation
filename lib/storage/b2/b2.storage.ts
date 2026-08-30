@@ -76,7 +76,7 @@ export class B2StorageService implements StorageService {
           sizeBytes: data.byteLength,
           contentType: input.contentType,
           eTag: response.ETag,
-          uploadedAt: response.$metadata.requestId,
+          uploadedAt: new Date().toISOString(),
         },
       };
     } catch (error) {

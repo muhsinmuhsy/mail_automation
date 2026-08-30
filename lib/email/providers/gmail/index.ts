@@ -41,7 +41,7 @@ export class GmailProvider implements EmailProvider {
 
   constructor(options: GmailProviderOptions = {}) {
     this.socketFactory = options.socketFactory ?? defaultSocketFactory;
-    this.useStartTls = options.useStartTls ?? false;
+    this.useStartTls = options.useStartTls ?? true;
     this.host = options.host ?? 'smtp.gmail.com';
     this.port = options.port ?? (this.useStartTls ? 587 : 465);
     this.timeoutMs = options.timeoutMs ?? 15000;

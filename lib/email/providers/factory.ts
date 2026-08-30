@@ -8,8 +8,17 @@ export class EmailProviderFactory {
       throw new Error(`Provider ${provider} is not enabled`);
     }
     switch (provider) {
-      case 'gmail':
-        return new GmailProvider(options);
+      case 'gmail': {
+        // STARTTLS on port 587 is the validated primary production path. The
+        // registry supplies the canonical host/port; caller options override.
+        const cfg = PROVIDER_CAPABILITIES[provider];
+        return new GmailProvider({
+          host: cfg?.smtpHost,
+          port: cfg?.smtpPort,
+          useStartTls: true,
+          ...options,
+        });
+      }
       default:
         throw new Error(`Unknown provider: ${provider}`);
     }

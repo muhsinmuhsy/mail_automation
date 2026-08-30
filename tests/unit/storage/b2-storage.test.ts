@@ -118,6 +118,16 @@ describe('B2StorageService', () => {
     expect(result.contentType).toBe('application/pdf');
   });
 
+  it('records an ISO timestamp in uploadedAt metadata', async () => {
+    const svc = B2StorageService.fromEnv(env());
+    const result = await svc.upload({
+      key: 'k',
+      body: new Uint8Array([1]),
+      contentType: 'application/pdf',
+    });
+    expect(result.metadata.uploadedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+  });
+
   it('generates a storage key deterministically from input (upload validation)', async () => {
     const svc = B2StorageService.fromEnv(env());
     const result = await svc.upload({

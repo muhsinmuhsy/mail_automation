@@ -45,7 +45,7 @@ const SUCCESS_REPLIES =
 describe('lib/email/providers/gmail (transport)', () => {
   it('performs a full SMTP transaction over an injected socket', async () => {
     const factory = socketFactoryFrom(SUCCESS_REPLIES);
-    const provider = new GmailProvider({ socketFactory: factory });
+    const provider = new GmailProvider({ socketFactory: factory, useStartTls: false });
 
     const mimeMessage = buildMimeMessage({
       from: 'sender@gmail.com',
@@ -76,7 +76,7 @@ describe('lib/email/providers/gmail (transport)', () => {
 
   it('dot-stuffs message lines that begin with a dot during DATA', async () => {
     const factory = socketFactoryFrom(SUCCESS_REPLIES);
-    const provider = new GmailProvider({ socketFactory: factory });
+    const provider = new GmailProvider({ socketFactory: factory, useStartTls: false });
 
     // A pre-built MIME message whose body contains a line starting with a dot.
     const mimeMessage =
@@ -108,7 +108,7 @@ describe('lib/email/providers/gmail (transport)', () => {
       '535 5.7.8 Authentication failed\r\n';
 
     const factory = socketFactoryFrom(rejected);
-    const provider = new GmailProvider({ socketFactory: factory });
+    const provider = new GmailProvider({ socketFactory: factory, useStartTls: false });
 
     const result = await provider.sendEmail({
       from: 'sender@gmail.com',
