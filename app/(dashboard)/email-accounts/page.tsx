@@ -6,6 +6,7 @@ import { EmailAccountCard } from '@/components/email-accounts/EmailAccountCard';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Toast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface EmailAccount {
   id: string;
@@ -25,6 +26,9 @@ export default function EmailAccountsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deactivateId, setDeactivateId] = useState<string | null>(null);
+  const [deactivating, setDeactivating] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchAccounts = useCallback(async () => {
@@ -76,15 +80,26 @@ export default function EmailAccountsPage() {
     }
   };
 
-  const handleDeactivate = async (id: string) => {
-    if (!confirm('Are you sure you want to deactivate this email account?')) return;
-    const res = await fetch(`/api/email-accounts/${id}`, { method: 'DELETE' });
-    const data = (await res.json()) as ApiResponse<null>;
-    if (data.success) {
-      setToast({ message: 'Email account deactivated.', type: 'success' });
-      fetchAccounts();
-    } else {
-      setToast({ message: data.error?.message || 'Failed to deactivate account.', type: 'error' });
+  const openDeactivateConfirm = (id: string) => {
+    setDeactivateId(id);
+    setConfirmOpen(true);
+  };
+
+  const confirmDeactivate = async () => {
+    if (!deactivateId) return;
+    setDeactivating(true);
+    try {
+      const res = await fetch(`/api/email-accounts/${deactivateId}`, { method: 'DELETE' });
+      const data = (await res.json()) as ApiResponse<null>;
+      if (data.success) {
+        setToast({ message: 'Email account deactivated.', type: 'success' });
+        fetchAccounts();
+      } else {
+        setToast({ message: data.error?.message || 'Failed to deactivate account.', type: 'error' });
+      }
+    } finally {
+      setDeactivating(false);
+      setConfirmOpen(false);
     }
   };
 
@@ -127,7 +142,7 @@ export default function EmailAccountsPage() {
                   key={account.id}
                   account={account}
                   onTest={() => handleTest(account.id)}
-                  onDeactivate={() => handleDeactivate(account.id)}
+                  onDeactivate={() => openDeactivateConfirm(account.id)}
                 />
               ))}
             </div>
@@ -140,6 +155,18 @@ export default function EmailAccountsPage() {
         onOpenChange={setDialogOpen}
         provider="Gmail"
         onConnect={handleConnect}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Deactivate email account"
+        description="Are you sure you want to deactivate this email account? It will stop sending emails until reactivated."
+        confirmLabel="Deactivate"
+        cancelLabel="Cancel"
+        variant="destructive"
+        loading={deactivating}
+        onConfirm={confirmDeactivate}
       />
 
       {toast && (
