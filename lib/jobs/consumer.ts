@@ -2,7 +2,7 @@ import { PrismaClient } from '../generated/prisma/client';
 import { reserveEmailCapacity } from '../limits/email-limit-service';
 import { sendEmail } from '../email/service';
 import { decryptSecret } from '../security/encryption';
-import { getResume } from '../storage/r2';
+import { createStorageService } from '../storage/storage.factory';
 
 export async function processQueueJob(
   prisma: PrismaClient,
@@ -156,15 +156,21 @@ export async function processQueueJob(
       | { filename: string; content: ArrayBuffer; contentType: string }
       | undefined;
 
-    if (resume && env.R2_BUCKET) {
-      const r2Bucket = env.R2_BUCKET as R2Bucket;
-      const resumeContent = await getResume(r2Bucket, resume.r2_key);
-      if (resumeContent) {
-        attachment = {
-          filename: resume.filename,
-          content: resumeContent,
-          contentType: 'application/pdf',
-        };
+    if (resume) {
+      try {
+        const storage = createStorageService(env);
+        const stream = await storage.download(resume.storage_key);
+        if (stream) {
+          const content = await new Response(stream).arrayBuffer();
+          attachment = {
+            filename: resume.filename,
+            content,
+            contentType: 'application/pdf',
+          };
+        }
+      } catch {
+        // Storage failure must not crash the whole job; send without attachment.
+        attachment = undefined;
       }
     }
 

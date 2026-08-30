@@ -51,7 +51,7 @@ CREATE TABLE "resumes" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "user_id" UUID NOT NULL,
     "filename" VARCHAR(255) NOT NULL,
-    "r2_key" VARCHAR(1024) NOT NULL,
+    "storage_key" VARCHAR(1024) NOT NULL,
     "size_bytes" INTEGER,
     "is_default" BOOLEAN NOT NULL DEFAULT false,
     "deleted_at" TIMESTAMPTZ,

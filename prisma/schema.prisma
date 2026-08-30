@@ -100,7 +100,7 @@ model Resume {
   user_id    String   @db.Uuid
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   filename   String   @db.VarChar(255)
-  r2_key     String   @db.VarChar(1024)
+  storage_key String  @db.VarChar(1024)
   size_bytes Int?
   is_default Boolean  @default(false)
   deleted_at DateTime? @db.Timestamptz

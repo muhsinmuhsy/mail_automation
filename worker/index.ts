@@ -37,8 +37,12 @@ export default workerHandler;
 declare global {
   interface Env {
     DATABASE_URL: string;
-    R2_BUCKET: R2Bucket;
     EMAIL_QUEUE: Queue;
     SMTP_ENCRYPTION_KEY?: string;
+    B2_BUCKET_NAME: string;
+    B2_REGION: string;
+    B2_ENDPOINT: string;
+    B2_KEY_ID: string;
+    B2_APPLICATION_KEY: string;
   }
 }

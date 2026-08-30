@@ -89,7 +89,7 @@ describe('api/resumes/[id] DELETE auth guards', () => {
   it('deletes resume when owned by current user', async () => {
     const DELETE = await loadRoute({ session: { user: { id: 'user-1' } } });
 
-    mockPrismaResume.resume.findFirst.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1', filename: 'test.pdf', r2_key: 'key', deleted_at: null });
+    mockPrismaResume.resume.findFirst.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1', filename: 'test.pdf', storage_key: 'key', deleted_at: null });
     mockPrismaResume.emailJob.count.mockResolvedValue(0);
     mockPrismaResume.resume.update.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', deleted_at: new Date() });
 

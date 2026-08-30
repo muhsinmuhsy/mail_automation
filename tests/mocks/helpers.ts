@@ -1,5 +1,6 @@
 import { PrismaClient } from '@/lib/generated/prisma/client';
 import { vi } from 'vitest';
+import type { StorageService } from '@/lib/storage/storage.types';
 
 export function createMockPrisma(): PrismaClient {
   const mock = {
@@ -219,11 +220,6 @@ export function createMockEnv(overrides: Record<string, unknown> = {}): Record<s
   return {
     DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
     SMTP_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-    R2_BUCKET: {
-      get: vi.fn(),
-      put: vi.fn(),
-      delete: vi.fn(),
-    } as unknown as R2Bucket,
     RATE_LIMITER_AUTH: {
       check: vi.fn().mockResolvedValue({ success: true }),
     },
@@ -233,3 +229,25 @@ export function createMockEnv(overrides: Record<string, unknown> = {}): Record<s
     ...overrides,
   };
 }
+
+export function createMockStorageService(): StorageService {
+  return {
+    upload: vi.fn().mockResolvedValue({
+      key: 'key',
+      size: 0,
+      contentType: 'application/pdf',
+      metadata: { key: 'key', sizeBytes: 0, contentType: 'application/pdf' },
+    }),
+    download: vi.fn().mockResolvedValue(
+      new Response(new Blob([new Uint8Array([1, 2, 3]) as BlobPart])).body as ReadableStream,
+    ),
+    delete: vi.fn().mockResolvedValue(undefined),
+    exists: vi.fn().mockResolvedValue(true),
+    getMetadata: vi.fn().mockResolvedValue({
+      key: 'key',
+      sizeBytes: 3,
+      contentType: 'application/pdf',
+    }),
+  };
+}
+

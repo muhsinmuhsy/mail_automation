@@ -116,7 +116,7 @@ export const ResumeScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
   filename: 'filename',
-  r2_key: 'r2_key',
+  storage_key: 'storage_key',
   size_bytes: 'size_bytes',
   is_default: 'is_default',
   deleted_at: 'deleted_at',

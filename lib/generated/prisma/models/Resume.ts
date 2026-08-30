@@ -38,7 +38,7 @@ export type ResumeMinAggregateOutputType = {
   id: string | null
   user_id: string | null
   filename: string | null
-  r2_key: string | null
+  storage_key: string | null
   size_bytes: number | null
   is_default: boolean | null
   deleted_at: Date | null
@@ -49,7 +49,7 @@ export type ResumeMaxAggregateOutputType = {
   id: string | null
   user_id: string | null
   filename: string | null
-  r2_key: string | null
+  storage_key: string | null
   size_bytes: number | null
   is_default: boolean | null
   deleted_at: Date | null
@@ -60,7 +60,7 @@ export type ResumeCountAggregateOutputType = {
   id: number
   user_id: number
   filename: number
-  r2_key: number
+  storage_key: number
   size_bytes: number
   is_default: number
   deleted_at: number
@@ -81,7 +81,7 @@ export type ResumeMinAggregateInputType = {
   id?: true
   user_id?: true
   filename?: true
-  r2_key?: true
+  storage_key?: true
   size_bytes?: true
   is_default?: true
   deleted_at?: true
@@ -92,7 +92,7 @@ export type ResumeMaxAggregateInputType = {
   id?: true
   user_id?: true
   filename?: true
-  r2_key?: true
+  storage_key?: true
   size_bytes?: true
   is_default?: true
   deleted_at?: true
@@ -103,7 +103,7 @@ export type ResumeCountAggregateInputType = {
   id?: true
   user_id?: true
   filename?: true
-  r2_key?: true
+  storage_key?: true
   size_bytes?: true
   is_default?: true
   deleted_at?: true
@@ -201,7 +201,7 @@ export type ResumeGroupByOutputType = {
   id: string
   user_id: string
   filename: string
-  r2_key: string
+  storage_key: string
   size_bytes: number | null
   is_default: boolean
   deleted_at: Date | null
@@ -235,7 +235,7 @@ export type ResumeWhereInput = {
   id?: Prisma.UuidFilter<"Resume"> | string
   user_id?: Prisma.UuidFilter<"Resume"> | string
   filename?: Prisma.StringFilter<"Resume"> | string
-  r2_key?: Prisma.StringFilter<"Resume"> | string
+  storage_key?: Prisma.StringFilter<"Resume"> | string
   size_bytes?: Prisma.IntNullableFilter<"Resume"> | number | null
   is_default?: Prisma.BoolFilter<"Resume"> | boolean
   deleted_at?: Prisma.DateTimeNullableFilter<"Resume"> | Date | string | null
@@ -249,7 +249,7 @@ export type ResumeOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   filename?: Prisma.SortOrder
-  r2_key?: Prisma.SortOrder
+  storage_key?: Prisma.SortOrder
   size_bytes?: Prisma.SortOrderInput | Prisma.SortOrder
   is_default?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -266,7 +266,7 @@ export type ResumeWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.ResumeWhereInput | Prisma.ResumeWhereInput[]
   user_id?: Prisma.UuidFilter<"Resume"> | string
   filename?: Prisma.StringFilter<"Resume"> | string
-  r2_key?: Prisma.StringFilter<"Resume"> | string
+  storage_key?: Prisma.StringFilter<"Resume"> | string
   size_bytes?: Prisma.IntNullableFilter<"Resume"> | number | null
   is_default?: Prisma.BoolFilter<"Resume"> | boolean
   deleted_at?: Prisma.DateTimeNullableFilter<"Resume"> | Date | string | null
@@ -280,7 +280,7 @@ export type ResumeOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   filename?: Prisma.SortOrder
-  r2_key?: Prisma.SortOrder
+  storage_key?: Prisma.SortOrder
   size_bytes?: Prisma.SortOrderInput | Prisma.SortOrder
   is_default?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -299,7 +299,7 @@ export type ResumeScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"Resume"> | string
   user_id?: Prisma.UuidWithAggregatesFilter<"Resume"> | string
   filename?: Prisma.StringWithAggregatesFilter<"Resume"> | string
-  r2_key?: Prisma.StringWithAggregatesFilter<"Resume"> | string
+  storage_key?: Prisma.StringWithAggregatesFilter<"Resume"> | string
   size_bytes?: Prisma.IntNullableWithAggregatesFilter<"Resume"> | number | null
   is_default?: Prisma.BoolWithAggregatesFilter<"Resume"> | boolean
   deleted_at?: Prisma.DateTimeNullableWithAggregatesFilter<"Resume"> | Date | string | null
@@ -309,7 +309,7 @@ export type ResumeScalarWhereWithAggregatesInput = {
 export type ResumeCreateInput = {
   id?: string
   filename: string
-  r2_key: string
+  storage_key: string
   size_bytes?: number | null
   is_default?: boolean
   deleted_at?: Date | string | null
@@ -323,7 +323,7 @@ export type ResumeUncheckedCreateInput = {
   id?: string
   user_id: string
   filename: string
-  r2_key: string
+  storage_key: string
   size_bytes?: number | null
   is_default?: boolean
   deleted_at?: Date | string | null
@@ -335,7 +335,7 @@ export type ResumeUncheckedCreateInput = {
 export type ResumeUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
-  r2_key?: Prisma.StringFieldUpdateOperationsInput | string
+  storage_key?: Prisma.StringFieldUpdateOperationsInput | string
   size_bytes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -349,7 +349,7 @@ export type ResumeUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
-  r2_key?: Prisma.StringFieldUpdateOperationsInput | string
+  storage_key?: Prisma.StringFieldUpdateOperationsInput | string
   size_bytes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -362,7 +362,7 @@ export type ResumeCreateManyInput = {
   id?: string
   user_id: string
   filename: string
-  r2_key: string
+  storage_key: string
   size_bytes?: number | null
   is_default?: boolean
   deleted_at?: Date | string | null
@@ -372,7 +372,7 @@ export type ResumeCreateManyInput = {
 export type ResumeUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
-  r2_key?: Prisma.StringFieldUpdateOperationsInput | string
+  storage_key?: Prisma.StringFieldUpdateOperationsInput | string
   size_bytes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -383,7 +383,7 @@ export type ResumeUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
-  r2_key?: Prisma.StringFieldUpdateOperationsInput | string
+  storage_key?: Prisma.StringFieldUpdateOperationsInput | string
   size_bytes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -404,7 +404,7 @@ export type ResumeCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   filename?: Prisma.SortOrder
-  r2_key?: Prisma.SortOrder
+  storage_key?: Prisma.SortOrder
   size_bytes?: Prisma.SortOrder
   is_default?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -419,7 +419,7 @@ export type ResumeMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   filename?: Prisma.SortOrder
-  r2_key?: Prisma.SortOrder
+  storage_key?: Prisma.SortOrder
   size_bytes?: Prisma.SortOrder
   is_default?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -430,7 +430,7 @@ export type ResumeMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   filename?: Prisma.SortOrder
-  r2_key?: Prisma.SortOrder
+  storage_key?: Prisma.SortOrder
   size_bytes?: Prisma.SortOrder
   is_default?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -519,7 +519,7 @@ export type ResumeUpdateOneRequiredWithoutEmail_jobsNestedInput = {
 export type ResumeCreateWithoutUserInput = {
   id?: string
   filename: string
-  r2_key: string
+  storage_key: string
   size_bytes?: number | null
   is_default?: boolean
   deleted_at?: Date | string | null
@@ -531,7 +531,7 @@ export type ResumeCreateWithoutUserInput = {
 export type ResumeUncheckedCreateWithoutUserInput = {
   id?: string
   filename: string
-  r2_key: string
+  storage_key: string
   size_bytes?: number | null
   is_default?: boolean
   deleted_at?: Date | string | null
@@ -573,7 +573,7 @@ export type ResumeScalarWhereInput = {
   id?: Prisma.UuidFilter<"Resume"> | string
   user_id?: Prisma.UuidFilter<"Resume"> | string
   filename?: Prisma.StringFilter<"Resume"> | string
-  r2_key?: Prisma.StringFilter<"Resume"> | string
+  storage_key?: Prisma.StringFilter<"Resume"> | string
   size_bytes?: Prisma.IntNullableFilter<"Resume"> | number | null
   is_default?: Prisma.BoolFilter<"Resume"> | boolean
   deleted_at?: Prisma.DateTimeNullableFilter<"Resume"> | Date | string | null
@@ -583,7 +583,7 @@ export type ResumeScalarWhereInput = {
 export type ResumeCreateWithoutCampaignsInput = {
   id?: string
   filename: string
-  r2_key: string
+  storage_key: string
   size_bytes?: number | null
   is_default?: boolean
   deleted_at?: Date | string | null
@@ -596,7 +596,7 @@ export type ResumeUncheckedCreateWithoutCampaignsInput = {
   id?: string
   user_id: string
   filename: string
-  r2_key: string
+  storage_key: string
   size_bytes?: number | null
   is_default?: boolean
   deleted_at?: Date | string | null
@@ -623,7 +623,7 @@ export type ResumeUpdateToOneWithWhereWithoutCampaignsInput = {
 export type ResumeUpdateWithoutCampaignsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
-  r2_key?: Prisma.StringFieldUpdateOperationsInput | string
+  storage_key?: Prisma.StringFieldUpdateOperationsInput | string
   size_bytes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -636,7 +636,7 @@ export type ResumeUncheckedUpdateWithoutCampaignsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
-  r2_key?: Prisma.StringFieldUpdateOperationsInput | string
+  storage_key?: Prisma.StringFieldUpdateOperationsInput | string
   size_bytes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -647,7 +647,7 @@ export type ResumeUncheckedUpdateWithoutCampaignsInput = {
 export type ResumeCreateWithoutEmail_jobsInput = {
   id?: string
   filename: string
-  r2_key: string
+  storage_key: string
   size_bytes?: number | null
   is_default?: boolean
   deleted_at?: Date | string | null
@@ -660,7 +660,7 @@ export type ResumeUncheckedCreateWithoutEmail_jobsInput = {
   id?: string
   user_id: string
   filename: string
-  r2_key: string
+  storage_key: string
   size_bytes?: number | null
   is_default?: boolean
   deleted_at?: Date | string | null
@@ -687,7 +687,7 @@ export type ResumeUpdateToOneWithWhereWithoutEmail_jobsInput = {
 export type ResumeUpdateWithoutEmail_jobsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
-  r2_key?: Prisma.StringFieldUpdateOperationsInput | string
+  storage_key?: Prisma.StringFieldUpdateOperationsInput | string
   size_bytes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -700,7 +700,7 @@ export type ResumeUncheckedUpdateWithoutEmail_jobsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
-  r2_key?: Prisma.StringFieldUpdateOperationsInput | string
+  storage_key?: Prisma.StringFieldUpdateOperationsInput | string
   size_bytes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -711,7 +711,7 @@ export type ResumeUncheckedUpdateWithoutEmail_jobsInput = {
 export type ResumeCreateManyUserInput = {
   id?: string
   filename: string
-  r2_key: string
+  storage_key: string
   size_bytes?: number | null
   is_default?: boolean
   deleted_at?: Date | string | null
@@ -721,7 +721,7 @@ export type ResumeCreateManyUserInput = {
 export type ResumeUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
-  r2_key?: Prisma.StringFieldUpdateOperationsInput | string
+  storage_key?: Prisma.StringFieldUpdateOperationsInput | string
   size_bytes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -733,7 +733,7 @@ export type ResumeUpdateWithoutUserInput = {
 export type ResumeUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
-  r2_key?: Prisma.StringFieldUpdateOperationsInput | string
+  storage_key?: Prisma.StringFieldUpdateOperationsInput | string
   size_bytes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -745,7 +745,7 @@ export type ResumeUncheckedUpdateWithoutUserInput = {
 export type ResumeUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
-  r2_key?: Prisma.StringFieldUpdateOperationsInput | string
+  storage_key?: Prisma.StringFieldUpdateOperationsInput | string
   size_bytes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -796,7 +796,7 @@ export type ResumeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   id?: boolean
   user_id?: boolean
   filename?: boolean
-  r2_key?: boolean
+  storage_key?: boolean
   size_bytes?: boolean
   is_default?: boolean
   deleted_at?: boolean
@@ -811,7 +811,7 @@ export type ResumeSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   id?: boolean
   user_id?: boolean
   filename?: boolean
-  r2_key?: boolean
+  storage_key?: boolean
   size_bytes?: boolean
   is_default?: boolean
   deleted_at?: boolean
@@ -823,7 +823,7 @@ export type ResumeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   id?: boolean
   user_id?: boolean
   filename?: boolean
-  r2_key?: boolean
+  storage_key?: boolean
   size_bytes?: boolean
   is_default?: boolean
   deleted_at?: boolean
@@ -835,14 +835,14 @@ export type ResumeSelectScalar = {
   id?: boolean
   user_id?: boolean
   filename?: boolean
-  r2_key?: boolean
+  storage_key?: boolean
   size_bytes?: boolean
   is_default?: boolean
   deleted_at?: boolean
   created_at?: boolean
 }
 
-export type ResumeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "filename" | "r2_key" | "size_bytes" | "is_default" | "deleted_at" | "created_at", ExtArgs["result"]["resume"]>
+export type ResumeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "filename" | "storage_key" | "size_bytes" | "is_default" | "deleted_at" | "created_at", ExtArgs["result"]["resume"]>
 export type ResumeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   campaigns?: boolean | Prisma.Resume$campaignsArgs<ExtArgs>
@@ -867,7 +867,7 @@ export type $ResumePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     id: string
     user_id: string
     filename: string
-    r2_key: string
+    storage_key: string
     size_bytes: number | null
     is_default: boolean
     deleted_at: Date | null
@@ -1301,7 +1301,7 @@ export interface ResumeFieldRefs {
   readonly id: Prisma.FieldRef<"Resume", 'String'>
   readonly user_id: Prisma.FieldRef<"Resume", 'String'>
   readonly filename: Prisma.FieldRef<"Resume", 'String'>
-  readonly r2_key: Prisma.FieldRef<"Resume", 'String'>
+  readonly storage_key: Prisma.FieldRef<"Resume", 'String'>
   readonly size_bytes: Prisma.FieldRef<"Resume", 'Int'>
   readonly is_default: Prisma.FieldRef<"Resume", 'Boolean'>
   readonly deleted_at: Prisma.FieldRef<"Resume", 'DateTime'>
