@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PrismaClient } from '@/lib/generated/prisma/client';
-import { scheduleDueJobs, recoverStuckJobs, completeFinishedCampaigns } from '@/lib/jobs/scheduler';
+import { scheduleDueJobs, recoverStuckJobs, completeFinishedCampaigns, generateCampaignJobs } from '@/lib/jobs/scheduler';
 
 describe('lib/jobs/scheduler', () => {
   beforeEach(() => {
@@ -88,6 +88,55 @@ describe('lib/jobs/scheduler', () => {
       const queryString = typeof query === 'string' ? query : String(query);
       expect(queryString).toContain('COMPLETED');
       expect(queryString).toContain('NOT EXISTS');
+    });
+  });
+
+  describe('generateCampaignJobs', () => {
+    it('should substitute template variables per contact', async () => {
+      const prisma = {
+        contact: {
+          findMany: vi.fn().mockResolvedValue([
+            { id: 'contact-1', name: 'Jane Doe', email: 'jane@example.com', company: 'Acme', job_title: 'Engineer' },
+          ]),
+        },
+        template: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'template-1',
+            subject: 'Hi {{name}}',
+            body: 'Hello {{first_name}} at {{company}}',
+          }),
+        },
+        emailJob: {
+          createMany: vi.fn().mockResolvedValue({}),
+        },
+      } as unknown as PrismaClient;
+
+      await generateCampaignJobs(
+        prisma,
+        {
+          id: 'campaign-1',
+          user_id: 'user-1',
+          start_at: new Date('2026-01-01T09:00:00Z'),
+          timezone: 'UTC',
+          interval_minutes: 10,
+          email_account_id: 'account-1',
+          resume_id: 'resume-1',
+          template_id: 'template-1',
+        },
+        ['contact-1']
+      );
+
+      expect(prisma.emailJob.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              to_email: 'jane@example.com',
+              subject: 'Hi Jane Doe',
+              body: 'Hello Jane at Acme',
+            }),
+          ]),
+        })
+      );
     });
   });
 });

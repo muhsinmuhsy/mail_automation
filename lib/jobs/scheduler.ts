@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '../generated/prisma/client';
+import { replaceTemplateVariables } from '@/lib/email/template';
 
 function wallClockToUTC(wallClock: Date, timezone: string): Date {
   const year = wallClock.getUTCFullYear();
@@ -88,8 +89,8 @@ export async function generateCampaignJobs(
       resume_id: campaign.resume_id,
       template_id: campaign.template_id,
       to_email: contact.email,
-      subject: template.subject,
-      body: template.body,
+      subject: replaceTemplateVariables(template.subject, contact),
+      body: replaceTemplateVariables(template.body, contact),
       scheduled_at: scheduledAt,
       status: 'SCHEDULED' as const,
       attempt_count: 0,
