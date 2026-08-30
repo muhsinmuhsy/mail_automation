@@ -41,13 +41,15 @@ export function EmailAccountCard({ account, onTest, onDeactivate, onReactivate, 
         <Button variant="secondary" size="sm" onClick={handleTest} disabled={testing || !account.is_active}>
           {testing ? 'Testing...' : 'Test'}
         </Button>
-        <Button variant="secondary" size="sm" onClick={onEdit}>
-          Edit
-        </Button>
         {account.is_active ? (
-          <Button variant="destructive" size="sm" onClick={onDeactivate}>
-            Deactivate
-          </Button>
+          <>
+            <Button variant="secondary" size="sm" onClick={onEdit}>
+              Edit
+            </Button>
+            <Button variant="destructive" size="sm" onClick={onDeactivate}>
+              Deactivate
+            </Button>
+          </>
         ) : (
           <Button variant="primary" size="sm" onClick={onReactivate}>
             Reactivate

@@ -41,7 +41,7 @@ describe('email-accounts/[id] PATCH', () => {
   });
 
   it('should update the app password when account exists', async () => {
-    mockPrismaUpdate.emailAccount.findFirst.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1' });
+    mockPrismaUpdate.emailAccount.findFirst.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1', is_active: true });
     mockPrismaUpdate.emailAccount.update.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', encrypted_secret: 'encrypted-secret' });
 
     const request = new NextRequest('http://localhost/api/email-accounts/07314147-25ec-4cf2-ae63-388e40add7b8', {
@@ -89,6 +89,23 @@ describe('email-accounts/[id] PATCH', () => {
     expect(response.status).toBe(404);
     expect(body.success).toBe(false);
     expect(body.error?.type).toBe('NOT_FOUND');
+    expect(mockPrismaUpdate.emailAccount.update).not.toHaveBeenCalled();
+  });
+
+  it('should reject when account is deactivated', async () => {
+    mockPrismaUpdate.emailAccount.findFirst.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1', is_active: false });
+
+    const request = new NextRequest('http://localhost/api/email-accounts/07314147-25ec-4cf2-ae63-388e40add7b8', {
+      method: 'PATCH',
+      body: JSON.stringify({ secret: 'new-app-password' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const response = await PATCH(request, { params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }) });
+    const body = (await response.json()) as ApiResponse;
+
+    expect(response.status).toBe(400);
+    expect(body.success).toBe(false);
+    expect(body.error?.type).toBe('BUSINESS_ERROR');
     expect(mockPrismaUpdate.emailAccount.update).not.toHaveBeenCalled();
   });
 });

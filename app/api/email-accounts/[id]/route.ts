@@ -43,6 +43,16 @@ export async function PATCH(
       return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Email account not found.'), { status: 404 }), requestId);
     }
 
+    if (!account.is_active) {
+      return withRequestId(
+        NextResponse.json(
+          failure('BUSINESS_ERROR', 'Cannot update the app password of a deactivated account. Reactivate it first.'),
+          { status: 400 }
+        ),
+        requestId
+      );
+    }
+
     const encryptedSecret = await encryptSecret(parsedBody.data.secret, process.env.SMTP_ENCRYPTION_KEY!);
 
     await prisma.emailAccount.update({
