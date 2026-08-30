@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { buildErrorResponse } from '@/lib/errors';
+import { NextRequest } from 'next/server';
+import type { NextResponse } from 'next/server';
+import { respondError } from '@/lib/api/respond';
+import { requireVerifiedUser } from '@/lib/api/session';
 import { enforceRateLimit } from '@/lib/rate-limit/middleware';
 import {
-  requireUser,
   requireAdmin,
   requireOwnership,
   type SessionUser,
@@ -24,6 +25,8 @@ export type RouteAuth =
 export type RouteOptions = {
   auth?: RouteAuth;
   rateLimitKey?: string;
+  /** When true (default), user routes also require a verified email. */
+  verified?: boolean;
 };
 
 export type RouteHandler = (
@@ -34,6 +37,7 @@ export type RouteHandler = (
 /**
  * Wraps a route handler with:
  *  - authentication/authorization (user, admin, or resource-owner),
+ *  - optional email-verification enforcement for user routes,
  *  - per-endpoint rate limiting,
  *  - centralized error handling that converts AppError/unknown into a stable
  *    JSON error body.
@@ -54,7 +58,12 @@ export function defineRoute(handler: RouteHandler, options: RouteOptions = {}) {
         const result = await requireAdmin();
         user = result.sessionUser;
       } else if (auth === 'user') {
-        user = await requireUser();
+        if (options.verified === false) {
+          const { requireUser } = await import('@/lib/auth/guards');
+          user = await requireUser();
+        } else {
+          user = (await requireVerifiedUser()) as SessionUser;
+        }
       } else {
         const ownerId = await auth.ownership(params);
         const result = await requireOwnership(ownerId);
@@ -67,8 +76,7 @@ export function defineRoute(handler: RouteHandler, options: RouteOptions = {}) {
 
       return await handler(req, { user, params, req });
     } catch (err) {
-      const { status, body } = buildErrorResponse(err);
-      return NextResponse.json(body, { status });
+      return respondError(err);
     }
   };
 }

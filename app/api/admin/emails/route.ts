@@ -1,45 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { getSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth/guards';
+import { respondError, respondList } from '@/lib/api/respond';
+import { parseListQuery } from '@/lib/api/list';
+
+const EMAIL_JOB_STATUSES = [
+  'SCHEDULED',
+  'QUEUED',
+  'PROCESSING',
+  'RETRY_WAIT',
+  'SENT',
+  'FAILED',
+  'CANCELLED',
+  'DELIVERY_UNKNOWN',
+] as const;
 
 export async function GET(request: NextRequest) {
-  void request;
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const session = await getSession();
-    if (!session || session.user.role !== 'ADMIN') {
-      return withRequestId(NextResponse.json(failure('AUTHORIZATION_ERROR', 'Admin access required.'), { status: 403 }), requestId);
-    }
+    await requireAdmin();
 
+    const { page, limit, search } = parseListQuery(request, { search: true });
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const statusParam = searchParams.get('status');
+    const statusFilter =
+      statusParam && (EMAIL_JOB_STATUSES as readonly string[]).includes(statusParam)
+        ? { status: statusParam as (typeof EMAIL_JOB_STATUSES)[number] }
+        : {};
 
-    const where: Record<string, unknown> = {};
-    if (status === 'sent') where.status = 'SENT';
-    if (status === 'failed') where.status = 'FAILED';
-    if (status === 'retry') where.status = 'RETRY_WAIT';
+    const where = {
+      ...statusFilter,
+      ...(search ? { to_email: { contains: search, mode: 'insensitive' as const } } : {}),
+    };
 
     const [jobs, total] = await Promise.all([
-      prisma.emailJob.findMany({
+      getPrisma().emailJob.findMany({
         where,
-        select: { id: true, to_email: true, subject: true, status: true, sent_at: true, error_message: true, created_at: true, user: { select: { email: true } } },
+        select: {
+          id: true,
+          to_email: true,
+          subject: true,
+          status: true,
+          sent_at: true,
+          error_message: true,
+          created_at: true,
+          user: { select: { email: true } },
+        },
         orderBy: { created_at: 'desc' },
-        take: 50,
+        skip: (page - 1) * limit,
+        take: limit,
       }),
-      prisma.emailJob.count({ where }),
+      getPrisma().emailJob.count({ where }),
     ]);
 
-    return withRequestId(NextResponse.json(success({ jobs, total, page: 1, limit: 50 })), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    return respondList(jobs, total, page, limit, requestId);
+  } catch (err) {
+    return respondError(err, requestId);
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

@@ -1,54 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { requireVerifiedSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireVerifiedUser } from '@/lib/api/session';
+import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
 import { checkApiRateLimit } from '@/lib/rate-limit/api';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const prisma = createPrisma(process.env.DATABASE_URL!);
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  void request;
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
 
-    const session = sessionResult.session;
-    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'email-account-reactivate');
+    const rateLimitResult = await checkApiRateLimit(request, user.id, 'email-account-reactivate');
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
     const parsed = idParamSchema.safeParse({ id });
     if (!parsed.success) {
-      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'Invalid ID.'), { status: 400 }), requestId);
+      return respondError(new ValidationError('Invalid ID.'), requestId);
     }
 
-    const account = await prisma.emailAccount.findFirst({
-      where: { id: parsed.data.id, user_id: session.user.id },
+    const account = await getPrisma().emailAccount.findFirst({
+      where: { id: parsed.data.id, user_id: user.id },
     });
 
     if (!account) {
-      return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Email account not found.'), { status: 404 }), requestId);
+      return respondError(new NotFoundError('Email account not found.'), requestId);
     }
 
-    await prisma.emailAccount.update({
-      where: { id: parsed.data.id, user_id: session.user.id },
+    await getPrisma().emailAccount.update({
+      where: { id: parsed.data.id, user_id: user.id },
       data: { is_active: true },
     });
 
-    return withRequestId(NextResponse.json(success(null, 'Email account reactivated.')), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'Failed to reactivate email account.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    return respondOk(null, requestId, 'Email account reactivated.');
+  } catch (err) {
+    return respondError(err, requestId);
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

@@ -1,47 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { requireVerifiedSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireVerifiedUser } from '@/lib/api/session';
+import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
 import { checkApiRateLimit } from '@/lib/rate-limit/api';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   void request;
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
 
-    const session = sessionResult.session;
-    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'campaign-cancel');
+    const rateLimitResult = await checkApiRateLimit(request, user.id, 'campaign-cancel');
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
     const parsed = idParamSchema.safeParse({ id });
     if (!parsed.success) {
-      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'Invalid ID.'), { status: 400 }), requestId);
+      return respondError(new ValidationError('Invalid ID.'), requestId);
     }
 
-    await prisma.campaign.updateMany({
-      where: { id: parsed.data.id, user_id: session.user.id },
+    const result = await getPrisma().campaign.updateMany({
+      where: { id: parsed.data.id, user_id: user.id },
       data: { status: 'CANCELLED' },
     });
 
-    return withRequestId(NextResponse.json(success(null, 'Campaign cancelled.')), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Campaign not found.'), { status: 404 }), requestId);
-  } finally {
-    await prisma.$disconnect();
-  }
-}
+    if (result.count === 0) {
+      return respondError(new NotFoundError('Campaign not found.'), requestId);
+    }
 
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
+    return respondOk(null, requestId, 'Campaign cancelled.');
+  } catch (err) {
+    return respondError(err, requestId);
+  }
 }

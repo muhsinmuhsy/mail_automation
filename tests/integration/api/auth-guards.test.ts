@@ -2,8 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
 interface AuthErrorResponse {
-  type: string;
-  message: string;
+  error: { type: string; message: string };
 }
 
 interface ApiFailureResponse {
@@ -30,8 +29,8 @@ vi.mock('@/lib/rate-limit/api', () => ({
   checkApiRateLimit: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock('@/lib/db/prisma', () => ({
-  createPrisma: vi.fn(() => mockPrismaResume),
+vi.mock('@/lib/db', () => ({
+  getPrisma: vi.fn(() => mockPrismaResume),
 }));
 
 const storageDelete = vi.fn().mockResolvedValue(undefined);
@@ -66,7 +65,7 @@ describe('api/resumes/[id] DELETE auth guards', () => {
     const body = (await response.json()) as AuthErrorResponse;
 
     expect(response.status).toBe(401);
-    expect(body.type).toBe('AUTHENTICATION_ERROR');
+    expect(body.error.type).toBe('AUTHENTICATION_ERROR');
   });
 
   it('returns 403 when email not verified', async () => {
@@ -76,8 +75,8 @@ describe('api/resumes/[id] DELETE auth guards', () => {
     const response = await DELETE(request, { params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }) });
     const body = (await response.json()) as AuthErrorResponse;
 
-    expect(response.status).toBe(401);
-    expect(body.type).toBe('AUTHORIZATION_ERROR');
+    expect(response.status).toBe(403);
+    expect(body.error.type).toBe('AUTHORIZATION_ERROR');
   });
 
   it('returns 404 when resume belongs to another user', async () => {

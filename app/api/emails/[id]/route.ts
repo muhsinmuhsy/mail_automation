@@ -1,46 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { requireVerifiedSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireVerifiedUser } from '@/lib/api/session';
+import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   void request;
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
 
     const { id } = await params;
     const parsed = idParamSchema.safeParse({ id });
     if (!parsed.success) {
-      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'Invalid ID.'), { status: 400 }), requestId);
+      return respondError(new ValidationError('Invalid ID.'), requestId);
     }
 
-    const emailJob = await prisma.emailJob.findFirst({
-      where: { id: parsed.data.id, user_id: sessionResult.session.user.id },
+    const emailJob = await getPrisma().emailJob.findFirst({
+      where: { id: parsed.data.id, user_id: user.id },
       include: { email_logs: true },
     });
 
     if (!emailJob) {
-      return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Email not found.'), { status: 404 }), requestId);
+      return respondError(new NotFoundError('Email not found.'), requestId);
     }
 
-    return withRequestId(NextResponse.json(success(emailJob)), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    return respondOk(emailJob, requestId);
+  } catch (err) {
+    return respondError(err, requestId);
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

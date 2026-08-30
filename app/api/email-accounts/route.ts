@@ -1,56 +1,56 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { requireVerifiedSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireVerifiedUser } from '@/lib/api/session';
+import { respondError, respondOk, respondList } from '@/lib/api/respond';
+import { parseListQuery } from '@/lib/api/list';
+import { ConflictError, ValidationError, fromPrismaError } from '@/lib/errors';
 import { createEmailAccountSchema } from '@/lib/validation/email-account';
 import { encryptSecret } from '@/lib/security/encryption';
 import { checkApiRateLimit } from '@/lib/rate-limit/api';
 
 export async function GET(request: NextRequest) {
-  void request;
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
+    const { page, limit, search } = parseListQuery(request, { search: true });
 
-    const accounts = await prisma.emailAccount.findMany({
-      where: { user_id: sessionResult.session.user.id },
-      select: { id: true, provider: true, email: true, is_active: true, created_at: true },
-    });
+    const where = {
+      user_id: user.id,
+      ...(search ? { email: { contains: search, mode: 'insensitive' as const } } : {}),
+    };
 
-    return withRequestId(NextResponse.json(success(accounts)), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    const [accounts, total] = await Promise.all([
+      getPrisma().emailAccount.findMany({
+        where,
+        select: { id: true, provider: true, email: true, is_active: true, created_at: true },
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      getPrisma().emailAccount.count({ where }),
+    ]);
+
+    return respondList(accounts, total, page, limit, requestId);
+  } catch (err) {
+    return respondError(err, requestId);
   }
 }
 
 export async function POST(request: NextRequest) {
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
 
-    const session = sessionResult.session;
-    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'email-account-create');
+    const rateLimitResult = await checkApiRateLimit(request, user.id, 'email-account-create');
     if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();
     const parsed = createEmailAccountSchema.safeParse(body);
     if (!parsed.success) {
-      return withRequestId(
-        NextResponse.json(
-          failure('VALIDATION_ERROR', 'Please correct the highlighted fields.', {
-            fields: Object.fromEntries(parsed.error.errors.map((e) => [e.path.join('.'), e.message])),
-          }),
-          { status: 400 }
+      return respondError(
+        new ValidationError(
+          'Please correct the highlighted fields.',
+          Object.fromEntries(parsed.error.errors.map((e) => [e.path.join('.'), e.message]))
         ),
         requestId
       );
@@ -58,30 +58,26 @@ export async function POST(request: NextRequest) {
 
     const encryptedSecret = await encryptSecret(parsed.data.secret, process.env.SMTP_ENCRYPTION_KEY!);
 
-    const account = await prisma.emailAccount.create({
-      data: {
-        user_id: session.user.id,
-        provider: parsed.data.provider,
-        email: parsed.data.email,
-        auth_method: parsed.data.auth_method,
-        encrypted_secret: encryptedSecret,
-      },
-      select: { id: true, provider: true, email: true, is_active: true, created_at: true },
-    });
+    try {
+      const account = await getPrisma().emailAccount.create({
+        data: {
+          user_id: user.id,
+          provider: parsed.data.provider,
+          email: parsed.data.email,
+          auth_method: parsed.data.auth_method,
+          encrypted_secret: encryptedSecret,
+        },
+        select: { id: true, provider: true, email: true, is_active: true, created_at: true },
+      });
 
-    return withRequestId(NextResponse.json(success(account, 'Email account connected successfully.'), { status: 201 }), requestId);
-  } catch (error) {
-    if ((error as { code?: string })?.code === 'P2002') {
-      return withRequestId(NextResponse.json(failure('BUSINESS_ERROR', 'This email account is already connected.'), { status: 409 }), requestId);
+      return respondOk(account, requestId, 'Email account connected successfully.', 201);
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'P2002') {
+        return respondError(new ConflictError('This email account is already connected.'), requestId);
+      }
+      throw fromPrismaError(error);
     }
-    
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+  } catch (err) {
+    return respondError(err, requestId);
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

@@ -13,6 +13,7 @@ const mockPrisma = {
   emailAccount: {
     findMany: vi.fn(),
     create: vi.fn(),
+    count: vi.fn().mockResolvedValue(1),
   },
   $disconnect: vi.fn(),
 };
@@ -32,8 +33,8 @@ vi.mock('@/lib/security/encryption', () => ({
   decryptSecret: vi.fn(),
 }));
 
-vi.mock('@/lib/db/prisma', () => ({
-  createPrisma: vi.fn(() => mockPrisma),
+vi.mock('@/lib/db', () => ({
+  getPrisma: vi.fn(() => mockPrisma),
 }));
 
 describe('email-accounts GET/POST', () => {

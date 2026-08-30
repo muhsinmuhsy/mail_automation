@@ -1,54 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { requireVerifiedSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireVerifiedUser } from '@/lib/api/session';
+import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
 import { checkApiRateLimit } from '@/lib/rate-limit/api';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   void request;
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
 
-    const session = sessionResult.session;
-    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'resume-default');
+    const rateLimitResult = await checkApiRateLimit(request, user.id, 'resume-default');
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
     const parsed = idParamSchema.safeParse({ id });
     if (!parsed.success) {
-      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'Invalid ID.'), { status: 400 }), requestId);
+      return respondError(new ValidationError('Invalid ID.'), requestId);
     }
 
-    const resume = await prisma.resume.findFirst({
-      where: { id: parsed.data.id, user_id: session.user.id, deleted_at: null },
+    const resume = await getPrisma().resume.findFirst({
+      where: { id: parsed.data.id, user_id: user.id, deleted_at: null },
     });
     if (!resume) {
-      return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Resume not found.'), { status: 404 }), requestId);
+      return respondError(new NotFoundError('Resume not found.'), requestId);
     }
 
-    await prisma.$transaction([
-      prisma.resume.updateMany({ where: { user_id: session.user.id, deleted_at: null }, data: { is_default: false } }),
-      prisma.resume.update({ where: { id: resume.id }, data: { is_default: true } }),
+    await getPrisma().$transaction([
+      getPrisma().resume.updateMany({
+        where: { user_id: user.id, deleted_at: null },
+        data: { is_default: false },
+      }),
+      getPrisma().resume.update({ where: { id: resume.id }, data: { is_default: true } }),
     ]);
 
-    return withRequestId(NextResponse.json(success(null, 'Default resume set.')), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Resume not found.'), { status: 404 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    return respondOk(null, requestId, 'Default resume set.');
+  } catch (err) {
+    return respondError(err, requestId);
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

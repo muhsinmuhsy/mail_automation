@@ -37,8 +37,8 @@ vi.mock('@/lib/email/providers/gmail', () => ({
   })),
 }));
 
-vi.mock('@/lib/db/prisma', () => ({
-  createPrisma: vi.fn(() => mockPrismaTest),
+vi.mock('@/lib/db', () => ({
+  getPrisma: vi.fn(() => mockPrismaTest),
 }));
 
 describe('email-accounts/[id]/test POST', () => {

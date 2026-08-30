@@ -29,8 +29,8 @@ vi.mock('@/lib/rate-limit/api', () => ({
   checkApiRateLimit: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock('@/lib/db/prisma', () => ({
-  createPrisma: vi.fn(() => mockPrismaDelete),
+vi.mock('@/lib/db', () => ({
+  getPrisma: vi.fn(() => mockPrismaDelete),
 }));
 
 describe('email-accounts/[id] DELETE', () => {

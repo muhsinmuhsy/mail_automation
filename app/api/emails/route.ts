@@ -1,34 +1,52 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { requireVerifiedSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireVerifiedUser } from '@/lib/api/session';
+import { respondError, respondList } from '@/lib/api/respond';
+import { parseListQuery } from '@/lib/api/list';
+
+const EMAIL_JOB_STATUSES = [
+  'SCHEDULED',
+  'QUEUED',
+  'PROCESSING',
+  'RETRY_WAIT',
+  'SENT',
+  'FAILED',
+  'CANCELLED',
+  'DELIVERY_UNKNOWN',
+] as const;
 
 export async function GET(request: NextRequest) {
-  void request;
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
+    const { page, limit, search } = parseListQuery(request, { search: true });
 
-    const emails = await prisma.emailJob.findMany({
-      where: { user_id: sessionResult.session.user.id },
-      select: { id: true, to_email: true, subject: true, status: true, sent_at: true },
-      orderBy: { created_at: 'desc' },
-      take: 50,
-    });
+    const { searchParams } = new URL(request.url);
+    const statusParam = searchParams.get('status');
+    const statusFilter =
+      statusParam && (EMAIL_JOB_STATUSES as readonly string[]).includes(statusParam)
+        ? { status: statusParam as (typeof EMAIL_JOB_STATUSES)[number] }
+        : {};
 
-    return withRequestId(NextResponse.json(success(emails)), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    const where = {
+      user_id: user.id,
+      ...statusFilter,
+      ...(search ? { to_email: { contains: search, mode: 'insensitive' as const } } : {}),
+    };
+
+    const [emails, total] = await Promise.all([
+      getPrisma().emailJob.findMany({
+        where,
+        select: { id: true, to_email: true, subject: true, status: true, sent_at: true, created_at: true },
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      getPrisma().emailJob.count({ where }),
+    ]);
+
+    return respondList(emails, total, page, limit, requestId);
+  } catch (err) {
+    return respondError(err, requestId);
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

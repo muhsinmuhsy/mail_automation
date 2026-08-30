@@ -22,4 +22,34 @@ export function respondError(err: unknown, requestId?: string): NextResponse {
   return NextResponse.json(body, { status, headers });
 }
 
+/**
+ * Paginated list response. Keeps the same `{success, data}` envelope as
+ * `respondOk` and adds a `pagination` metadata block. `data` remains the
+ * array of items so callers can treat list and single responses uniformly.
+ */
+export function respondList<T>(
+  items: T[],
+  total: number,
+  page: number,
+  pageSize: number,
+  requestId: string,
+  message?: string
+): NextResponse {
+  const headers: Record<string, string> = { 'X-Request-ID': requestId };
+  return NextResponse.json(
+    {
+      success: true,
+      data: items,
+      pagination: {
+        total,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+      ...(message ? { message } : {}),
+    },
+    { status: 200, headers }
+  );
+}
+
 export type { ApiSuccessResponse };

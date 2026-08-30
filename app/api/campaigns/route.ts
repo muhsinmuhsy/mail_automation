@@ -1,88 +1,110 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { requireVerifiedSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireVerifiedUser } from '@/lib/api/session';
+import { respondError, respondOk, respondList } from '@/lib/api/respond';
+import { parseListQuery } from '@/lib/api/list';
 import { createCampaignSchema } from '@/lib/validation/campaign';
 import { generateCampaignJobs } from '@/lib/jobs/scheduler';
 import { checkApiRateLimit } from '@/lib/rate-limit/api';
+import { ValidationError, ForbiddenError } from '@/lib/errors';
+
+const CAMPAIGN_STATUSES = ['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'] as const;
 
 export async function GET(request: NextRequest) {
-  void request;
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
+    const { page, limit, search } = parseListQuery(request, { search: true });
 
-    const campaigns = await prisma.campaign.findMany({
-      where: { user_id: sessionResult.session.user.id },
-      select: { id: true, name: true, status: true, created_at: true },
-    });
+    const { searchParams } = new URL(request.url);
+    const statusParam = searchParams.get('status');
+    const statusFilter =
+      statusParam && (CAMPAIGN_STATUSES as readonly string[]).includes(statusParam)
+        ? { status: statusParam as (typeof CAMPAIGN_STATUSES)[number] }
+        : {};
 
-    return withRequestId(NextResponse.json(success(campaigns)), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    const where = {
+      user_id: user.id,
+      ...statusFilter,
+      ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
+    };
+
+    const [campaigns, total] = await Promise.all([
+      getPrisma().campaign.findMany({
+        where,
+        select: { id: true, name: true, status: true, created_at: true },
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      getPrisma().campaign.count({ where }),
+    ]);
+
+    return respondList(campaigns, total, page, limit, requestId);
+  } catch (err) {
+    return respondError(err, requestId);
   }
 }
 
 export async function POST(request: NextRequest) {
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
 
-    const session = sessionResult.session;
-    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'campaign-create');
+    const rateLimitResult = await checkApiRateLimit(request, user.id, 'campaign-create');
     if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();
     const parsed = createCampaignSchema.safeParse(body);
     if (!parsed.success) {
-      return withRequestId(
-        NextResponse.json(
-          failure('VALIDATION_ERROR', 'Please correct the highlighted fields.', {
-            fields: Object.fromEntries(parsed.error.errors.map((e) => [e.path.join('.'), e.message])),
-          }),
-          { status: 400 }
+      return respondError(
+        new ValidationError(
+          'Please correct the highlighted fields.',
+          Object.fromEntries(parsed.error.errors.map((e) => [e.path.join('.'), e.message]))
         ),
         requestId
       );
     }
 
     const [emailAccount, resume, template] = await Promise.all([
-      prisma.emailAccount.findFirst({ where: { id: parsed.data.email_account_id, user_id: session.user.id } }),
-      prisma.resume.findFirst({ where: { id: parsed.data.resume_id, user_id: session.user.id, deleted_at: null } }),
-      prisma.template.findFirst({ where: { id: parsed.data.template_id, user_id: session.user.id } }),
+      getPrisma().emailAccount.findFirst({
+        where: { id: parsed.data.email_account_id, user_id: user.id },
+      }),
+      getPrisma().resume.findFirst({
+        where: { id: parsed.data.resume_id, user_id: user.id, deleted_at: null },
+      }),
+      getPrisma().template.findFirst({
+        where: { id: parsed.data.template_id, user_id: user.id },
+      }),
     ]);
 
     if (!emailAccount) {
-      return withRequestId(NextResponse.json(failure('AUTHORIZATION_ERROR', 'Email account not found or does not belong to you.'), { status: 403 }), requestId);
+      return respondError(
+        new ForbiddenError('Email account not found or does not belong to you.'),
+        requestId
+      );
     }
     if (!resume) {
-      return withRequestId(NextResponse.json(failure('AUTHORIZATION_ERROR', 'Resume not found or does not belong to you.'), { status: 403 }), requestId);
+      return respondError(new ForbiddenError('Resume not found or does not belong to you.'), requestId);
     }
     if (!template) {
-      return withRequestId(NextResponse.json(failure('AUTHORIZATION_ERROR', 'Template not found or does not belong to you.'), { status: 403 }), requestId);
+      return respondError(new ForbiddenError('Template not found or does not belong to you.'), requestId);
     }
 
-    const contactCount = await prisma.contact.count({
-      where: { id: { in: parsed.data.contact_ids }, user_id: session.user.id },
+    const contactCount = await getPrisma().contact.count({
+      where: { id: { in: parsed.data.contact_ids }, user_id: user.id },
     });
 
     if (contactCount !== parsed.data.contact_ids.length) {
-      return withRequestId(NextResponse.json(failure('AUTHORIZATION_ERROR', 'One or more contacts do not belong to you.'), { status: 403 }), requestId);
+      return respondError(
+        new ForbiddenError('One or more contacts do not belong to you.'),
+        requestId
+      );
     }
 
-    const campaign = await prisma.campaign.create({
+    const campaign = await getPrisma().campaign.create({
       data: {
-        user_id: session.user.id,
+        user_id: user.id,
         name: parsed.data.name,
         email_account_id: parsed.data.email_account_id,
         resume_id: parsed.data.resume_id,
@@ -95,27 +117,24 @@ export async function POST(request: NextRequest) {
       select: { id: true, name: true, status: true, created_at: true },
     });
 
-    await generateCampaignJobs(prisma, {
-      id: campaign.id,
-      user_id: session.user.id,
-      start_at: parsed.data.start_at,
-      timezone: parsed.data.timezone,
-      interval_minutes: parsed.data.interval_minutes,
-      daily_limit: parsed.data.daily_limit,
-      email_account_id: parsed.data.email_account_id,
-      resume_id: parsed.data.resume_id,
-      template_id: parsed.data.template_id,
-    }, parsed.data.contact_ids);
+    await generateCampaignJobs(
+      getPrisma(),
+      {
+        id: campaign.id,
+        user_id: user.id,
+        start_at: parsed.data.start_at,
+        timezone: parsed.data.timezone,
+        interval_minutes: parsed.data.interval_minutes,
+        daily_limit: parsed.data.daily_limit,
+        email_account_id: parsed.data.email_account_id,
+        resume_id: parsed.data.resume_id,
+        template_id: parsed.data.template_id,
+      },
+      parsed.data.contact_ids
+    );
 
-    return withRequestId(NextResponse.json(success(campaign, 'Campaign created successfully.'), { status: 201 }), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    return respondOk(campaign, requestId, 'Campaign created successfully.', 201);
+  } catch (err) {
+    return respondError(err, requestId);
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

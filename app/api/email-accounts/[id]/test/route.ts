@@ -1,43 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { requireVerifiedSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireVerifiedUser } from '@/lib/api/session';
+import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
 import { decryptSecret } from '@/lib/security/encryption';
 import { checkApiRateLimit } from '@/lib/rate-limit/api';
+import { NotFoundError, ExternalServiceError, ValidationError } from '@/lib/errors';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const prisma = createPrisma(process.env.DATABASE_URL!);
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
 
-    const session = sessionResult.session;
-    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'smtp-test');
+    const rateLimitResult = await checkApiRateLimit(request, user.id, 'smtp-test');
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
     const parsed = idParamSchema.safeParse({ id });
     if (!parsed.success) {
-      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'Invalid ID.'), { status: 400 }), requestId);
+      return respondError(new ValidationError('Invalid ID.'), requestId);
     }
 
-    const account = await prisma.emailAccount.findUnique({
+    const account = await getPrisma().emailAccount.findUnique({
       where: { id: parsed.data.id },
     });
 
-    if (!account || account.user_id !== session.user.id) {
-      return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Email account not found.'), { status: 404 }), requestId);
+    if (!account || account.user_id !== user.id) {
+      return respondError(new NotFoundError('Email account not found.'), requestId);
     }
 
     if (!account.encrypted_secret) {
-      return withRequestId(NextResponse.json(failure('BUSINESS_ERROR', 'No credentials stored for this account.'), { status: 400 }), requestId);
+      return respondError(
+        new ValidationError('No credentials stored for this account.'),
+        requestId
+      );
     }
 
     const decryptedSecret = await decryptSecret(account.encrypted_secret, process.env.SMTP_ENCRYPTION_KEY!);
@@ -46,15 +42,14 @@ export async function POST(
     const provider = new GmailProvider();
     const result = await provider.testConnection({ email: account.email, secret: decryptedSecret });
 
-    return withRequestId(NextResponse.json(success({ connected: result.success, message: result.message })), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('PROVIDER_ERROR', 'We couldn\'t connect to your email account. Please check your credentials.'), { status: 502 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    return respondOk({ connected: result.success, message: result.message }, requestId);
+  } catch (err) {
+    if (err instanceof ExternalServiceError || err instanceof NotFoundError || err instanceof ValidationError) {
+      return respondError(err, requestId);
+    }
+    return respondError(
+      new ExternalServiceError("We couldn't connect to your email account. Please check your credentials."),
+      requestId
+    );
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

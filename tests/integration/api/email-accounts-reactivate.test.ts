@@ -26,8 +26,8 @@ vi.mock('@/lib/rate-limit/api', () => ({
   checkApiRateLimit: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock('@/lib/db/prisma', () => ({
-  createPrisma: vi.fn(() => mockPrismaReactivate),
+vi.mock('@/lib/db', () => ({
+  getPrisma: vi.fn(() => mockPrismaReactivate),
 }));
 
 describe('email-accounts/[id]/reactivate POST', () => {

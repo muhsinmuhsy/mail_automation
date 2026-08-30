@@ -1,34 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { requireVerifiedSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireVerifiedUser } from '@/lib/api/session';
+import { respondError, respondOk } from '@/lib/api/respond';
 import { createContactSchema } from '@/lib/validation/contact';
 import { checkApiRateLimit } from '@/lib/rate-limit/api';
+import { ValidationError } from '@/lib/errors';
 
 export async function POST(request: NextRequest) {
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
 
-    const session = sessionResult.session;
-    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'contact-import');
+    const rateLimitResult = await checkApiRateLimit(request, user.id, 'contact-import');
     if (rateLimitResult) return rateLimitResult;
 
     const formData = await request.formData();
     const file = formData.get('csv');
     if (!file || !(file instanceof File)) {
-      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'CSV file is required.'), { status: 400 }), requestId);
+      return respondError(new ValidationError('CSV file is required.'), requestId);
     }
 
     const text = await file.text();
     const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
 
     if (lines.length <= 1) {
-      return withRequestId(NextResponse.json(success({ imported: 0, duplicate: 0, invalid: 0, skipped: 0 }, 'No contacts to import.')), requestId);
+      return respondOk(
+        { imported: 0, duplicate: 0, invalid: 0, skipped: 0 },
+        requestId,
+        'No contacts to import.'
+      );
     }
 
     const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const notesIdx = header.indexOf('notes');
 
     if (nameIdx === -1 || emailIdx === -1) {
-      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'CSV must contain name and email columns.'), { status: 400 }), requestId);
+      return respondError(new ValidationError('CSV must contain name and email columns.'), requestId);
     }
 
     let importedCount = 0;
@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const existing = await prisma.contact.findFirst({
-        where: { user_id: session.user.id, email: parsed.data.email },
+      const existing = await getPrisma().contact.findFirst({
+        where: { user_id: user.id, email: parsed.data.email },
       });
 
       if (existing) {
@@ -70,9 +70,9 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      await prisma.contact.create({
+      await getPrisma().contact.create({
         data: {
-          user_id: session.user.id,
+          user_id: user.id,
           name: parsed.data.name,
           email: parsed.data.email,
           company: parsed.data.company || null,
@@ -84,21 +84,12 @@ export async function POST(request: NextRequest) {
       importedCount++;
     }
 
-    return withRequestId(
-      NextResponse.json(
-        success({ imported: importedCount, duplicate: duplicateCount, invalid: invalidCount, skipped: skippedCount }, `Contacts imported successfully. ${importedCount} imported, ${duplicateCount} duplicates, ${invalidCount} invalid, ${skippedCount} skipped.`)
-      ),
-      requestId
+    return respondOk(
+      { imported: importedCount, duplicate: duplicateCount, invalid: invalidCount, skipped: skippedCount },
+      requestId,
+      `Contacts imported successfully. ${importedCount} imported, ${duplicateCount} duplicates, ${invalidCount} invalid, ${skippedCount} skipped.`
     );
   } catch (err) {
-    console.error('CSV import error:', err);
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    return respondError(err, requestId);
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

@@ -1,53 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { requireVerifiedSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireVerifiedUser } from '@/lib/api/session';
+import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
-import { checkApiRateLimit } from '@/lib/rate-limit/api';
-import { encryptSecret } from '@/lib/security/encryption';
 import { updateEmailAccountSecretSchema } from '@/lib/validation/email-account';
+import { encryptSecret } from '@/lib/security/encryption';
+import { checkApiRateLimit } from '@/lib/rate-limit/api';
+import { NotFoundError, ValidationError, AppError } from '@/lib/errors';
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const prisma = createPrisma(process.env.DATABASE_URL!);
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
 
-    const session = sessionResult.session;
-    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'email-account-update');
+    const rateLimitResult = await checkApiRateLimit(request, user.id, 'email-account-update');
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
     const parsedId = idParamSchema.safeParse({ id });
     if (!parsedId.success) {
-      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'Invalid ID.'), { status: 400 }), requestId);
+      return respondError(new ValidationError('Invalid ID.'), requestId);
     }
 
     const body = await request.json().catch(() => null);
     const parsedBody = updateEmailAccountSecretSchema.safeParse(body);
     if (!parsedBody.success) {
-      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'App password is required.'), { status: 400 }), requestId);
+      return respondError(new ValidationError('App password is required.'), requestId);
     }
 
-    const account = await prisma.emailAccount.findFirst({
-      where: { id: parsedId.data.id, user_id: session.user.id },
+    const account = await getPrisma().emailAccount.findFirst({
+      where: { id: parsedId.data.id, user_id: user.id },
     });
 
     if (!account) {
-      return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Email account not found.'), { status: 404 }), requestId);
+      return respondError(new NotFoundError('Email account not found.'), requestId);
     }
 
     if (!account.is_active) {
-      return withRequestId(
-        NextResponse.json(
-          failure('BUSINESS_ERROR', 'Cannot update the app password of a deactivated account. Reactivate it first.'),
-          { status: 400 }
+      return respondError(
+        new AppError(
+          'Cannot update the app password of a deactivated account. Reactivate it first.',
+          400,
+          'BUSINESS_ERROR'
         ),
         requestId
       );
@@ -55,51 +49,41 @@ export async function PATCH(
 
     const encryptedSecret = await encryptSecret(parsedBody.data.secret, process.env.SMTP_ENCRYPTION_KEY!);
 
-    await prisma.emailAccount.update({
-      where: { id: parsedId.data.id, user_id: session.user.id },
+    await getPrisma().emailAccount.update({
+      where: { id: parsedId.data.id, user_id: user.id },
       data: { encrypted_secret: encryptedSecret },
     });
 
-    return withRequestId(NextResponse.json(success(null, 'App password updated.')), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'Failed to update email account.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    return respondOk(null, requestId, 'App password updated.');
+  } catch (err) {
+    return respondError(err, requestId);
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   void request;
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const sessionResult = await requireVerifiedSession();
-    if ('error' in sessionResult) {
-      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
-    }
+    const user = await requireVerifiedUser();
 
-    const session = sessionResult.session;
-    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'email-account-delete');
+    const rateLimitResult = await checkApiRateLimit(request, user.id, 'email-account-delete');
     if (rateLimitResult) return rateLimitResult;
 
     const { id } = await params;
     const parsed = idParamSchema.safeParse({ id });
     if (!parsed.success) {
-      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'Invalid ID.'), { status: 400 }), requestId);
+      return respondError(new ValidationError('Invalid ID.'), requestId);
     }
 
-    const emailAccount = await prisma.emailAccount.findFirst({
-      where: { id: parsed.data.id, user_id: session.user.id },
+    const emailAccount = await getPrisma().emailAccount.findFirst({
+      where: { id: parsed.data.id, user_id: user.id },
     });
 
     if (!emailAccount) {
-      return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Email account not found.'), { status: 404 }), requestId);
+      return respondError(new NotFoundError('Email account not found.'), requestId);
     }
 
-    const pendingJobCount = await prisma.emailJob.count({
+    const pendingJobCount = await getPrisma().emailJob.count({
       where: {
         email_account_id: parsed.data.id,
         status: { in: ['SCHEDULED', 'QUEUED', 'PROCESSING', 'RETRY_WAIT'] },
@@ -107,27 +91,20 @@ export async function DELETE(
     });
 
     if (pendingJobCount > 0) {
-      await prisma.emailAccount.update({
+      await getPrisma().emailAccount.update({
         where: { id: emailAccount.id },
         data: { is_active: false },
       });
-      return withRequestId(NextResponse.json(success(null, 'Email account deactivated and retained for pending email jobs.')), requestId);
+      return respondOk(null, requestId, 'Email account deactivated and retained for pending email jobs.');
     }
 
-    await prisma.emailAccount.update({
-      where: { id: parsed.data.id, user_id: session.user.id },
+    await getPrisma().emailAccount.update({
+      where: { id: parsed.data.id, user_id: user.id },
       data: { is_active: false },
     });
 
-    return withRequestId(NextResponse.json(success(null, 'Email account deactivated.')), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Email account not found.'), { status: 404 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    return respondOk(null, requestId, 'Email account deactivated.');
+  } catch (err) {
+    return respondError(err, requestId);
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

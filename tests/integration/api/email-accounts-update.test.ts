@@ -30,8 +30,8 @@ vi.mock('@/lib/security/encryption', () => ({
   encryptSecret: vi.fn().mockResolvedValue('encrypted-secret'),
 }));
 
-vi.mock('@/lib/db/prisma', () => ({
-  createPrisma: vi.fn(() => mockPrismaUpdate),
+vi.mock('@/lib/db', () => ({
+  getPrisma: vi.fn(() => mockPrismaUpdate),
 }));
 
 describe('email-accounts/[id] PATCH', () => {
