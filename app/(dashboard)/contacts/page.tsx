@@ -4,20 +4,33 @@ import { ContactCard } from '@/components/contacts/ContactCard';
 import { ContactForm } from '@/components/contacts/ContactForm';
 import { ContactImport } from '@/components/contacts/ContactImport';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type ApiResponse<T> = { data: T; message?: string };
+type Contact = { id: string; name: string; email: string; company?: string };
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Array<{ id: string; name: string; email: string; company?: string }>>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const load = useCallback(async () => {
-    const response = await fetch('/api/contacts');
-    const payload = await response.json() as ApiResponse<Array<{ id: string; name: string; email: string; company?: string }>>;
-    if (!response.ok) throw new Error(payload.message || 'Unable to load contacts.');
-    setContacts(payload.data);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const response = await fetch('/api/contacts');
+        const payload = (await response.json()) as ApiResponse<Contact[]>;
+        if (!active) return;
+        if (!response.ok) throw new Error(payload.message || 'Unable to load contacts.');
+        setContacts(payload.data);
+      } catch (cause) {
+        if (!active) return;
+        setError((cause as Error).message);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
-  useEffect(() => { load().catch((cause: Error) => setError(cause.message)); }, [load]);
 
   return (
     <div className="flex flex-col gap-8">

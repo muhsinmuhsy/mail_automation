@@ -10,16 +10,17 @@ export async function checkApiRateLimit(request: NextRequest, userId: string, en
   const key = `user:${userId}:${endpoint}`;
   const result = await apiRateLimiter.check(key, 100, 60);
   if (!result.success) {
+    const retryAfter = typeof result.reset === 'number' && result.reset > 0 ? result.reset : 60;
     return NextResponse.json(
       {
         success: false,
         error: {
           type: 'RATE_LIMITED',
           message: "You're doing that too frequently. Please wait a moment and try again.",
-          retryAfter: result.reset,
+          retryAfter,
         },
       },
-      { status: 429 }
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
     );
   }
   return null;

@@ -1,56 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { getSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth/guards';
+import { ValidationError } from '@/lib/errors';
 import { adminSettingsSchema } from '@/lib/validation/admin';
 import { checkApiRateLimit } from '@/lib/rate-limit/api';
+import { respondError, respondOk } from '@/lib/api/respond';
 
 export async function GET(request: NextRequest) {
   void request;
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const session = await getSession();
-    if (!session || session.user.role !== 'ADMIN') {
-      return withRequestId(NextResponse.json(failure('AUTHORIZATION_ERROR', 'Admin access required.'), { status: 403 }), requestId);
-    }
+    await requireAdmin();
 
-    const settings = await prisma.systemSetting.findUnique({ where: { id: 1 } });
-    return withRequestId(NextResponse.json(success(settings)), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    const settings = await getPrisma().systemSetting.findUnique({ where: { id: 1 } });
+    return respondOk(settings, requestId);
+  } catch (err) {
+    return respondError(err, requestId);
   }
 }
 
 export async function PATCH(request: NextRequest) {
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const session = await getSession();
-    if (!session || session.user.role !== 'ADMIN') {
-      return withRequestId(NextResponse.json(failure('AUTHORIZATION_ERROR', 'Admin access required.'), { status: 403 }), requestId);
-    }
+    const { sessionUser } = await requireAdmin();
 
-    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'admin-settings');
+    const rateLimitResult = await checkApiRateLimit(request, sessionUser.id, 'admin-settings');
     if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();
     const parsed = adminSettingsSchema.safeParse(body);
     if (!parsed.success) {
-      return withRequestId(
-        NextResponse.json(
-          failure('VALIDATION_ERROR', 'Please correct the highlighted fields.', {
-            fields: Object.fromEntries(parsed.error.errors.map((e) => [e.path.join('.'), e.message])),
-          }),
-          { status: 400 }
+      return respondError(
+        new ValidationError(
+          'Please correct the highlighted fields.',
+          Object.fromEntries(parsed.error.errors.map((e) => [e.path.join('.'), e.message]))
         ),
         requestId
       );
     }
 
-    const settings = await prisma.systemSetting.update({
+    const settings = await getPrisma().systemSetting.update({
       where: { id: 1 },
       data: {
         default_daily_email_limit: parsed.data.default_daily_email_limit,
@@ -59,15 +48,8 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-    return withRequestId(NextResponse.json(success(settings, 'Settings updated.')), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    return respondOk(settings, requestId, 'Settings updated.');
+  } catch (err) {
+    return respondError(err, requestId);
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

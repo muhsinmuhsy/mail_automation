@@ -3,7 +3,7 @@
 import { ResumeCard } from '@/components/resumes/ResumeCard';
 import { ResumeUpload } from '@/components/resumes/ResumeUpload';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Resume = { id: string; filename: string; size_bytes: number; is_default: boolean };
 type ApiResponse<T> = { data: T; message?: string };
@@ -11,13 +11,25 @@ type ApiResponse<T> = { data: T; message?: string };
 export default function ResumesPage() {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const load = useCallback(async () => {
-    const response = await fetch('/api/resumes');
-    const payload = await response.json() as ApiResponse<Resume[]>;
-    if (!response.ok) throw new Error(payload.message || 'Unable to load resumes.');
-    setResumes(payload.data);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const response = await fetch('/api/resumes');
+        const payload = (await response.json()) as ApiResponse<Resume[]>;
+        if (!active) return;
+        if (!response.ok) throw new Error(payload.message || 'Unable to load resumes.');
+        setResumes(payload.data);
+      } catch (cause) {
+        if (!active) return;
+        setError((cause as Error).message);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
-  useEffect(() => { load().catch((cause: Error) => setError(cause.message)); }, [load]);
 
   return (
     <div className="flex flex-col gap-8">

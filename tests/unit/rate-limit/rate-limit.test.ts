@@ -3,6 +3,7 @@ import {
   MemoryRateLimitStore,
   resolveRateLimitRule,
   createRateLimitStore,
+  createRateLimiter,
   RATE_LIMITS,
 } from '@/lib/rate-limit';
 import { enforceRateLimit, setRateLimitStore } from '@/lib/rate-limit/middleware';
@@ -31,6 +32,32 @@ describe('lib/rate-limit', () => {
   it('createRateLimitStore falls back to memory when no binding', () => {
     const store = createRateLimitStore({});
     expect(store).toBeInstanceOf(MemoryRateLimitStore);
+  });
+
+  it('createRateLimitStore delegates to a Cloudflare rate-limit binding', async () => {
+    const calls: string[] = [];
+    const binding = {
+      limit: async (opts: { key: string }) => {
+        calls.push(opts.key);
+        return { success: !opts.key.includes('block') };
+      },
+    };
+    const store = createRateLimitStore({ RATE_LIMITER: binding }, 'RATE_LIMITER');
+
+    expect((await store.check('user:1:contacts', 10, 60)).success).toBe(true);
+    expect((await store.check('block', 10, 60)).success).toBe(false);
+    expect(calls).toEqual(['user:1:contacts', 'block']);
+  });
+
+  it('createRateLimiter uses the Cloudflare binding and enforces in-memory fallback otherwise', async () => {
+    const binding = { limit: async (opts: { key: string }) => ({ success: opts.key !== 'block' }) };
+    const limiter = createRateLimiter({ RATE_LIMITER_API: binding }, 'RATE_LIMITER_API');
+    expect((await limiter.check('fine')).success).toBe(true);
+    expect((await limiter.check('block')).success).toBe(false);
+
+    const fallback = createRateLimiter({}, 'RATE_LIMITER_API');
+    expect((await fallback.check('k', 1, 60)).success).toBe(true);
+    expect((await fallback.check('k', 1, 60)).success).toBe(false);
   });
 
   it('enforceRateLimit throws RateLimitError after budget exhausted', async () => {

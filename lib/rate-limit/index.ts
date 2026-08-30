@@ -93,16 +93,38 @@ export class MemoryRateLimitStore implements RateLimitStore {
  * present it is used directly; otherwise a per-process in-memory store is
  * returned. The `env` shape is the Worker/Pages `env` object.
  */
+/**
+ * Detects a Cloudflare Rate Limit API binding (Wrangler 4.36.0+, binding type
+ * `ratelimit`). The binding exposes `limit({ key })` and returns `{ success }`;
+ * it enforces the limit configured in `wrangler.toml`, so the `limit`/`window`
+ * arguments are ignored on that path. When no binding is present (local dev /
+ * tests) a per-process in-memory store is returned.
+ */
+function asCloudflareBinding(
+  env: Record<string, unknown>,
+  bindingName: string
+): { limit: (options: { key: string }) => Promise<{ success: boolean }> } | undefined {
+  const binding = env[bindingName] as
+    | { limit?: unknown }
+    | undefined;
+  if (binding && typeof binding.limit === 'function') {
+    return binding as { limit: (options: { key: string }) => Promise<{ success: boolean }> };
+  }
+  return undefined;
+}
+
 export function createRateLimitStore(
   env: Record<string, unknown> = {},
   bindingName = 'RATE_LIMITER'
 ): RateLimitStore {
-  const binding = env[bindingName] as Partial<RateLimitStore> | undefined;
-  if (binding && typeof binding.check === 'function') {
+  const binding = asCloudflareBinding(env, bindingName);
+  if (binding) {
     return {
-      check: (key, limit, windowSec) => binding.check!(key, limit, windowSec),
-      reset: (key) =>
-        typeof binding.reset === 'function' ? binding.reset(key) : Promise.resolve(),
+      check: async (key) => {
+        const outcome = await binding.limit({ key });
+        return { success: outcome.success, remaining: 0, reset: 0, limit: 0 };
+      },
+      reset: async () => undefined,
     };
   }
   return new MemoryRateLimitStore();
@@ -114,24 +136,23 @@ export function createRateLimitStore(
  * ------------------------------------------------------------------------- */
 
 export type RateLimiter = {
-  check: (key: string, limit: number, window: number) => Promise<{ success: boolean; remaining?: number; reset?: number }>;
+  check: (key: string, limit?: number, window?: number) => Promise<{ success: boolean; remaining?: number; reset?: number }>;
 };
 
 export function createRateLimiter(env: Record<string, unknown>, bindingName: string): RateLimiter {
-  const binding = env[bindingName] as
-    | {
-        check: (key: string, limit: number, window: number) => Promise<{ success: boolean; remaining?: number; reset?: number }>;
-      }
-    | undefined;
-
-  if (!binding) {
+  const binding = asCloudflareBinding(env, bindingName);
+  if (binding) {
     return {
-      check: async () => ({ success: true }),
+      check: async (key) => {
+        const outcome = await binding.limit({ key });
+        return { success: outcome.success };
+      },
     };
   }
 
+  const store = new MemoryRateLimitStore();
   return {
-    check: (key: string, limit: number, window: number) =>
-      binding.check(key, limit, window),
+    check: (key: string, limit?: number, window?: number) =>
+      store.check(key, limit ?? 60, window ?? 60),
   };
 }

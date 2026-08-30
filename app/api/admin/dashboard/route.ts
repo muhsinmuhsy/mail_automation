@@ -1,33 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createPrisma } from '@/lib/db/prisma';
-import { getSession } from '@/lib/auth/neon-auth';
-import { failure, success } from '@/lib/errors/error-handler';
+import { NextRequest } from 'next/server';
+import { getPrisma } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth/guards';
+import { respondError, respondOk } from '@/lib/api/respond';
 
 export async function GET(request: NextRequest) {
   void request;
-  const prisma = createPrisma(process.env.DATABASE_URL!);
   const requestId = crypto.randomUUID();
   try {
-    const session = await getSession();
-    if (!session || session.user.role !== 'ADMIN') {
-      return withRequestId(NextResponse.json(failure('AUTHORIZATION_ERROR', 'Admin access required.'), { status: 403 }), requestId);
-    }
+    await requireAdmin();
 
-    const users = await prisma.user.count();
-    const settings = await prisma.systemSetting.findUnique({ where: { id: 1 } });
+    const users = await getPrisma().user.count();
+    const settings = await getPrisma().systemSetting.findUnique({ where: { id: 1 } });
 
-    return withRequestId(NextResponse.json(success({
-      totalUsers: users,
-      settings,
-    })), requestId);
-  } catch {
-    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'We couldn\'t complete your request. Please try again.'), { status: 500 }), requestId);
-  } finally {
-    await prisma.$disconnect();
+    return respondOk({ totalUsers: users, settings }, requestId);
+  } catch (err) {
+    return respondError(err, requestId);
   }
-}
-
-function withRequestId(response: NextResponse, requestId: string): NextResponse {
-  response.headers.set('X-Request-ID', requestId);
-  return response;
 }

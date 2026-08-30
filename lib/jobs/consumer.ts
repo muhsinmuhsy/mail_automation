@@ -127,10 +127,6 @@ export async function processQueueJob(
       return;
     }
 
-    let attachment:
-      | { filename: string; content: Uint8Array; contentType: string }
-      | undefined;
-
     const resume = await prisma.resume.findUnique({
       where: { id: job.resume_id, user_id: job.user_id, deleted_at: null },
     });
@@ -144,7 +140,7 @@ export async function processQueueJob(
       throw new Error('Resume object is unavailable for this email job.');
     }
     const content = new Uint8Array(await new Response(stream).arrayBuffer());
-    attachment = {
+    const attachment = {
       filename: resume.filename,
       content,
       contentType: contentTypeForFilename(resume.filename),
