@@ -15,9 +15,11 @@ interface EmailAccountCardProps {
   account: EmailAccount;
   onTest: () => void;
   onDeactivate: () => void;
+  onReactivate: () => void;
+  onEdit: () => void;
 }
 
-export function EmailAccountCard({ account, onTest, onDeactivate }: EmailAccountCardProps) {
+export function EmailAccountCard({ account, onTest, onDeactivate, onReactivate, onEdit }: EmailAccountCardProps) {
   const [testing, setTesting] = useState(false);
 
   const handleTest = async () => {
@@ -39,9 +41,16 @@ export function EmailAccountCard({ account, onTest, onDeactivate }: EmailAccount
         <Button variant="secondary" size="sm" onClick={handleTest} disabled={testing || !account.is_active}>
           {testing ? 'Testing...' : 'Test'}
         </Button>
-        {account.is_active && (
+        <Button variant="secondary" size="sm" onClick={onEdit}>
+          Edit
+        </Button>
+        {account.is_active ? (
           <Button variant="destructive" size="sm" onClick={onDeactivate}>
             Deactivate
+          </Button>
+        ) : (
+          <Button variant="primary" size="sm" onClick={onReactivate}>
+            Reactivate
           </Button>
         )}
       </div>

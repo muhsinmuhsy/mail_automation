@@ -12,5 +12,10 @@ export const testEmailAccountSchema = z.object({
   secret: nonEmptyString.max(100),
 });
 
+export const updateEmailAccountSecretSchema = z.object({
+  secret: nonEmptyString.max(100),
+});
+
 export type CreateEmailAccountInput = z.infer<typeof createEmailAccountSchema>;
 export type TestEmailAccountInput = z.infer<typeof testEmailAccountSchema>;
+export type UpdateEmailAccountSecretInput = z.infer<typeof updateEmailAccountSecretSchema>;

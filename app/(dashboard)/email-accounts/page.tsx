@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ProviderConnectionDialog } from '@/components/email-accounts/ProviderConnectionDialog';
 import { EmailAccountCard } from '@/components/email-accounts/EmailAccountCard';
+import { EmailAccountEditDialog } from '@/components/email-accounts/EmailAccountEditDialog';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Toast } from '@/components/ui/Toast';
@@ -29,6 +30,12 @@ export default function EmailAccountsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deactivateId, setDeactivateId] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
+  const [reactivateId, setReactivateId] = useState<string | null>(null);
+  const [reactivating, setReactivating] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<EmailAccount | null>(null);
+  const [editing, setEditing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchAccounts = useCallback(async () => {
@@ -103,6 +110,55 @@ export default function EmailAccountsPage() {
     }
   };
 
+  const openReactivateConfirm = (id: string) => {
+    setReactivateId(id);
+    setReactivateOpen(true);
+  };
+
+  const confirmReactivate = async () => {
+    if (!reactivateId) return;
+    setReactivating(true);
+    try {
+      const res = await fetch(`/api/email-accounts/${reactivateId}/reactivate`, { method: 'POST' });
+      const data = (await res.json()) as ApiResponse<null>;
+      if (data.success) {
+        setToast({ message: 'Email account reactivated.', type: 'success' });
+        fetchAccounts();
+      } else {
+        setToast({ message: data.error?.message || 'Failed to reactivate account.', type: 'error' });
+      }
+    } finally {
+      setReactivating(false);
+      setReactivateOpen(false);
+    }
+  };
+
+  const openEdit = (account: EmailAccount) => {
+    setEditTarget(account);
+    setEditOpen(true);
+  };
+
+  const handleEditSecret = async (secret: string) => {
+    if (!editTarget) return;
+    setEditing(true);
+    try {
+      const res = await fetch(`/api/email-accounts/${editTarget.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret }),
+      });
+      const data = (await res.json()) as ApiResponse<null>;
+      if (data.success) {
+        setToast({ message: 'App password updated.', type: 'success' });
+        setEditOpen(false);
+      } else {
+        setToast({ message: data.error?.message || 'Failed to update app password.', type: 'error' });
+      }
+    } finally {
+      setEditing(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -143,6 +199,8 @@ export default function EmailAccountsPage() {
                   account={account}
                   onTest={() => handleTest(account.id)}
                   onDeactivate={() => openDeactivateConfirm(account.id)}
+                  onReactivate={() => openReactivateConfirm(account.id)}
+                  onEdit={() => openEdit(account)}
                 />
               ))}
             </div>
@@ -167,6 +225,26 @@ export default function EmailAccountsPage() {
         variant="destructive"
         loading={deactivating}
         onConfirm={confirmDeactivate}
+      />
+
+      <ConfirmDialog
+        open={reactivateOpen}
+        onOpenChange={setReactivateOpen}
+        title="Reactivate email account"
+        description="Are you sure you want to reactivate this email account? It will resume sending emails."
+        confirmLabel="Reactivate"
+        cancelLabel="Cancel"
+        variant="primary"
+        loading={reactivating}
+        onConfirm={confirmReactivate}
+      />
+
+      <EmailAccountEditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        email={editTarget?.email ?? ''}
+        onSave={handleEditSecret}
+        loading={editing}
       />
 
       {toast && (

@@ -4,6 +4,59 @@ import { requireVerifiedSession } from '@/lib/auth/neon-auth';
 import { failure, success } from '@/lib/errors/error-handler';
 import { idParamSchema } from '@/lib/validation/common';
 import { checkApiRateLimit } from '@/lib/rate-limit/api';
+import { encryptSecret } from '@/lib/security/encryption';
+import { updateEmailAccountSecretSchema } from '@/lib/validation/email-account';
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const prisma = createPrisma(process.env.DATABASE_URL!);
+  const requestId = crypto.randomUUID();
+  try {
+    const sessionResult = await requireVerifiedSession();
+    if ('error' in sessionResult) {
+      return withRequestId(NextResponse.json(sessionResult.error, { status: 401 }), requestId);
+    }
+
+    const session = sessionResult.session;
+    const rateLimitResult = await checkApiRateLimit(request, session.user.id, 'email-account-update');
+    if (rateLimitResult) return rateLimitResult;
+
+    const { id } = await params;
+    const parsedId = idParamSchema.safeParse({ id });
+    if (!parsedId.success) {
+      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'Invalid ID.'), { status: 400 }), requestId);
+    }
+
+    const body = await request.json().catch(() => null);
+    const parsedBody = updateEmailAccountSecretSchema.safeParse(body);
+    if (!parsedBody.success) {
+      return withRequestId(NextResponse.json(failure('VALIDATION_ERROR', 'App password is required.'), { status: 400 }), requestId);
+    }
+
+    const account = await prisma.emailAccount.findFirst({
+      where: { id: parsedId.data.id, user_id: session.user.id },
+    });
+
+    if (!account) {
+      return withRequestId(NextResponse.json(failure('NOT_FOUND', 'Email account not found.'), { status: 404 }), requestId);
+    }
+
+    const encryptedSecret = await encryptSecret(parsedBody.data.secret, process.env.SMTP_ENCRYPTION_KEY!);
+
+    await prisma.emailAccount.update({
+      where: { id: parsedId.data.id, user_id: session.user.id },
+      data: { encrypted_secret: encryptedSecret },
+    });
+
+    return withRequestId(NextResponse.json(success(null, 'App password updated.')), requestId);
+  } catch {
+    return withRequestId(NextResponse.json(failure('INTERNAL_ERROR', 'Failed to update email account.'), { status: 500 }), requestId);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
 
 export async function DELETE(
   request: NextRequest,
