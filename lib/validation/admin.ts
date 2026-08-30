@@ -6,11 +6,16 @@ export const adminUpdateUserSchema = z.object({
   daily_email_limit_override: z.coerce.number().int().positive().nullable().optional(),
 });
 
+export const adminRecoverJobSchema = z.object({
+  decision: z.enum(['sent', 'failed', 'unknown']),
+});
+
+export type AdminRecoverJobInput = z.infer<typeof adminRecoverJobSchema>;
+
 export const adminSettingsSchema = z.object({
   default_daily_email_limit: z.coerce.number().int().positive(),
   global_daily_email_limit: z.coerce.number().int().positive(),
   email_sending_enabled: z.boolean(),
 });
 
-export type AdminUpdateUserInput = z.infer<typeof adminUpdateUserSchema>;
 export type AdminSettingsInput = z.infer<typeof adminSettingsSchema>;

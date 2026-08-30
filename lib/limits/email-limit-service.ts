@@ -1,4 +1,5 @@
 import { PrismaClient } from '../generated/prisma/client';
+import { NotFoundError, AppError } from '../errors';
 
 type Tx = PrismaClient;
 
@@ -303,4 +304,136 @@ export async function recoverReservations(
   }
 
   return { reconciled };
+}
+
+/**
+ * Admin recovery for a job stuck in `DELIVERY_UNKNOWN` (its upstream send
+ * ended without a definitive success/failure acknowledgement). The decision is
+ * applied atomically inside a single transaction:
+ *   - `sent`   : mark the job SENT and COMMIT the outstanding reservation
+ *               (reservation -> COMMITTED, reserved_count--, sent_count++).
+ *   - `failed` : mark the job FAILED and RELEASE the outstanding reservation
+ *               (reservation -> RELEASED, reserved_count--).
+ *   - `unknown` : no-op; the job stays DELIVERY_UNKNOWN for later review.
+ *
+ * Only jobs currently in `DELIVERY_UNKNOWN` may be resolved this way.
+ */
+export async function resolveDeliveryUnknown(
+  prisma: PrismaClient,
+  params: {
+    emailJobId: string;
+    userId: string;
+    campaignId?: string | null;
+    decision: 'sent' | 'failed' | 'unknown';
+  }
+): Promise<'sent' | 'failed' | 'unknown'> {
+  if (params.decision === 'unknown') {
+    return 'unknown';
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const t = tx as Tx;
+    const today = utcToday();
+
+    const job = await t.emailJob.findUnique({ where: { id: params.emailJobId } });
+    if (!job) {
+      throw new NotFoundError('Email job not found.');
+    }
+    if (job.status !== 'DELIVERY_UNKNOWN') {
+      throw new AppError(
+        'Only jobs in DELIVERY_UNKNOWN can be recovered.',
+        409,
+        'BUSINESS_ERROR'
+      );
+    }
+
+    const reservation = await t.emailSendReservation.findFirst({
+      where: { email_job_id: params.emailJobId, status: { in: ['RESERVED', 'UNKNOWN'] } },
+      orderBy: { attempt_number: 'desc' },
+    });
+
+    const reconcileCounters = async (mode: 'commit' | 'release') => {
+      if (!reservation || reservation.resolved_at) {
+        // No outstanding reservation to reconcile; still advance the sent
+        // counter for a commit so totals stay correct.
+        if (mode === 'commit') {
+          await t.emailUsageDaily.upsert({
+            where: { user_id_usage_date: { user_id: params.userId, usage_date: today } },
+            update: { sent_count: { increment: 1 } },
+            create: { user_id: params.userId, usage_date: today, sent_count: 1 },
+          });
+          await t.systemUsageDaily.upsert({
+            where: { usage_date: today },
+            update: { sent_count: { increment: 1 } },
+            create: { usage_date: today, sent_count: 1 },
+          });
+          if (params.campaignId) {
+            await t.campaignUsageDaily.upsert({
+              where: { campaign_id_usage_date: { campaign_id: params.campaignId, usage_date: today } },
+              update: { sent_count: { increment: 1 } },
+              create: { campaign_id: params.campaignId, usage_date: today, sent_count: 1 },
+            });
+          }
+        }
+        return;
+      }
+
+      const usageDate = reservation.usage_date;
+      if (mode === 'commit') {
+        await t.emailSendReservation.update({
+          where: { id: reservation.id },
+          data: { status: 'COMMITTED', resolved_at: new Date() },
+        });
+        await t.emailUsageDaily.update({
+          where: { user_id_usage_date: { user_id: params.userId, usage_date: usageDate } },
+          data: { reserved_count: { decrement: 1 }, sent_count: { increment: 1 } },
+        });
+        await t.systemUsageDaily.update({
+          where: { usage_date: usageDate },
+          data: { reserved_count: { decrement: 1 }, sent_count: { increment: 1 } },
+        });
+        if (params.campaignId) {
+          await t.campaignUsageDaily.update({
+            where: { campaign_id_usage_date: { campaign_id: params.campaignId, usage_date: usageDate } },
+            data: { reserved_count: { decrement: 1 }, sent_count: { increment: 1 } },
+          });
+        }
+      } else {
+        await t.emailSendReservation.update({
+          where: { id: reservation.id },
+          data: { status: 'RELEASED', resolved_at: new Date() },
+        });
+        await t.emailUsageDaily.update({
+          where: { user_id_usage_date: { user_id: params.userId, usage_date: usageDate } },
+          data: { reserved_count: { decrement: 1 } },
+        });
+        await t.systemUsageDaily.update({
+          where: { usage_date: usageDate },
+          data: { reserved_count: { decrement: 1 } },
+        });
+        if (params.campaignId) {
+          await t.campaignUsageDaily.update({
+            where: { campaign_id_usage_date: { campaign_id: params.campaignId, usage_date: usageDate } },
+            data: { reserved_count: { decrement: 1 } },
+          });
+        }
+      }
+    };
+
+    if (params.decision === 'sent') {
+      await t.emailJob.update({
+        where: { id: params.emailJobId },
+        data: { status: 'SENT', sent_at: new Date() },
+      });
+      await reconcileCounters('commit');
+      return 'sent';
+    }
+
+    await t.emailJob.update({
+      where: { id: params.emailJobId },
+      data: { status: 'FAILED' },
+    });
+    await reconcileCounters('release');
+    return 'failed';
+  });
 }
