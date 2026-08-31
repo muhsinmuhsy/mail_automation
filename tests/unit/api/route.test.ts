@@ -7,7 +7,7 @@ type JsonBody = { user?: unknown; params?: unknown; success?: boolean; error?: u
 const mockRequireVerifiedUser = vi.fn();
 const mockRequireUser = vi.fn();
 const mockRequireAdmin = vi.fn();
-const mockRequireOwnership = vi.fn();
+const mockGetDbRole = vi.fn();
 const mockEnforceRateLimit = vi.fn();
 const mockRespondError = vi.fn();
 
@@ -18,7 +18,7 @@ vi.mock('@/lib/api/session', () => ({
 vi.mock('@/lib/auth/guards', () => ({
   requireUser: (...a: unknown[]) => mockRequireUser(...a),
   requireAdmin: (...a: unknown[]) => mockRequireAdmin(...a),
-  requireOwnership: (...a: unknown[]) => mockRequireOwnership(...a),
+  getDbRole: (...a: unknown[]) => mockGetDbRole(...a),
 }));
 
 vi.mock('@/lib/rate-limit/middleware', () => ({
@@ -40,6 +40,7 @@ beforeEach(() => {
   mockRespondError.mockImplementation((err: unknown) =>
     NextResponse.json({ error: 'handled', name: (err as Error)?.constructor?.name }, { status: 500 }),
   );
+  mockGetDbRole.mockResolvedValue('USER');
 });
 
 describe('lib/api/route', () => {
@@ -93,13 +94,14 @@ describe('lib/api/route', () => {
 
   it('uses requireOwnership for ownership routes', async () => {
     const sessionUser = { id: 'u4', email: 'a@b.c' };
-    mockRequireOwnership.mockResolvedValue({ sessionUser });
+    mockRequireVerifiedUser.mockResolvedValue(sessionUser);
     const handler = vi.fn((_req: NextRequest, _ctx: Ctx) => new NextResponse('ok'));
     const route = defineRoute(handler, {
-      auth: { ownership: (params: Record<string, string>) => params.ownerId },
+      auth: { ownership: () => 'u4' },
     });
     await route(makeReq(), { params: { ownerId: 'owner-9' } });
-    expect(mockRequireOwnership).toHaveBeenCalledWith('owner-9');
+    expect(mockRequireVerifiedUser).toHaveBeenCalledOnce();
+    expect(mockGetDbRole).toHaveBeenCalledWith('u4');
     expect(handler.mock.calls[0][1].user).toEqual(sessionUser);
   });
 

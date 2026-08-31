@@ -25,7 +25,7 @@ const _PATCH = defineRoute(async (req, ctx) => {
   }
 
   const result = await getPrisma().template.updateMany({
-    where: { id: parsed.data.id },
+    where: { id: parsed.data.id, user_id: ctx.user.id },
     data: updateParsed.data,
   });
 
@@ -55,7 +55,7 @@ const _DELETE = defineRoute(async (_req, ctx) => {
   }
 
   await getPrisma().template.deleteMany({
-    where: { id: parsed.data.id },
+    where: { id: parsed.data.id, user_id: ctx.user.id },
   });
 
   return respondOk(null, ctx.requestId, 'Template deleted.');

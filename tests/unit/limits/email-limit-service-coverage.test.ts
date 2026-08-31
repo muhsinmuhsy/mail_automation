@@ -11,7 +11,7 @@ import {
 
 type Fn = ReturnType<typeof vi.fn>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function makeModel(dflt: Record<string, any> = {}) {
   const m: Record<string, Fn> = {};
   for (const k of [
@@ -55,7 +55,7 @@ function makeLimitPrisma(opts: LimitOpts = {}) {
     campaign,
     emailJob,
     $transaction: vi.fn(),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   } as any as PrismaClient & { $transaction: Fn };
 
   const tx = {
@@ -74,7 +74,7 @@ function makeLimitPrisma(opts: LimitOpts = {}) {
     },
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   (prisma.$transaction as Fn).mockImplementation(async (fn: (t: any) => Promise<any>) => fn(tx));
 
   return {

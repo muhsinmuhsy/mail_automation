@@ -59,6 +59,17 @@ describe('proxy unverified user behavior', () => {
     expect(response.status).toBe(200);
   });
 
+  it('allows public health checks without a session lookup', async () => {
+    mockAuthGetSession.mockResolvedValue(null);
+    const proxyHandler = await loadProxy();
+
+    const request = new NextRequest('http://localhost/api/health');
+    const response = await proxyHandler(request);
+
+    expect(response.status).toBe(200);
+    expect(mockAuthGetSession).not.toHaveBeenCalled();
+  });
+
   it('redirects unverified authenticated user from /dashboard to /verify-email', async () => {
     mockAuthGetSession.mockResolvedValue({
       data: {

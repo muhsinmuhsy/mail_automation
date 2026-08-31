@@ -240,16 +240,20 @@ describe('app/api route handlers (unit coverage)', () => {
   });
 
   it('campaigns/[id]/cancel cancels via updateMany', async () => {
+    prismaMock.campaign.findUnique.mockResolvedValue({ id: UUID, status: 'ACTIVE' });
     prismaMock.campaign.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.emailJob.updateMany.mockResolvedValue({ count: 1 });
     await ok((await (campaignCancel as any).POST(makeReq(), CTX({ id: UUID }))));
   });
 
   it('campaigns/[id]/pause pauses via updateMany', async () => {
+    prismaMock.campaign.findUnique.mockResolvedValue({ id: UUID, status: 'ACTIVE' });
     prismaMock.campaign.updateMany.mockResolvedValue({ count: 1 });
     await ok((await (campaignPause as any).POST(makeReq(), CTX({ id: UUID }))));
   });
 
   it('campaigns/[id]/resume resumes via updateMany', async () => {
+    prismaMock.campaign.findUnique.mockResolvedValue({ id: UUID, status: 'PAUSED' });
     prismaMock.campaign.updateMany.mockResolvedValue({ count: 1 });
     await ok((await (campaignResume as any).POST(makeReq(), CTX({ id: UUID }))));
   });

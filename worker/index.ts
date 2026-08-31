@@ -1,5 +1,6 @@
-// @ts-expect-error .open-next/worker.js is generated at build time
-import handler from './.open-next/worker.js';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore .open-next/worker.js is generated at build time
+import handler from '../.open-next/worker.js';
 
 import { createPrisma } from '../lib/db/prisma';
 import { processQueueJob } from '../lib/jobs/consumer';

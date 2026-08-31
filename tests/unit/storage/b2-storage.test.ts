@@ -143,13 +143,13 @@ describe('B2StorageService', () => {
     await svc.upload({ key: 'k', body: new Uint8Array([7, 8]), contentType: 'application/pdf' });
     const stream = await svc.download('k');
     expect(stream).not.toBeNull();
-    const buf = await new Response(stream!).arrayBuffer();
+    const buf = await new Response(stream).arrayBuffer();
     expect(new Uint8Array(buf)).toEqual(new Uint8Array([7, 8]));
   });
 
-  it('returns null when downloading a missing object', async () => {
+  it('throws NOT_FOUND when downloading a missing object', async () => {
     const svc = B2StorageService.fromEnv(env());
-    expect(await svc.download('missing')).toBeNull();
+    await expect(svc.download('missing')).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
   it('returns false from exists for a missing object', async () => {
@@ -173,13 +173,13 @@ describe('B2StorageService', () => {
     });
     const meta = await svc.getMetadata('k');
     expect(meta).not.toBeNull();
-    expect(meta!.sizeBytes).toBe(4);
-    expect(meta!.contentType).toBe('application/pdf');
+    expect(meta.sizeBytes).toBe(4);
+    expect(meta.contentType).toBe('application/pdf');
   });
 
-  it('returns null metadata for a missing object', async () => {
+  it('throws NOT_FOUND when reading metadata for a missing object', async () => {
     const svc = B2StorageService.fromEnv(env());
-    expect(await svc.getMetadata('missing')).toBeNull();
+    await expect(svc.getMetadata('missing')).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
   it('deletes an object and makes it unavailable', async () => {
@@ -187,7 +187,7 @@ describe('B2StorageService', () => {
     await svc.upload({ key: 'k', body: new Uint8Array([1]), contentType: 'application/pdf' });
     await svc.delete('k');
     expect(await svc.exists('k')).toBe(false);
-    expect(await svc.download('k')).toBeNull();
+    await expect(svc.download('k')).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
   it('maps NoSuchKey to NOT_FOUND', () => {

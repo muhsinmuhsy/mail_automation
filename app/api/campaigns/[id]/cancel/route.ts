@@ -3,7 +3,7 @@ import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
-import { NotFoundError, ValidationError } from '@/lib/errors';
+import { AppError, NotFoundError, ValidationError } from '@/lib/errors';
 
 const _POST = defineRoute(async (_req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
@@ -11,14 +11,34 @@ const _POST = defineRoute(async (_req, ctx) => {
     return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
   }
 
-  const result = await getPrisma().campaign.updateMany({
+  const campaign = await getPrisma().campaign.findUnique({
     where: { id: parsed.data.id },
+    select: { id: true, status: true },
+  });
+
+  if (!campaign) {
+    return respondError(new NotFoundError('Campaign not found.'), ctx.requestId);
+  }
+  if (campaign.status === 'CANCELLED' || campaign.status === 'COMPLETED') {
+    return respondError(
+      new AppError('Only draft, active, or paused campaigns can be cancelled.', 409, 'BUSINESS_ERROR'),
+      ctx.requestId
+    );
+  }
+
+  const result = await getPrisma().campaign.updateMany({
+    where: { id: parsed.data.id, status: { in: ['DRAFT', 'ACTIVE', 'PAUSED'] } },
     data: { status: 'CANCELLED' },
   });
 
   if (result.count === 0) {
     return respondError(new NotFoundError('Campaign not found.'), ctx.requestId);
   }
+
+  await getPrisma().emailJob.updateMany({
+    where: { campaign_id: parsed.data.id, status: 'SCHEDULED' },
+    data: { status: 'CANCELLED', error_message: 'Campaign was cancelled.' },
+  });
 
   return respondOk(null, ctx.requestId, 'Campaign cancelled.');
 }, {

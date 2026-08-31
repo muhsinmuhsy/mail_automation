@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { resolveDeliveryUnknown } from '@/lib/limits/email-limit-service';
 import { NotFoundError, AppError } from '@/lib/errors';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 function makeFakePrisma(seed: {
   jobStatus: string;
   reservationStatus: string;

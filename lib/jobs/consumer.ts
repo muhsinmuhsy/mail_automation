@@ -136,9 +136,6 @@ export async function processQueueJob(
     }
     const storage = createStorageService(env);
     const stream = await storage.download(resume.storage_key);
-    if (!stream) {
-      throw new Error('Resume object is unavailable for this email job.');
-    }
     const content = new Uint8Array(await new Response(stream).arrayBuffer());
     const attachment = {
       filename: resume.filename,

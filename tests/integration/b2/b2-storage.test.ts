@@ -44,7 +44,7 @@ describe.skipIf(!runIntegration)('Backblaze B2 storage (real bucket)', () => {
     const svc = createStorageService(env);
     const stream = await svc.download(key);
     expect(stream).not.toBeNull();
-    const buf = await new Response(stream!).arrayBuffer();
+    const buf = await new Response(stream).arrayBuffer();
     expect(new Uint8Array(buf)).toEqual(bytes);
   });
 
@@ -52,15 +52,15 @@ describe.skipIf(!runIntegration)('Backblaze B2 storage (real bucket)', () => {
     const svc = createStorageService(env);
     const meta = await svc.getMetadata(key);
     expect(meta).not.toBeNull();
-    expect(meta!.sizeBytes).toBe(bytes.byteLength);
-    expect(meta!.contentType).toBe('application/pdf');
+    expect(meta.sizeBytes).toBe(bytes.byteLength);
+    expect(meta.contentType).toBe('application/pdf');
   });
 
   it('deletes the object and makes it unavailable', async () => {
     const svc = createStorageService(env);
     await svc.delete(key);
     expect(await svc.exists(key)).toBe(false);
-    expect(await svc.download(key)).toBeNull();
+    await expect(svc.download(key)).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 });
 

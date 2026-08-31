@@ -3,7 +3,7 @@ import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
-import { NotFoundError, ValidationError } from '@/lib/errors';
+import { AppError, NotFoundError, ValidationError } from '@/lib/errors';
 
 const _POST = defineRoute(async (_req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
@@ -11,8 +11,23 @@ const _POST = defineRoute(async (_req, ctx) => {
     return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
   }
 
-  const result = await getPrisma().campaign.updateMany({
+  const campaign = await getPrisma().campaign.findUnique({
     where: { id: parsed.data.id },
+    select: { id: true, status: true },
+  });
+
+  if (!campaign) {
+    return respondError(new NotFoundError('Campaign not found.'), ctx.requestId);
+  }
+  if (campaign.status !== 'PAUSED') {
+    return respondError(
+      new AppError('Only paused campaigns can be resumed.', 409, 'BUSINESS_ERROR'),
+      ctx.requestId
+    );
+  }
+
+  const result = await getPrisma().campaign.updateMany({
+    where: { id: parsed.data.id, status: 'PAUSED' },
     data: { status: 'ACTIVE' },
   });
 

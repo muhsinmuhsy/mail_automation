@@ -19,6 +19,7 @@ const apiRateLimiter = createRateLimiter(
 
 function isUnauthenticatedPath(pathname: string): boolean {
   return (
+    pathname === '/api/health' ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
     pathname.startsWith('/forgot-password') ||

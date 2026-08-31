@@ -9,7 +9,7 @@ import {
 
 describe('integration/worker (scheduler, no real DB)', () => {
   it('scheduleDueJobs marks due jobs QUEUED and returns their ids', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
     prisma.$queryRaw.mockResolvedValue([{ id: 'job-1' }, { id: 'job-2' }]);
 
@@ -19,14 +19,14 @@ describe('integration/worker (scheduler, no real DB)', () => {
   });
 
   it('scheduleDueJobs returns an empty array when nothing is due', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
     prisma.$queryRaw.mockResolvedValue([]);
     expect(await scheduleDueJobs(prisma)).toEqual([]);
   });
 
   it('recoverStuckJobs flips stuck PROCESSING jobs to DELIVERY_UNKNOWN', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
     prisma.emailJob.updateMany.mockResolvedValue({ count: 3 });
 
@@ -40,7 +40,7 @@ describe('integration/worker (scheduler, no real DB)', () => {
   });
 
   it('completeFinishedCampaigns marks ACTIVE campaigns with only terminal jobs COMPLETED', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
     prisma.$queryRaw.mockResolvedValue([{ id: 'c-1' }]);
 
@@ -50,7 +50,7 @@ describe('integration/worker (scheduler, no real DB)', () => {
   });
 
   it('generateCampaignJobs substitutes template variables per contact and persists jobs', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
     prisma.contact.findMany.mockResolvedValue([
       { id: 'contact-1', name: 'Jane Doe', first_name: 'Jane', email: 'jane@example.com', company: 'Acme' },
@@ -97,7 +97,7 @@ describe('integration/worker (scheduler, no real DB)', () => {
   });
 
   it('generateCampaignJobs short-circuits when no contacts match', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
     prisma.contact.findMany.mockResolvedValue([]);
     await generateCampaignJobs(prisma, {
@@ -114,7 +114,7 @@ describe('integration/worker (scheduler, no real DB)', () => {
   });
 
   it('generateCampaignJobs throws when the template is missing', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
     prisma.contact.findMany.mockResolvedValue([{ id: 'c1', email: 'a@b.c' }]);
     prisma.template.findUnique.mockResolvedValue(null);

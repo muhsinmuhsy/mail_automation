@@ -304,7 +304,7 @@ describe('PATCH /api/contacts/[id]', () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe('Contact updated.');
     expect(mockPrisma.contact.updateMany).toHaveBeenCalledWith({
-      where: { id: CONTACT_ID },
+      where: { id: CONTACT_ID, user_id: 'user-1' },
       data: { name: 'Ada L.', company: null },
     });
   });
@@ -393,7 +393,7 @@ describe('DELETE /api/contacts/[id]', () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe('Contact deleted.');
     expect(mockPrisma.contact.deleteMany).toHaveBeenCalledWith({
-      where: { id: CONTACT_ID },
+      where: { id: CONTACT_ID, user_id: 'user-1' },
     });
   });
 

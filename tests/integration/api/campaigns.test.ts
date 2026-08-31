@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
-import { ForbiddenError } from '@/lib/errors';
 import { GET as listCampaigns, POST as createCampaign } from '@/app/api/campaigns/route';
 import { GET as getCampaign } from '@/app/api/campaigns/[id]/route';
 import { POST as pauseCampaign } from '@/app/api/campaigns/[id]/pause/route';
@@ -39,6 +38,9 @@ const mockPrisma = {
     create: vi.fn(),
     updateMany: vi.fn(),
   },
+  emailJob: {
+    updateMany: vi.fn(),
+  },
   user: {
     findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
   },
@@ -62,10 +64,9 @@ mockPrisma.campaign.findUnique = mockPrisma.campaign.findFirst;
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   requireVerifiedSession: mockRequireVerifiedSession,
-  // Unverified users have no secondary (raw) session to fall back to in tests,
-  // so ownership/admin guards must reject them with a 403.
-  getSession: vi.fn().mockImplementation(() => {
-    throw new ForbiddenError('Email verification required.');
+  getSession: vi.fn(async () => {
+    const result = await mockRequireVerifiedSession();
+    return 'session' in result ? result.session : null;
   }),
 }));
 
@@ -166,6 +167,7 @@ beforeEach(() => {
     created_at: new Date('2030-01-01'),
   });
   mockPrisma.campaign.updateMany.mockResolvedValue({ count: 1 });
+  mockPrisma.emailJob.updateMany.mockResolvedValue({ count: 3 });
   mockPrisma.emailAccount.findFirst.mockResolvedValue({ id: EMAIL_ACCOUNT_ID, user_id: 'user-1' });
   mockPrisma.resume.findFirst.mockResolvedValue({ id: RESUME_ID, user_id: 'user-1' });
   mockPrisma.template.findFirst.mockResolvedValue({ id: TEMPLATE_ID, user_id: 'user-1' });
@@ -467,15 +469,22 @@ describe('GET /api/campaigns/[id]', () => {
 });
 
 const transitions = [
-  { label: 'pause', handler: pauseCampaign, status: 'PAUSED', message: 'Campaign paused.' },
-  { label: 'cancel', handler: cancelCampaign, status: 'CANCELLED', message: 'Campaign cancelled.' },
-  { label: 'resume', handler: resumeCampaign, status: 'ACTIVE', message: 'Campaign resumed.' },
+  { label: 'pause', handler: pauseCampaign, from: 'ACTIVE', whereStatus: 'ACTIVE', status: 'PAUSED', message: 'Campaign paused.' },
+  { label: 'cancel', handler: cancelCampaign, from: 'ACTIVE', whereStatus: ['DRAFT', 'ACTIVE', 'PAUSED'], status: 'CANCELLED', message: 'Campaign cancelled.' },
+  { label: 'resume', handler: resumeCampaign, from: 'PAUSED', whereStatus: 'PAUSED', status: 'ACTIVE', message: 'Campaign resumed.' },
 ] as const;
 
-describe.each(transitions)('POST /api/campaigns/[id]/$label', ({ handler, status, message }) => {
+describe.each(transitions)('POST /api/campaigns/[id]/$label', ({ handler, from, whereStatus, status, message, label }) => {
   const url = `http://localhost/api/campaigns/${CAMPAIGN_ID}/action`;
 
   it('updates the campaign status and returns a confirmation message', async () => {
+    mockPrisma.campaign.findFirst.mockResolvedValue({
+      id: CAMPAIGN_ID,
+      user_id: 'user-1',
+      name: 'Spring outreach',
+      status: from,
+    });
+
     const response = await handler(new NextRequest(url, { method: 'POST' }), {
       params: Promise.resolve({ id: CAMPAIGN_ID }),
     });
@@ -486,13 +495,21 @@ describe.each(transitions)('POST /api/campaigns/[id]/$label', ({ handler, status
     expect(body.data).toBeNull();
     expect(body.message).toBe(message);
     expect(mockPrisma.campaign.updateMany).toHaveBeenCalledWith({
-      where: { id: CAMPAIGN_ID },
+      where: Array.isArray(whereStatus)
+        ? { id: CAMPAIGN_ID, status: { in: whereStatus } }
+        : { id: CAMPAIGN_ID, status: whereStatus },
       data: { status },
     });
+    if (label === 'cancel') {
+      expect(mockPrisma.emailJob.updateMany).toHaveBeenCalledWith({
+        where: { campaign_id: CAMPAIGN_ID, status: 'SCHEDULED' },
+        data: { status: 'CANCELLED', error_message: 'Campaign was cancelled.' },
+      });
+    }
   });
 
   it('returns 404 when no owned campaign matched', async () => {
-    mockPrisma.campaign.updateMany.mockResolvedValue({ count: 0 });
+    mockPrisma.campaign.findFirst.mockResolvedValue(null);
 
     const response = await handler(new NextRequest(url, { method: 'POST' }), {
       params: Promise.resolve({ id: CAMPAIGN_ID }),
@@ -501,6 +518,24 @@ describe.each(transitions)('POST /api/campaigns/[id]/$label', ({ handler, status
 
     expect(response.status).toBe(404);
     expect(body.error?.type).toBe('NOT_FOUND');
+  });
+
+  it('returns 409 for an invalid lifecycle transition', async () => {
+    mockPrisma.campaign.findFirst.mockResolvedValue({
+      id: CAMPAIGN_ID,
+      user_id: 'user-1',
+      name: 'Spring outreach',
+      status: label === 'resume' ? 'ACTIVE' : 'COMPLETED',
+    });
+
+    const response = await handler(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: CAMPAIGN_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(409);
+    expect(body.error?.type).toBe('BUSINESS_ERROR');
+    expect(mockPrisma.campaign.updateMany).not.toHaveBeenCalled();
   });
 
   it('returns 400 for a non-uuid id', async () => {
@@ -540,6 +575,12 @@ describe.each(transitions)('POST /api/campaigns/[id]/$label', ({ handler, status
   });
 
   it('returns 500 when the update fails', async () => {
+    mockPrisma.campaign.findFirst.mockResolvedValue({
+      id: CAMPAIGN_ID,
+      user_id: 'user-1',
+      name: 'Spring outreach',
+      status: from,
+    });
     mockPrisma.campaign.updateMany.mockRejectedValue(new Error('db down'));
 
     const response = await handler(new NextRequest(url, { method: 'POST' }), {

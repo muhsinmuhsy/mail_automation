@@ -3,11 +3,14 @@ import type { NextResponse } from 'next/server';
 import { respondError } from '@/lib/api/respond';
 import { requireVerifiedUser } from '@/lib/api/session';
 import { enforceRateLimit } from '@/lib/rate-limit/middleware';
+import { assertSameOriginForCookieMutation } from '@/lib/security/csrf';
 import {
   requireAdmin,
-  requireOwnership,
+  getDbRole,
+  requireUser,
   type SessionUser,
 } from '@/lib/auth/guards';
+import { ForbiddenError } from '@/lib/errors';
 
 export type RouteParams = Record<string, string> | Promise<Record<string, string>>;
 
@@ -51,6 +54,8 @@ export function defineRoute(handler: RouteHandler, options: RouteOptions = {}) {
    return async (req: NextRequest, ctx: { params: RouteParams }) => {
     const requestId = globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}`;
     try {
+      assertSameOriginForCookieMutation(req);
+
       const params =
         ctx.params instanceof Promise ? await ctx.params : ctx.params;
 
@@ -68,9 +73,15 @@ export function defineRoute(handler: RouteHandler, options: RouteOptions = {}) {
           user = (await requireVerifiedUser()) as SessionUser;
         }
       } else {
+        user =
+          options.verified === false
+            ? await requireUser()
+            : ((await requireVerifiedUser()) as SessionUser);
         const ownerId = await auth.ownership(params);
-        const result = await requireOwnership(ownerId);
-        user = result.sessionUser;
+        const role = await getDbRole(user.id);
+        if (role !== 'ADMIN' && user.id !== ownerId) {
+          throw new ForbiddenError('You do not have access to this resource.');
+        }
       }
 
       if (options.rateLimitKey) {

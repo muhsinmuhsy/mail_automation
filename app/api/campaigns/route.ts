@@ -99,6 +99,7 @@ const _POST = defineRoute(async (req, ctx) => {
       timezone: parsed.data.timezone,
       interval_minutes: parsed.data.interval_minutes,
       daily_limit: parsed.data.daily_limit ?? undefined,
+      status: 'ACTIVE',
     },
     select: { id: true, name: true, status: true, created_at: true },
   });

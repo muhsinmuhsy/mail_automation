@@ -22,17 +22,17 @@ vi.mock('@/lib/limits/email-limit-service', () => ({
 
 const MAX_ATTEMPTS = 3;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 let sendEmail: any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 let createStorageService: any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 let reserveEmailCapacity: any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 let commitReservation: any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 let releaseReservation: any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 let decryptSecret: any;
 
 const baseJob = {
@@ -49,9 +49,9 @@ const baseJob = {
   attempt_count: 0,
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function buildPrisma(overrides: Record<string, any> = {}) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const prisma = createMockPrisma() as any;
   prisma.emailJob.findUnique.mockResolvedValue({ ...baseJob, ...(overrides.job || {}) });
   prisma.emailJob.updateMany.mockResolvedValue({ count: 1 });
@@ -80,10 +80,10 @@ function buildPrisma(overrides: Record<string, any> = {}) {
   return prisma;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function getUpdate(prisma: any, status: string) {
   const call = prisma.emailJob.update.mock.calls.find(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     (c: any) => c[0].data?.status === status
   );
   return call ? call[0].data : undefined;
@@ -241,11 +241,11 @@ describe('worker/consumer additional coverage', () => {
     });
   });
 
-  it('outer catch: storage download falsy stream -> RETRY_WAIT', async () => {
+  it('outer catch: storage download failure -> RETRY_WAIT', async () => {
     const prisma = buildPrisma();
     createStorageService.mockReturnValue({
       ...createMockStorageService(),
-      download: vi.fn().mockResolvedValue(null),
+      download: vi.fn().mockRejectedValue(new Error('missing object')),
     });
     await processQueueJob(prisma, createMockEnv(), 'job-1');
     expect(releaseReservation).toHaveBeenCalled();
@@ -259,7 +259,7 @@ describe('worker/consumer additional coverage', () => {
     expect(getUpdate(prisma, 'FAILED')).toMatchObject({ status: 'FAILED' });
     expect(releaseReservation).toHaveBeenCalled();
     const log = prisma.emailLog.create.mock.calls.find(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       (c: any) => c[0].data?.status === 'SMTP_AUTH_FAILED'
     );
     expect(log).toBeDefined();
@@ -338,11 +338,11 @@ describe('worker/consumer additional coverage', () => {
         sendEmail.mockResolvedValue({ success: true });
         await processQueueJob(prisma, createMockEnv(), 'job-1');
         const call = sendEmail.mock.calls.find(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           (c: any) => c[0].attachment?.filename === filename
         );
         expect(call).toBeDefined();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         expect((call as any)[0].attachment.contentType).toBe(contentType);
         expect(commitReservation).toHaveBeenCalled();
       });

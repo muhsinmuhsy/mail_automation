@@ -23,7 +23,7 @@ describe('worker/consumer', () => {
     const { createStorageService } = await import('@/lib/storage/storage.factory');
     vi.mocked(createStorageService).mockReturnValue(createMockStorageService());
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
 
     prisma.emailJob.findUnique.mockResolvedValue({ id: 'job-1', status: 'QUEUED', user_id: 'user-1', campaign_id: null, to_email: 'test@example.com', template_id: 'template-1', email_account_id: 'account-1', resume_id: 'resume-1', attempt_count: 0 });
@@ -88,7 +88,7 @@ describe('worker/consumer', () => {
     const { createStorageService } = await import('@/lib/storage/storage.factory');
     vi.mocked(createStorageService).mockReturnValue(createMockStorageService());
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
     prisma.emailJob.findUnique.mockResolvedValue({ id: 'job-1', status: 'QUEUED', user_id: 'user-1', campaign_id: null, to_email: 'test@example.com', template_id: 'template-1', email_account_id: 'account-1', resume_id: 'resume-1', attempt_count: 0 });
     prisma.emailJob.updateMany.mockResolvedValue({ count: 1 });
@@ -147,7 +147,7 @@ describe('worker/consumer', () => {
     const { createStorageService } = await import('@/lib/storage/storage.factory');
     vi.mocked(createStorageService).mockReturnValue(createMockStorageService());
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
     prisma.emailJob.findUnique.mockResolvedValue({ id: 'job-1', status: 'QUEUED', user_id: 'user-1', campaign_id: null, to_email: 'test@example.com', template_id: 'template-1', email_account_id: 'account-1', resume_id: 'resume-1', attempt_count: 0 });
     prisma.emailJob.updateMany.mockResolvedValue({ count: 1 });

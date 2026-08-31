@@ -23,10 +23,10 @@ export interface StoredObject {
 
 export interface StorageService {
   upload(input: UploadInput): Promise<StoredObject>;
-  download(key: string): Promise<ReadableStream | null>;
+  download(key: string): Promise<ReadableStream>;
   delete(key: string): Promise<void>;
   exists(key: string): Promise<boolean>;
-  getMetadata(key: string): Promise<ObjectMetadata | null>;
+  getMetadata(key: string): Promise<ObjectMetadata>;
 }
 
 export interface StorageEnv {

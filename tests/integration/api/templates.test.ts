@@ -279,7 +279,7 @@ describe('PATCH /api/templates/[id]', () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe('Template updated.');
     expect(mockPrisma.template.updateMany).toHaveBeenCalledWith({
-      where: { id: TEMPLATE_ID },
+      where: { id: TEMPLATE_ID, user_id: 'user-1' },
       data: { name: 'Renamed' },
     });
   });
@@ -370,7 +370,7 @@ describe('DELETE /api/templates/[id]', () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe('Template deleted.');
     expect(mockPrisma.template.deleteMany).toHaveBeenCalledWith({
-      where: { id: TEMPLATE_ID },
+      where: { id: TEMPLATE_ID, user_id: 'user-1' },
     });
   });
 

@@ -23,7 +23,7 @@ describe('integration/worker (consumer, no real DB)', () => {
     const { createStorageService } = await import('@/lib/storage/storage.factory');
     vi.mocked(createStorageService).mockReturnValue(createMockStorageService());
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
     prisma.emailJob.findUnique.mockResolvedValue({
       id: 'job-1', status: 'QUEUED', user_id: 'user-1', campaign_id: null,
@@ -84,7 +84,7 @@ describe('integration/worker (consumer, no real DB)', () => {
 
   it('returns early when the job no longer exists', async () => {
     const { sendEmail } = await import('@/lib/email/service');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const prisma = createMockPrisma() as any;
     prisma.emailJob.findUnique.mockResolvedValue(null);
     await processQueueJob(prisma, createMockEnv(), 'missing');

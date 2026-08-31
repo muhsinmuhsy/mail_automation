@@ -147,10 +147,10 @@ describe('B2StorageService (extended)', () => {
     );
   });
 
-  it('download returns null when the object Body is null', async () => {
+  it('download throws NOT_FOUND when the object Body is null', async () => {
     const svc = B2StorageService.fromEnv(env());
     h.setMode('nullBody');
-    expect(await svc.download('k')).toBeNull();
+    await expect(svc.download('k')).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
   it('download maps a non-NOT_FOUND error to a thrown StorageError', async () => {
@@ -184,16 +184,16 @@ describe('B2StorageService (extended)', () => {
     });
     const meta = await svc.getMetadata('k');
     expect(meta).not.toBeNull();
-    expect(meta!.sizeBytes).toBe(4);
-    expect(meta!.contentType).toBe('application/pdf');
-    expect(meta!.eTag).toBe('"k-etag"');
-    expect(meta!.uploadedAt).toBe('2026-01-01T00:00:00.000Z');
+    expect(meta.sizeBytes).toBe(4);
+    expect(meta.contentType).toBe('application/pdf');
+    expect(meta.eTag).toBe('"k-etag"');
+    expect(meta.uploadedAt).toBe('2026-01-01T00:00:00.000Z');
   });
 
-  it('getMetadata returns null for a missing object', async () => {
+  it('getMetadata throws NOT_FOUND for a missing object', async () => {
     const svc = B2StorageService.fromEnv(env());
     h.setMode('notFound');
-    expect(await svc.getMetadata('missing')).toBeNull();
+    await expect(svc.getMetadata('missing')).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
   it('getMetadata applies default content type / size when absent', async () => {
@@ -202,9 +202,9 @@ describe('B2StorageService (extended)', () => {
     h.store.set('k', { body: new Uint8Array([1]), contentType: 'application/pdf', contentLength: 1, etag: 'e' });
     const meta = await svc.getMetadata('k');
     expect(meta).not.toBeNull();
-    expect(meta!.sizeBytes).toBe(0);
-    expect(meta!.contentType).toBe('application/octet-stream');
-    expect(meta!.uploadedAt).toBeUndefined();
+    expect(meta.sizeBytes).toBe(0);
+    expect(meta.contentType).toBe('application/octet-stream');
+    expect(meta.uploadedAt).toBeUndefined();
   });
 
   it('getMetadata maps a non-NOT_FOUND error to a thrown StorageError', async () => {

@@ -13,7 +13,7 @@ import type {
   UploadInput,
 } from '../storage.types';
 import { createB2Client } from './b2.client';
-import { mapB2Error } from './b2.errors';
+import { mapB2Error, StorageError } from './b2.errors';
 
 async function toUint8Array(body: UploadInput['body']): Promise<Uint8Array> {
   if (body instanceof Uint8Array) {
@@ -84,18 +84,15 @@ export class B2StorageService implements StorageService {
     }
   }
 
-  async download(key: string): Promise<ReadableStream | null> {
+  async download(key: string): Promise<ReadableStream> {
     try {
       const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
       const response = await this.client.send(command);
       if (!response.Body) {
-        return null;
+        throw new StorageError('NOT_FOUND', `Object not found. (download:${key})`);
       }
       return response.Body.transformToWebStream() as ReadableStream;
     } catch (error) {
-      if (mapB2Error(error, `download:${key}`).code === 'NOT_FOUND') {
-        return null;
-      }
       throw mapB2Error(error, `download:${key}`);
     }
   }
@@ -110,11 +107,18 @@ export class B2StorageService implements StorageService {
   }
 
   async exists(key: string): Promise<boolean> {
-    const metadata = await this.getMetadata(key);
-    return metadata !== null;
+    try {
+      await this.getMetadata(key);
+      return true;
+    } catch (error) {
+      if ((error as StorageError).code === 'NOT_FOUND') {
+        return false;
+      }
+      throw error;
+    }
   }
 
-  async getMetadata(key: string): Promise<ObjectMetadata | null> {
+  async getMetadata(key: string): Promise<ObjectMetadata> {
     try {
       const command = new HeadObjectCommand({ Bucket: this.bucket, Key: key });
       const response = await this.client.send(command);
@@ -126,9 +130,6 @@ export class B2StorageService implements StorageService {
         uploadedAt: response.LastModified?.toISOString(),
       };
     } catch (error) {
-      if (mapB2Error(error, `getMetadata:${key}`).code === 'NOT_FOUND') {
-        return null;
-      }
       throw mapB2Error(error, `getMetadata:${key}`);
     }
   }

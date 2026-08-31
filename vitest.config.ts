@@ -5,8 +5,10 @@ export default defineConfig({
   plugins: [
     {
       name: 'mock-open-next-worker',
+      enforce: 'pre',
       resolveId(source) {
-        if (source === './.open-next/worker.js' || source.endsWith('.open-next/worker.js')) {
+        const normalized = source.replaceAll('\\', '/');
+        if (normalized.endsWith('.open-next/worker.js')) {
           return '\0open-next-worker-mock';
         }
         return null;

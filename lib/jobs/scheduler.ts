@@ -105,11 +105,19 @@ export async function scheduleDueJobs(prisma: PrismaClient): Promise<string[]> {
     UPDATE email_jobs
     SET status = 'QUEUED', updated_at = now()
     WHERE id IN (
-      SELECT id FROM email_jobs
+      SELECT email_jobs.id
+      FROM email_jobs
+      LEFT JOIN campaigns ON campaigns.id = email_jobs.campaign_id
       WHERE
-        (status = 'SCHEDULED' AND scheduled_at <= now())
-        OR (status = 'RETRY_WAIT' AND next_attempt_at <= now())
-      ORDER BY COALESCE(next_attempt_at, scheduled_at)
+        (
+          (email_jobs.status = 'SCHEDULED' AND email_jobs.scheduled_at <= now())
+          OR (email_jobs.status = 'RETRY_WAIT' AND email_jobs.next_attempt_at <= now())
+        )
+        AND (
+          email_jobs.campaign_id IS NULL
+          OR campaigns.status = 'ACTIVE'
+        )
+      ORDER BY COALESCE(email_jobs.next_attempt_at, email_jobs.scheduled_at)
       LIMIT 100
     )
     AND status IN ('SCHEDULED', 'RETRY_WAIT')
