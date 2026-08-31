@@ -55,12 +55,12 @@ describe('DashboardSidebar', () => {
 
   it.each([
     ['Dashboard', '/dashboard'],
-    ['Email Accounts', '/dashboard/email-accounts'],
-    ['Resumes', '/dashboard/resumes'],
-    ['Contacts', '/dashboard/contacts'],
-    ['Templates', '/dashboard/templates'],
-    ['Campaigns', '/dashboard/campaigns'],
-    ['Emails', '/dashboard/emails'],
+    ['Email Accounts', '/email-accounts'],
+    ['Resumes', '/resumes'],
+    ['Contacts', '/contacts'],
+    ['Templates', '/templates'],
+    ['Campaigns', '/campaigns'],
+    ['Emails', '/emails'],
   ])('links %s to %s', (label, href) => {
     render(<DashboardSidebar />);
     expect(linkFor(label)).toHaveAttribute('href', href);
@@ -74,14 +74,14 @@ describe('DashboardSidebar', () => {
   });
 
   it('marks the item matching the pathname exactly as active', () => {
-    pathnameRef.current = '/dashboard/contacts';
+    pathnameRef.current = '/contacts';
     render(<DashboardSidebar />);
     expect(linkFor('Contacts')).toHaveClass(ACTIVE_CLASS);
     expect(linkFor('Resumes')).toHaveClass(INACTIVE_CLASS);
   });
 
   it('marks an item active when the pathname is a nested child route', () => {
-    pathnameRef.current = '/dashboard/campaigns/abc-123/edit';
+    pathnameRef.current = '/campaigns/abc-123/edit';
     render(<DashboardSidebar />);
     expect(linkFor('Campaigns')).toHaveClass(ACTIVE_CLASS);
   });
@@ -95,11 +95,11 @@ describe('DashboardSidebar', () => {
     }
   });
 
-  it('treats every nested dashboard route as active for Dashboard as well (prefix match)', () => {
+  it('marks Dashboard active for any nested dashboard route via prefix match', () => {
     pathnameRef.current = '/dashboard/resumes';
     render(<DashboardSidebar />);
     expect(linkFor('Dashboard')).toHaveClass(ACTIVE_CLASS);
-    expect(linkFor('Resumes')).toHaveClass(ACTIVE_CLASS);
+    expect(linkFor('Resumes')).toHaveClass(INACTIVE_CLASS);
   });
 
   it('marks nothing active for an unrelated pathname', () => {

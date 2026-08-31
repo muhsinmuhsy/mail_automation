@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { requireUser, requireAdmin, requireOwnership, getDbRole } from '@/lib/auth/guards';
+import { requireUser, requireAdmin, requireOwnership, getDbRole, canAccess } from '@/lib/auth/guards';
 import { AuthenticationError, ForbiddenError, NotFoundError } from '@/lib/errors';
 
 const mockPrisma = {
@@ -70,5 +70,28 @@ describe('lib/auth/guards', () => {
   it('getDbRole throws for inactive users', async () => {
     mockPrisma.user.findUnique.mockResolvedValue({ role: 'USER', is_active: false });
     await expect(getDbRole('u1')).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it('canAccess returns true for the resource owner', async () => {
+    vi.mocked(getSession).mockResolvedValue({ user: { id: 'u1', email: 'a@b.com' } } as never);
+    mockPrisma.user.findUnique.mockResolvedValue({ role: 'USER', is_active: true });
+    expect(await canAccess('u1')).toBe(true);
+  });
+
+  it('canAccess returns true for an admin acting on any resource', async () => {
+    vi.mocked(getSession).mockResolvedValue({ user: { id: 'u1', email: 'a@b.com' } } as never);
+    mockPrisma.user.findUnique.mockResolvedValue({ role: 'ADMIN', is_active: true });
+    expect(await canAccess('other')).toBe(true);
+  });
+
+  it('canAccess returns false for another non-admin user', async () => {
+    vi.mocked(getSession).mockResolvedValue({ user: { id: 'u2', email: 'c@d.com' } } as never);
+    mockPrisma.user.findUnique.mockResolvedValue({ role: 'USER', is_active: true });
+    expect(await canAccess('u1')).toBe(false);
+  });
+
+  it('canAccess returns false when unauthenticated', async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    expect(await canAccess('u1')).toBe(false);
   });
 });

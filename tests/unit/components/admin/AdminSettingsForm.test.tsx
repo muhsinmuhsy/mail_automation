@@ -9,9 +9,19 @@ describe('AdminSettingsForm', () => {
     expect(screen.getByLabelText('Global daily email limit')).toBeInTheDocument();
   });
 
-  it('defaults the daily limit to 500', () => {
-    render(<AdminSettingsForm />);
-    expect(screen.getByLabelText('Global daily email limit')).toHaveValue('500');
+  it('initializes both limit inputs and the sending toggle from the provided settings', () => {
+    render(
+      <AdminSettingsForm
+        settings={{
+          default_daily_email_limit: 250,
+          global_daily_email_limit: 500,
+          email_sending_enabled: true,
+        }}
+      />
+    );
+    expect(screen.getByLabelText('Default daily email limit')).toHaveValue(250);
+    expect(screen.getByLabelText('Global daily email limit')).toHaveValue(500);
+    expect(screen.getByLabelText('Enable email sending')).toBeChecked();
   });
 
   it('renders a submit button', () => {
@@ -34,7 +44,7 @@ describe('AdminSettingsForm', () => {
     const input = screen.getByLabelText('Global daily email limit');
     await user.clear(input);
     await user.type(input, '1200');
-    expect(input).toHaveValue('1200');
+    expect(input).toHaveValue(1200);
   });
 
   it('supports clearing the field entirely', async () => {
@@ -42,14 +52,14 @@ describe('AdminSettingsForm', () => {
     render(<AdminSettingsForm />);
     const input = screen.getByLabelText('Global daily email limit');
     await user.clear(input);
-    expect(input).toHaveValue('');
+    expect((input as HTMLInputElement).value).toBe('');
   });
 
   it('updates on a direct change event', () => {
     render(<AdminSettingsForm />);
     const input = screen.getByLabelText('Global daily email limit');
     fireEvent.change(input, { target: { value: '42' } });
-    expect(input).toHaveValue('42');
+    expect(input).toHaveValue(42);
   });
 
   it('prevents the default form submission', () => {
@@ -66,7 +76,7 @@ describe('AdminSettingsForm', () => {
     await user.clear(input);
     await user.type(input, '999');
     await user.click(screen.getByRole('button', { name: 'Save settings' }));
-    expect(input).toHaveValue('999');
+    expect(input).toHaveValue(999);
     expect(container.querySelector('form')).toBeInTheDocument();
   });
 

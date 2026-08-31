@@ -47,13 +47,13 @@ describe('DashboardLayout', () => {
     expect(screen.getByRole('button', { name: 'Account ▾' })).toBeInTheDocument();
   });
 
-  it('marks the sidebar item matching the mocked pathname as active', () => {
+  it('marks the Dashboard item active for a nested dashboard route via prefix match', () => {
     render(
       <DashboardLayout>
         <span>x</span>
       </DashboardLayout>
     );
-    expect(screen.getByRole('link', { name: /Contacts$/ })).toHaveClass('bg-selected');
+    expect(screen.getByRole('link', { name: /Dashboard$/ })).toHaveClass('bg-selected');
   });
 
   it('applies a full-height flex shell', () => {

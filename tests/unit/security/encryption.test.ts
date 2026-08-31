@@ -38,4 +38,12 @@ describe('lib/security/encryption', () => {
     const decrypted = await decryptSecret(encrypted, key);
     expect(decrypted).toBe(plaintext);
   });
+
+  it('should throw when the ciphertext is too short', async () => {
+    await expect(decryptSecret('abcd', key)).rejects.toThrow(/too short/i);
+  });
+
+  it('should throw for an invalid key length', async () => {
+    await expect(encryptSecret('secret', 'not-a-valid-key')).rejects.toThrow(/64 hex/i);
+  });
 });

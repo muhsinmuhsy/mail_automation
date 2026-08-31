@@ -34,10 +34,27 @@ describe('AdminDashboard', () => {
     );
   });
 
-  it('renders exactly one heading and one paragraph', () => {
-    const { container } = render(<AdminDashboard />);
-    expect(container.querySelectorAll('h1')).toHaveLength(1);
-    expect(container.querySelectorAll('p')).toHaveLength(1);
+  it('renders the page title heading once and real stat sections when data is provided', () => {
+    const stats = {
+      totalUsers: 12,
+      activeCampaigns: 3,
+      emailsSent: 50,
+      emailsQueued: 4,
+      emailsFailed: 1,
+      emailsDeliveryUnknown: 0,
+      settings: {
+        default_daily_email_limit: 100,
+        global_daily_email_limit: 500,
+        email_sending_enabled: true,
+      },
+      recentActivity: [],
+    };
+    render(<AdminDashboard stats={stats} />);
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByText('Users')).toBeInTheDocument();
+    expect(screen.getByText('Active campaigns')).toBeInTheDocument();
+    expect(screen.getByText('Emails queued')).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
   });
 
   it('renders no interactive controls', () => {

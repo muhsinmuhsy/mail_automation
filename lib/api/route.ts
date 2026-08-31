@@ -15,6 +15,8 @@ export type RouteContext = {
   user: SessionUser;
   params: Record<string, string>;
   req: NextRequest;
+  /** Stable correlation id attached to every response and log line. */
+  requestId: string;
 };
 
 export type RouteAuth =
@@ -46,7 +48,8 @@ export type RouteHandler = (
  * and the authenticated user.
  */
 export function defineRoute(handler: RouteHandler, options: RouteOptions = {}) {
-  return async (req: NextRequest, ctx: { params: RouteParams }) => {
+   return async (req: NextRequest, ctx: { params: RouteParams }) => {
+    const requestId = globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}`;
     try {
       const params =
         ctx.params instanceof Promise ? await ctx.params : ctx.params;
@@ -74,9 +77,9 @@ export function defineRoute(handler: RouteHandler, options: RouteOptions = {}) {
         await enforceRateLimit(user.id, options.rateLimitKey);
       }
 
-      return await handler(req, { user, params, req });
+      return await handler(req, { user, params, req, requestId });
     } catch (err) {
-      return respondError(err);
+      return respondError(err, requestId);
     }
   };
 }

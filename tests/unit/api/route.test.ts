@@ -119,7 +119,7 @@ describe('lib/api/route', () => {
     });
     const route = defineRoute(handler);
     const res = await route(makeReq(), { params: {} });
-    expect(mockRespondError).toHaveBeenCalledWith(boom);
+    expect(mockRespondError).toHaveBeenCalledWith(boom, expect.any(String));
     expect(res.status).toBe(500);
   });
 
@@ -129,7 +129,7 @@ describe('lib/api/route', () => {
     const handler = vi.fn((_req: NextRequest, _ctx: Ctx) => new NextResponse('ok'));
     const route = defineRoute(handler);
     await route(makeReq(), { params: {} });
-    expect(mockRespondError).toHaveBeenCalledWith(authErr);
+    expect(mockRespondError).toHaveBeenCalledWith(authErr, expect.any(String));
     expect(handler).not.toHaveBeenCalled();
   });
 });

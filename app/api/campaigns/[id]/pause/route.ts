@@ -1,37 +1,41 @@
 import { NextRequest } from 'next/server';
 import { getPrisma } from '@/lib/db';
-import { requireVerifiedUser } from '@/lib/api/session';
+import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
-import { checkApiRateLimit } from '@/lib/rate-limit/api';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  void request;
-  const requestId = crypto.randomUUID();
-  try {
-    const user = await requireVerifiedUser();
-
-    const rateLimitResult = await checkApiRateLimit(request, user.id, 'campaign-pause');
-    if (rateLimitResult) return rateLimitResult;
-
-    const { id } = await params;
-    const parsed = idParamSchema.safeParse({ id });
-    if (!parsed.success) {
-      return respondError(new ValidationError('Invalid ID.'), requestId);
-    }
-
-    const result = await getPrisma().campaign.updateMany({
-      where: { id: parsed.data.id, user_id: user.id },
-      data: { status: 'PAUSED' },
-    });
-
-    if (result.count === 0) {
-      return respondError(new NotFoundError('Campaign not found.'), requestId);
-    }
-
-    return respondOk(null, requestId, 'Campaign paused.');
-  } catch (err) {
-    return respondError(err, requestId);
+const _POST = defineRoute(async (_req, ctx) => {
+  const parsed = idParamSchema.safeParse({ id: ctx.params.id });
+  if (!parsed.success) {
+    return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
   }
+
+  const result = await getPrisma().campaign.updateMany({
+    where: { id: parsed.data.id },
+    data: { status: 'PAUSED' },
+  });
+
+  if (result.count === 0) {
+    return respondError(new NotFoundError('Campaign not found.'), ctx.requestId);
+  }
+
+  return respondOk(null, ctx.requestId, 'Campaign paused.');
+}, {
+  auth: {
+    ownership: async (params) => {
+      const c = await getPrisma().campaign.findUnique({
+        where: { id: params.id },
+        select: { user_id: true },
+      });
+      if (!c) throw new NotFoundError('Campaign not found.');
+      return c.user_id;
+    },
+  },
+  rateLimitKey: 'campaign-pause',
+});
+
+
+export async function POST(req: NextRequest, ctx: { params: RouteParams } = { params: {} as RouteParams }) {
+  return _POST(req, ctx);
 }
