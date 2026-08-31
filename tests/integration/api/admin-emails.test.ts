@@ -27,6 +27,10 @@ vi.mock('@/lib/auth/guards', () => ({
   requireAdmin: mockRequireAdmin,
 }));
 
+vi.mock('@/lib/auth/neon-auth', () => ({
+  requireVerifiedSession: vi.fn(),
+}));
+
 vi.mock('@/lib/rate-limit/api', () => ({
   checkApiRateLimit: vi.fn().mockResolvedValue(null),
 }));

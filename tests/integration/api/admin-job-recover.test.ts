@@ -15,6 +15,9 @@ const mockPrisma = {
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   getSession: vi.fn().mockResolvedValue({ user: { id: 'admin', email: 'a@b.com', emailVerified: true } }),
+  requireVerifiedSession: vi.fn().mockResolvedValue({
+    session: { user: { id: 'admin', email: 'a@b.com', emailVerified: true } },
+  }),
 }));
 
 vi.mock('@/lib/db', () => ({

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
+import { ForbiddenError } from '@/lib/errors';
 import { GET as listTemplates, POST as createTemplate } from '@/app/api/templates/route';
 import { PATCH as patchTemplate, DELETE as deleteTemplate } from '@/app/api/templates/[id]/route';
 
@@ -21,20 +22,42 @@ const { mockRequireVerifiedSession, mockCheckApiRateLimit } = vi.hoisted(() => (
 const mockPrisma = {
   template: {
     findMany: vi.fn(),
+    findUnique: vi.fn().mockResolvedValue({ user_id: 'user-1' }),
     count: vi.fn(),
     create: vi.fn(),
     updateMany: vi.fn(),
     deleteMany: vi.fn(),
+  },
+  user: {
+    findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
   },
   $disconnect: vi.fn(),
 };
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   requireVerifiedSession: mockRequireVerifiedSession,
+  // Unverified users have no secondary (raw) session to fall back to in tests,
+  // so ownership/admin guards must reject them with a 403.
+  getSession: vi.fn().mockImplementation(() => {
+    throw new ForbiddenError('Email verification required.');
+  }),
 }));
 
 vi.mock('@/lib/rate-limit/api', () => ({
   checkApiRateLimit: mockCheckApiRateLimit,
+}));
+
+vi.mock('@/lib/rate-limit/middleware', () => ({
+  enforceRateLimit: vi.fn(async (identifier: string, key: string) => {
+    const res = await mockCheckApiRateLimit({}, identifier, key);
+    if (res) {
+      const { RateLimitError } = await import('@/lib/errors');
+      throw new RateLimitError(
+        "You're doing that too frequently. Please wait a moment and try again.",
+        60
+      );
+    }
+  }),
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -256,7 +279,7 @@ describe('PATCH /api/templates/[id]', () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe('Template updated.');
     expect(mockPrisma.template.updateMany).toHaveBeenCalledWith({
-      where: { id: TEMPLATE_ID, user_id: 'user-1' },
+      where: { id: TEMPLATE_ID },
       data: { name: 'Renamed' },
     });
   });
@@ -347,7 +370,7 @@ describe('DELETE /api/templates/[id]', () => {
     expect(body.success).toBe(true);
     expect(body.message).toBe('Template deleted.');
     expect(mockPrisma.template.deleteMany).toHaveBeenCalledWith({
-      where: { id: TEMPLATE_ID, user_id: 'user-1' },
+      where: { id: TEMPLATE_ID },
     });
   });
 

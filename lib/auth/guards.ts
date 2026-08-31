@@ -1,4 +1,4 @@
-import { auth, getSession } from './neon-auth';
+import { auth, getSession, requireVerifiedSession } from './neon-auth';
 import { getPrisma } from '@/lib/db';
 import { AuthenticationError, ForbiddenError, NotFoundError } from '@/lib/errors';
 
@@ -21,16 +21,31 @@ export type AuthContext = {
  * Throws an operational AuthenticationError when unauthenticated.
  */
 export async function requireUser(): Promise<SessionUser> {
-  const session = await getSession();
-  if (!session?.user?.id) {
-    throw new AuthenticationError('Please log in to continue.');
+  // Resolve the session user through `requireVerifiedSession` first. This keeps
+  // a single Neon Auth entry point and works even in environments where the
+  // raw `getSession()` (which reads the request cookie context) is unavailable.
+  const result = await requireVerifiedSession();
+  if ('error' in result && result.error) {
+    const err = result.error;
+    if (err.type === 'AUTHENTICATION_ERROR') {
+      throw new AuthenticationError(err.message);
+    }
+    // Unverified but authenticated: fall back to the raw session so routes that
+    // explicitly allow unverified users (defineRoute `verified: false`) can
+    // still resolve the identity.
+    const session = await getSession();
+    if (!session?.user?.id) {
+      throw new AuthenticationError('Please log in to continue.');
+    }
+    return {
+      id: session.user.id,
+      email: session.user.email,
+      name: session.user.name,
+      emailVerified: session.user.emailVerified,
+    };
   }
-  return {
-    id: session.user.id,
-    email: session.user.email,
-    name: session.user.name,
-    emailVerified: session.user.emailVerified,
-  };
+  const u = result.session.user;
+  return { id: u.id, email: u.email, name: u.name, emailVerified: u.emailVerified };
 }
 
 /**

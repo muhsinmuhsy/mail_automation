@@ -10,14 +10,19 @@ interface ApiResponse {
 
 const mockPrismaDelete = {
   emailAccount: {
+    findUnique: vi.fn(),
     findFirst: vi.fn(),
     update: vi.fn(),
   },
   emailJob: {
     count: vi.fn(),
   },
+  user: {
+    findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
+  },
   $disconnect: vi.fn(),
 };
+mockPrismaDelete.emailAccount.findUnique = mockPrismaDelete.emailAccount.findFirst;
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   requireVerifiedSession: vi.fn().mockResolvedValue({
@@ -38,6 +43,10 @@ describe('email-accounts/[id] DELETE', () => {
     mockPrismaDelete.emailAccount.findFirst.mockClear();
     mockPrismaDelete.emailJob.count.mockClear();
     mockPrismaDelete.emailAccount.update.mockClear();
+    mockPrismaDelete.emailAccount.findFirst.mockResolvedValue({
+      id: '07314147-25ec-4cf2-ae63-388e40add7b8',
+      user_id: 'user-1',
+    });
   });
 
   it('should deactivate email account when no pending jobs', async () => {
@@ -52,7 +61,7 @@ describe('email-accounts/[id] DELETE', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(mockPrismaDelete.emailAccount.update).toHaveBeenCalledWith({
-      where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1' },
+      where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8' },
       data: { is_active: false },
     });
   });

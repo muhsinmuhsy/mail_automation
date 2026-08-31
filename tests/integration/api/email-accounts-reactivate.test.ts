@@ -10,11 +10,16 @@ interface ApiResponse {
 
 const mockPrismaReactivate = {
   emailAccount: {
+    findUnique: vi.fn(),
     findFirst: vi.fn(),
     update: vi.fn(),
   },
+  user: {
+    findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
+  },
   $disconnect: vi.fn(),
 };
+mockPrismaReactivate.emailAccount.findUnique = mockPrismaReactivate.emailAccount.findFirst;
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   requireVerifiedSession: vi.fn().mockResolvedValue({
@@ -34,6 +39,11 @@ describe('email-accounts/[id]/reactivate POST', () => {
   beforeEach(() => {
     mockPrismaReactivate.emailAccount.findFirst.mockClear();
     mockPrismaReactivate.emailAccount.update.mockClear();
+    mockPrismaReactivate.emailAccount.findFirst.mockResolvedValue({
+      id: '07314147-25ec-4cf2-ae63-388e40add7b8',
+      user_id: 'user-1',
+      is_active: false,
+    });
   });
 
   it('should reactivate the email account', async () => {
@@ -49,7 +59,7 @@ describe('email-accounts/[id]/reactivate POST', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(mockPrismaReactivate.emailAccount.update).toHaveBeenCalledWith({
-      where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1' },
+      where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8' },
       data: { is_active: true },
     });
   });

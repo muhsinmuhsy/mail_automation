@@ -1,5 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
+import { ForbiddenError } from '@/lib/errors';
+import { DELETE } from '@/app/api/resumes/[id]/route';
 
 interface AuthErrorResponse {
   error: { type: string; message: string };
@@ -16,14 +18,25 @@ interface ApiFailureResponse {
 const mockPrismaResume = {
   resume: {
     findFirst: vi.fn(),
+    findUnique: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+  },
+  user: {
+    findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
   },
   emailJob: {
     count: vi.fn(),
   },
   $disconnect: vi.fn(),
 };
+// The route resolves ownership and loads the resume via `resume.findUnique`,
+// but this suite was written against `resume.findFirst`; alias them so both resolve identically.
+mockPrismaResume.resume.findUnique = mockPrismaResume.resume.findFirst;
+
+const { mockRequireVerifiedSession } = vi.hoisted(() => ({
+  mockRequireVerifiedSession: vi.fn(),
+}));
 
 vi.mock('@/lib/rate-limit/api', () => ({
   checkApiRateLimit: vi.fn().mockResolvedValue(null),
@@ -38,6 +51,10 @@ vi.mock('@/lib/storage/storage.factory', () => ({
   createStorageService: vi.fn(() => ({ delete: storageDelete })),
 }));
 
+vi.mock('@/lib/auth/neon-auth', () => ({
+  requireVerifiedSession: mockRequireVerifiedSession,
+}));
+
 describe('api/resumes/[id] DELETE auth guards', () => {
   beforeEach(() => {
     mockPrismaResume.resume.findFirst.mockClear();
@@ -45,23 +62,23 @@ describe('api/resumes/[id] DELETE auth guards', () => {
     mockPrismaResume.resume.update.mockClear();
     mockPrismaResume.resume.delete.mockClear();
     storageDelete.mockClear();
+    mockRequireVerifiedSession.mockReset();
+    mockPrismaResume.resume.findFirst.mockResolvedValue({
+      id: '07314147-25ec-4cf2-ae63-388e40add7b8',
+      user_id: 'user-1',
+      deleted_at: null,
+    });
   });
 
-  async function loadRoute(requireVerifiedSessionResult: unknown) {
-    vi.resetModules();
-    vi.doMock('@/lib/auth/neon-auth', () => ({
-      requireVerifiedSession: vi.fn().mockResolvedValue(requireVerifiedSessionResult),
-    }));
-
-    const routeModule = await import('@/app/api/resumes/[id]/route');
-    return routeModule.DELETE;
-  }
-
   it('returns 401 when not authenticated', async () => {
-    const DELETE = await loadRoute({ error: { type: 'AUTHENTICATION_ERROR', message: 'Please log in to continue.' } });
+    mockRequireVerifiedSession.mockResolvedValue({
+      error: { type: 'AUTHENTICATION_ERROR', message: 'Please log in to continue.' },
+    });
 
     const request = new NextRequest('http://localhost/api/resumes/07314147-25ec-4cf2-ae63-388e40add7b8');
-    const response = await DELETE(request, { params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }) });
+    const response = await DELETE(request, {
+      params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }),
+    });
     const body = (await response.json()) as AuthErrorResponse;
 
     expect(response.status).toBe(401);
@@ -69,10 +86,14 @@ describe('api/resumes/[id] DELETE auth guards', () => {
   });
 
   it('returns 403 when email not verified', async () => {
-    const DELETE = await loadRoute({ error: { type: 'AUTHORIZATION_ERROR', message: 'Please verify your email address to continue.' } });
+    mockRequireVerifiedSession.mockRejectedValue(
+      new ForbiddenError('Please verify your email address to continue.')
+    );
 
     const request = new NextRequest('http://localhost/api/resumes/07314147-25ec-4cf2-ae63-388e40add7b8');
-    const response = await DELETE(request, { params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }) });
+    const response = await DELETE(request, {
+      params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }),
+    });
     const body = (await response.json()) as AuthErrorResponse;
 
     expect(response.status).toBe(403);
@@ -80,12 +101,13 @@ describe('api/resumes/[id] DELETE auth guards', () => {
   });
 
   it('returns 404 when resume belongs to another user', async () => {
-    const DELETE = await loadRoute({ session: { user: { id: 'user-1' } } });
-
+    mockRequireVerifiedSession.mockResolvedValue({ session: { user: { id: 'user-1' } } });
     mockPrismaResume.resume.findFirst.mockResolvedValue(null);
 
     const request = new NextRequest('http://localhost/api/resumes/07314147-25ec-4cf2-ae63-388e40add7b8');
-    const response = await DELETE(request, { params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }) });
+    const response = await DELETE(request, {
+      params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }),
+    });
     const body = (await response.json()) as ApiFailureResponse;
 
     expect(response.status).toBe(404);
@@ -94,19 +116,28 @@ describe('api/resumes/[id] DELETE auth guards', () => {
   });
 
   it('deletes resume when owned by current user', async () => {
-    const DELETE = await loadRoute({ session: { user: { id: 'user-1' } } });
-
-    mockPrismaResume.resume.findFirst.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1', filename: 'test.pdf', storage_key: 'key', deleted_at: null });
+    mockRequireVerifiedSession.mockResolvedValue({ session: { user: { id: 'user-1' } } });
+    mockPrismaResume.resume.findFirst.mockResolvedValue({
+      id: '07314147-25ec-4cf2-ae63-388e40add7b8',
+      user_id: 'user-1',
+      filename: 'test.pdf',
+      storage_key: 'key',
+      deleted_at: null,
+    });
     mockPrismaResume.emailJob.count.mockResolvedValue(0);
     mockPrismaResume.resume.delete.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' });
 
     const request = new NextRequest('http://localhost/api/resumes/07314147-25ec-4cf2-ae63-388e40add7b8');
-    const response = await DELETE(request, { params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }) });
+    const response = await DELETE(request, {
+      params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }),
+    });
     const body = (await response.json()) as { success: boolean };
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(storageDelete).toHaveBeenCalledWith('key');
-    expect(mockPrismaResume.resume.delete).toHaveBeenCalledWith({ where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8' } });
+    expect(mockPrismaResume.resume.delete).toHaveBeenCalledWith({
+      where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8' },
+    });
   });
 });

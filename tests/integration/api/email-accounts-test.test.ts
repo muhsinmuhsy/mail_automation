@@ -12,6 +12,9 @@ const mockPrismaTest = {
   emailAccount: {
     findUnique: vi.fn(),
   },
+  user: {
+    findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
+  },
   $disconnect: vi.fn(),
 };
 

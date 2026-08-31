@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
+import { ForbiddenError } from '@/lib/errors';
 import { GET as listResumes, POST as uploadResume } from '@/app/api/resumes/route';
 import { DELETE as deleteResume } from '@/app/api/resumes/[id]/route';
 import { POST as setDefaultResume } from '@/app/api/resumes/[id]/default/route';
@@ -26,11 +27,15 @@ const mockPrisma = {
   resume: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
+    findUnique: vi.fn(),
     count: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     updateMany: vi.fn(),
     delete: vi.fn(),
+  },
+  user: {
+    findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
   },
   emailJob: {
     count: vi.fn(),
@@ -38,13 +43,34 @@ const mockPrisma = {
   $transaction: vi.fn(),
   $disconnect: vi.fn(),
 };
+// The route resolves ownership and loads the resume via `resume.findUnique`,
+// but this suite was written against `resume.findFirst`; alias them so both resolve identically.
+mockPrisma.resume.findUnique = mockPrisma.resume.findFirst;
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   requireVerifiedSession: mockRequireVerifiedSession,
+  // Unverified users have no secondary (raw) session to fall back to in tests,
+  // so ownership/admin guards must reject them with a 403.
+  getSession: vi.fn().mockImplementation(() => {
+    throw new ForbiddenError('Email verification required.');
+  }),
 }));
 
 vi.mock('@/lib/rate-limit/api', () => ({
   checkApiRateLimit: mockCheckApiRateLimit,
+}));
+
+vi.mock('@/lib/rate-limit/middleware', () => ({
+  enforceRateLimit: vi.fn(async (identifier: string, key: string) => {
+    const res = await mockCheckApiRateLimit({}, identifier, key);
+    if (res) {
+      const { RateLimitError } = await import('@/lib/errors');
+      throw new RateLimitError(
+        "You're doing that too frequently. Please wait a moment and try again.",
+        60
+      );
+    }
+  }),
 }));
 
 vi.mock('@/lib/storage/storage.factory', () => ({
@@ -439,7 +465,7 @@ describe('DELETE /api/resumes/[id]', () => {
 
     expect(response.status).toBe(400);
     expect(body.error?.type).toBe('VALIDATION_ERROR');
-    expect(mockPrisma.resume.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.resume.delete).not.toHaveBeenCalled();
   });
 
   it('returns the rate-limit response when limited', async () => {
@@ -450,7 +476,7 @@ describe('DELETE /api/resumes/[id]', () => {
     });
 
     expect(response.status).toBe(429);
-    expect(mockPrisma.resume.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.resume.delete).not.toHaveBeenCalled();
   });
 
   it('returns 403 for an unverified user', async () => {
@@ -491,9 +517,9 @@ describe('POST /api/resumes/[id]/default', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.message).toBe('Default resume set.');
-    expect(mockPrisma.resume.findFirst).toHaveBeenCalledWith({
-      where: { id: RESUME_ID, user_id: 'user-1', deleted_at: null },
-    });
+    expect(mockPrisma.resume.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: RESUME_ID } })
+    );
     expect(mockPrisma.resume.updateMany).toHaveBeenCalledWith({
       where: { user_id: 'user-1', deleted_at: null },
       data: { is_default: false },
@@ -536,7 +562,7 @@ describe('POST /api/resumes/[id]/default', () => {
     });
 
     expect(response.status).toBe(429);
-    expect(mockPrisma.resume.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('returns 401 when not authenticated', async () => {

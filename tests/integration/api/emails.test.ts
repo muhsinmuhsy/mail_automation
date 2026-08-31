@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
+import { ForbiddenError } from '@/lib/errors';
 import { GET as listEmails } from '@/app/api/emails/route';
 import { GET as getEmail } from '@/app/api/emails/[id]/route';
 
@@ -21,13 +22,25 @@ const mockPrisma = {
   emailJob: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
+    findUnique: vi.fn(),
     count: vi.fn(),
+  },
+  user: {
+    findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
   },
   $disconnect: vi.fn(),
 };
+// The route resolves ownership and loads the job via `emailJob.findUnique`,
+// but this suite was written against `findFirst`; alias them so both resolve identically.
+mockPrisma.emailJob.findUnique = mockPrisma.emailJob.findFirst;
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   requireVerifiedSession: mockRequireVerifiedSession,
+  // Unverified users have no secondary (raw) session to fall back to in tests,
+  // so ownership/admin guards must reject them with a 403.
+  getSession: vi.fn().mockImplementation(() => {
+    throw new ForbiddenError('Email verification required.');
+  }),
 }));
 
 vi.mock('@/lib/rate-limit/api', () => ({
@@ -69,7 +82,12 @@ beforeEach(() => {
     },
   ]);
   mockPrisma.emailJob.count.mockResolvedValue(1);
-  mockPrisma.emailJob.findFirst.mockResolvedValue(null);
+  mockPrisma.emailJob.findFirst.mockResolvedValue({
+    id: EMAIL_ID,
+    user_id: 'user-1',
+    to_email: 'lead@example.com',
+    email_logs: [],
+  });
 });
 
 describe('GET /api/emails', () => {
@@ -184,6 +202,7 @@ describe('GET /api/emails/[id]', () => {
   it('returns the email job with its logs', async () => {
     mockPrisma.emailJob.findFirst.mockResolvedValue({
       id: EMAIL_ID,
+      user_id: 'user-1',
       to_email: 'lead@example.com',
       email_logs: [{ id: 'log-1', event: 'SENT' }],
     });
@@ -196,8 +215,8 @@ describe('GET /api/emails/[id]', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data).toMatchObject({ id: EMAIL_ID });
-    expect(mockPrisma.emailJob.findFirst).toHaveBeenCalledWith({
-      where: { id: EMAIL_ID, user_id: 'user-1' },
+    expect(mockPrisma.emailJob.findUnique).toHaveBeenCalledWith({
+      where: { id: EMAIL_ID },
       include: { email_logs: true },
     });
   });
@@ -223,7 +242,9 @@ describe('GET /api/emails/[id]', () => {
 
     expect(response.status).toBe(400);
     expect(body.error?.type).toBe('VALIDATION_ERROR');
-    expect(mockPrisma.emailJob.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.emailJob.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: '12345' } })
+    );
   });
 
   it('returns 401 when not authenticated', async () => {

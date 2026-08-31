@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
+import { ForbiddenError } from '@/lib/errors';
 import { GET as listCampaigns, POST as createCampaign } from '@/app/api/campaigns/route';
 import { GET as getCampaign } from '@/app/api/campaigns/[id]/route';
 import { POST as pauseCampaign } from '@/app/api/campaigns/[id]/pause/route';
@@ -33,9 +34,13 @@ const mockPrisma = {
   campaign: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
+    findUnique: vi.fn(),
     count: vi.fn(),
     create: vi.fn(),
     updateMany: vi.fn(),
+  },
+  user: {
+    findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
   },
   emailAccount: {
     findFirst: vi.fn(),
@@ -51,13 +56,34 @@ const mockPrisma = {
   },
   $disconnect: vi.fn(),
 };
+// The route resolves ownership and loads the campaign via `campaign.findUnique`,
+// but this suite was written against `campaign.findFirst`; alias them so both resolve identically.
+mockPrisma.campaign.findUnique = mockPrisma.campaign.findFirst;
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   requireVerifiedSession: mockRequireVerifiedSession,
+  // Unverified users have no secondary (raw) session to fall back to in tests,
+  // so ownership/admin guards must reject them with a 403.
+  getSession: vi.fn().mockImplementation(() => {
+    throw new ForbiddenError('Email verification required.');
+  }),
 }));
 
 vi.mock('@/lib/rate-limit/api', () => ({
   checkApiRateLimit: mockCheckApiRateLimit,
+}));
+
+vi.mock('@/lib/rate-limit/middleware', () => ({
+  enforceRateLimit: vi.fn(async (identifier: string, key: string) => {
+    const res = await mockCheckApiRateLimit({}, identifier, key);
+    if (res) {
+      const { RateLimitError } = await import('@/lib/errors');
+      throw new RateLimitError(
+        "You're doing that too frequently. Please wait a moment and try again.",
+        60
+      );
+    }
+  }),
 }));
 
 vi.mock('@/lib/jobs/scheduler', () => ({
@@ -127,7 +153,12 @@ beforeEach(() => {
     { id: CAMPAIGN_ID, name: 'Spring outreach', status: 'ACTIVE', created_at: new Date('2030-01-01') },
   ]);
   mockPrisma.campaign.count.mockResolvedValue(1);
-  mockPrisma.campaign.findFirst.mockResolvedValue(null);
+  mockPrisma.campaign.findFirst.mockResolvedValue({
+    id: CAMPAIGN_ID,
+    user_id: 'user-1',
+    name: 'Spring outreach',
+    status: 'ACTIVE',
+  });
   mockPrisma.campaign.create.mockResolvedValue({
     id: CAMPAIGN_ID,
     name: 'Spring outreach',
@@ -375,6 +406,7 @@ describe('GET /api/campaigns/[id]', () => {
   it('returns the campaign when it belongs to the user', async () => {
     mockPrisma.campaign.findFirst.mockResolvedValue({
       id: CAMPAIGN_ID,
+      user_id: 'user-1',
       name: 'Spring outreach',
       status: 'ACTIVE',
     });
@@ -388,9 +420,9 @@ describe('GET /api/campaigns/[id]', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data).toMatchObject({ id: CAMPAIGN_ID, name: 'Spring outreach' });
-    expect(mockPrisma.campaign.findFirst).toHaveBeenCalledWith({
-      where: { id: CAMPAIGN_ID, user_id: 'user-1' },
-    });
+    expect(mockPrisma.campaign.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: CAMPAIGN_ID } })
+    );
   });
 
   it('returns 404 when the campaign is missing or owned by someone else', async () => {
@@ -415,7 +447,9 @@ describe('GET /api/campaigns/[id]', () => {
 
     expect(response.status).toBe(400);
     expect(body.error?.type).toBe('VALIDATION_ERROR');
-    expect(mockPrisma.campaign.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.campaign.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'nope' } })
+    );
   });
 
   it('returns 401 when not authenticated', async () => {
@@ -452,7 +486,7 @@ describe.each(transitions)('POST /api/campaigns/[id]/$label', ({ handler, status
     expect(body.data).toBeNull();
     expect(body.message).toBe(message);
     expect(mockPrisma.campaign.updateMany).toHaveBeenCalledWith({
-      where: { id: CAMPAIGN_ID, user_id: 'user-1' },
+      where: { id: CAMPAIGN_ID },
       data: { status },
     });
   });

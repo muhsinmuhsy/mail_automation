@@ -31,8 +31,25 @@ vi.mock('@/lib/auth/guards', () => ({
   requireAdmin: mockRequireAdmin,
 }));
 
+vi.mock('@/lib/auth/neon-auth', () => ({
+  requireVerifiedSession: vi.fn(),
+}));
+
 vi.mock('@/lib/rate-limit/api', () => ({
   checkApiRateLimit: mockCheckApiRateLimit,
+}));
+
+vi.mock('@/lib/rate-limit/middleware', () => ({
+  enforceRateLimit: vi.fn(async (identifier: string, key: string) => {
+    const res = await mockCheckApiRateLimit({}, identifier, key);
+    if (res) {
+      const { RateLimitError } = await import('@/lib/errors');
+      throw new RateLimitError(
+        "You're doing that too frequently. Please wait a moment and try again.",
+        60
+      );
+    }
+  }),
 }));
 
 vi.mock('@/lib/db', () => ({

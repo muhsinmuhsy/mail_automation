@@ -10,11 +10,18 @@ interface ApiResponse {
 
 const mockPrismaUpdate = {
   emailAccount: {
+    findUnique: vi.fn(),
     findFirst: vi.fn(),
     update: vi.fn(),
   },
+  user: {
+    findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
+  },
   $disconnect: vi.fn(),
 };
+// The route resolves ownership and loads the account via `emailAccount.findUnique`,
+// but this suite was written against `findFirst`; alias them so both resolve identically.
+mockPrismaUpdate.emailAccount.findUnique = mockPrismaUpdate.emailAccount.findFirst;
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   requireVerifiedSession: vi.fn().mockResolvedValue({
@@ -38,6 +45,11 @@ describe('email-accounts/[id] PATCH', () => {
   beforeEach(() => {
     mockPrismaUpdate.emailAccount.findFirst.mockClear();
     mockPrismaUpdate.emailAccount.update.mockClear();
+    mockPrismaUpdate.emailAccount.findFirst.mockResolvedValue({
+      id: '07314147-25ec-4cf2-ae63-388e40add7b8',
+      user_id: 'user-1',
+      is_active: true,
+    });
   });
 
   it('should update the app password when account exists', async () => {
@@ -55,7 +67,7 @@ describe('email-accounts/[id] PATCH', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(mockPrismaUpdate.emailAccount.update).toHaveBeenCalledWith({
-      where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1' },
+      where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8' },
       data: { encrypted_secret: 'encrypted-secret' },
     });
   });
