@@ -2,6 +2,31 @@ import { defineConfig } from 'vitest/config';
 import path from 'path';
 
 export default defineConfig({
+  plugins: [
+    {
+      name: 'mock-open-next-worker',
+      resolveId(source) {
+        if (source === './.open-next/worker.js' || source.endsWith('.open-next/worker.js')) {
+          return '\0open-next-worker-mock';
+        }
+        return null;
+      },
+      load(id) {
+        if (id === '\0open-next-worker-mock') {
+          return `
+            export default {
+              fetch: (...args) => {
+                globalThis.__workerFetchCalls = globalThis.__workerFetchCalls || [];
+                globalThis.__workerFetchCalls.push(args);
+                return new Response('ok');
+              },
+            };
+          `;
+        }
+        return null;
+      },
+    },
+  ],
   test: {
     globals: true,
     environment: 'node',
