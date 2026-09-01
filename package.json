@@ -15,7 +15,8 @@
     "test:integration": "vitest run tests/integration",
     "test:unit": "vitest run tests/unit",
     "test:e2e": "playwright test --pass-with-no-tests",
-    "test:smoke": "playwright test tests/e2e/smoke --pass-with-no-tests"
+    "test:smoke": "playwright test tests/e2e/smoke --pass-with-no-tests",
+    "check:production": "node scripts/check-production-readiness.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1121.0",
