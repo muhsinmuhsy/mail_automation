@@ -10,6 +10,7 @@ import { resolve } from 'node:path';
 
 const root = process.cwd();
 const envPath = resolve(root, '.env');
+const mode = process.argv.includes('--local') ? 'local' : 'production';
 
 function loadDotEnv(path) {
   if (!existsSync(path)) return;
@@ -118,7 +119,7 @@ async function main() {
   const appUrl = requireValue('NEXT_PUBLIC_APP_URL', errors);
   if (appUrl) {
     validateUrl('NEXT_PUBLIC_APP_URL', errors);
-    if (isLocalUrl(appUrl)) {
+    if (mode === 'production' && isLocalUrl(appUrl)) {
       warnings.push('NEXT_PUBLIC_APP_URL points to localhost; set it to the deployed HTTPS origin before production.');
     }
   }
@@ -142,7 +143,7 @@ async function main() {
     return;
   }
 
-  console.log('Production readiness checks passed.');
+  console.log(`${mode === 'local' ? 'Local production' : 'Production'} readiness checks passed.`);
 }
 
 await main();

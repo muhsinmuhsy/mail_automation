@@ -16,6 +16,7 @@
     "test:unit": "vitest run tests/unit",
     "test:e2e": "playwright test --pass-with-no-tests",
     "test:smoke": "playwright test tests/e2e/smoke --pass-with-no-tests",
+    "check:local-production": "node scripts/check-production-readiness.mjs --local",
     "check:production": "node scripts/check-production-readiness.mjs"
   },
   "dependencies": {
