@@ -17,6 +17,26 @@ export type AuthContext = {
 };
 
 /**
+ * Creates or refreshes the local database profile for the authenticated Neon
+ * Auth user. Role and active status remain database-owned authorization data.
+ */
+export async function ensureSessionUserProfile(user: SessionUser): Promise<void> {
+  const prisma = getPrisma();
+  await prisma.user.upsert({
+    where: { id: user.id },
+    update: {
+      email: user.email,
+      name: user.name,
+    },
+    create: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    },
+  });
+}
+
+/**
  * Verifies the request has a valid session and returns the session user.
  * Throws an operational AuthenticationError when unauthenticated.
  */
@@ -26,7 +46,9 @@ export async function requireUser(): Promise<SessionUser> {
     throw new AuthenticationError('Please log in to continue.');
   }
   const u = session.user;
-  return { id: u.id, email: u.email, name: u.name, emailVerified: u.emailVerified };
+  const user = { id: u.id, email: u.email, name: u.name, emailVerified: u.emailVerified };
+  await ensureSessionUserProfile(user);
+  return user;
 }
 
 /**

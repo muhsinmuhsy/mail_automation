@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/neon-auth';
-import { ensureUserProfile } from '@/lib/auth/user-provisioning';
 import { createRateLimiter } from '@/lib/rate-limit';
 
 const neonAuthMiddleware = auth.middleware({
@@ -59,8 +58,6 @@ export default async function proxy(request: NextRequest) {
 
   const sessionResult = await auth.getSession();
   if (sessionResult?.data?.user) {
-    ensureUserProfile(process.env.DATABASE_URL!, sessionResult.data.user.id, sessionResult.data.user.email, sessionResult.data.user.name).catch(() => {});
-
     if (!sessionResult.data.user.emailVerified) {
       const verifyUrl = new URL('/verify-email', request.url);
       if (pathname !== '/verify-email') {

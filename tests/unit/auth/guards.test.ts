@@ -5,6 +5,7 @@ import { AuthenticationError, ForbiddenError, NotFoundError } from '@/lib/errors
 const mockPrisma = {
   user: {
     findUnique: vi.fn(),
+    upsert: vi.fn(),
   },
 };
 
@@ -23,6 +24,7 @@ describe('lib/auth/guards', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPrisma.user.findUnique.mockResolvedValue({ role: 'USER', is_active: true });
+    mockPrisma.user.upsert.mockResolvedValue({ id: 'u1' });
   });
 
   it('requireUser throws when unauthenticated', async () => {
@@ -34,6 +36,11 @@ describe('lib/auth/guards', () => {
     vi.mocked(getSession).mockResolvedValue({ user: { id: 'u1', email: 'a@b.com' } } as never);
     const user = await requireUser();
     expect(user.id).toBe('u1');
+    expect(mockPrisma.user.upsert).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      update: { email: 'a@b.com', name: undefined },
+      create: { id: 'u1', email: 'a@b.com', name: undefined },
+    });
   });
 
   it('requireAdmin throws for non-admin users', async () => {

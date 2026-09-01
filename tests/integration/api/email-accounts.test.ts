@@ -15,6 +15,9 @@ const mockPrisma = {
     create: vi.fn(),
     count: vi.fn().mockResolvedValue(1),
   },
+  user: {
+    upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
+  },
   $disconnect: vi.fn(),
 };
 
@@ -41,6 +44,7 @@ describe('email-accounts GET/POST', () => {
   beforeEach(() => {
     mockPrisma.emailAccount.findMany.mockClear();
     mockPrisma.emailAccount.create.mockClear();
+    mockPrisma.user.upsert.mockClear();
   });
 
   it('should return user email accounts', async () => {

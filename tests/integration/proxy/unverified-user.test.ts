@@ -2,17 +2,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
 
 const mockAuthGetSession = vi.fn();
-const mockEnsureUserProfile = vi.fn(() => Promise.resolve());
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   auth: {
     getSession: () => mockAuthGetSession(),
     middleware: () => vi.fn(),
   },
-}));
-
-vi.mock('@/lib/auth/user-provisioning', () => ({
-  ensureUserProfile: mockEnsureUserProfile,
 }));
 
 vi.mock('@/lib/rate-limit', () => ({
@@ -33,10 +28,6 @@ describe('proxy unverified user behavior', () => {
         getSession: () => mockAuthGetSession(),
         middleware: () => vi.fn().mockResolvedValue(NextResponse.next()),
       },
-    }));
-
-    vi.doMock('@/lib/auth/user-provisioning', () => ({
-      ensureUserProfile: mockEnsureUserProfile,
     }));
 
     vi.doMock('@/lib/rate-limit', () => ({

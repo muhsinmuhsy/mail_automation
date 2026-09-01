@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockRequireVerifiedSession = vi.fn();
+const mockEnsureSessionUserProfile = vi.fn();
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   requireVerifiedSession: (...a: unknown[]) => mockRequireVerifiedSession(...a),
+}));
+
+vi.mock('@/lib/auth/guards', () => ({
+  ensureSessionUserProfile: (...a: unknown[]) => mockEnsureSessionUserProfile(...a),
 }));
 
 import { requireVerifiedUser } from '@/lib/api/session';
@@ -19,6 +24,7 @@ describe('lib/api/session', () => {
     mockRequireVerifiedSession.mockResolvedValue({ session: { user } });
     const result = await requireVerifiedUser();
     expect(result).toEqual(user);
+    expect(mockEnsureSessionUserProfile).toHaveBeenCalledWith(user);
   });
 
   it('throws AuthenticationError when there is no session', async () => {

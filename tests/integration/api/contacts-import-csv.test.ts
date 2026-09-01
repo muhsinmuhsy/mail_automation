@@ -13,6 +13,9 @@ const mockPrisma = {
     findFirst: vi.fn(),
     create: vi.fn(),
   },
+  user: {
+    upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
+  },
   $disconnect: vi.fn(),
 };
 

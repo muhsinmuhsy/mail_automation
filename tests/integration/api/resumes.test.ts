@@ -36,6 +36,7 @@ const mockPrisma = {
   },
   user: {
     findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
+    upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
   },
   emailJob: {
     count: vi.fn(),

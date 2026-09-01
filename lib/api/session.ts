@@ -1,4 +1,5 @@
 import { requireVerifiedSession } from '@/lib/auth/neon-auth';
+import { ensureSessionUserProfile } from '@/lib/auth/guards';
 import { AuthenticationError, ForbiddenError } from '@/lib/errors';
 
 export type AuthedUser = {
@@ -24,5 +25,7 @@ export async function requireVerifiedUser(): Promise<AuthedUser> {
     }
     throw new ForbiddenError(result.error.message);
   }
-  return result.session.user;
+  const user = result.session.user;
+  await ensureSessionUserProfile(user);
+  return user;
 }

@@ -22,6 +22,9 @@ const mockPrisma = {
     findMany: vi.fn(),
     count: vi.fn(),
   },
+  user: {
+    upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
+  },
 };
 
 vi.mock('@/lib/auth/neon-auth', () => ({

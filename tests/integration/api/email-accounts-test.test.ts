@@ -14,6 +14,7 @@ const mockPrismaTest = {
   },
   user: {
     findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
+    upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
   },
   $disconnect: vi.fn(),
 };
