@@ -4,17 +4,22 @@ import { createStorageService } from '@/lib/storage/storage.factory';
 /**
  * Real Backblaze B2 integration tests.
  *
- * These run ONLY when explicit test credentials are provided. They never run
- * automatically in CI. Set the following to enable:
- *   B2_TEST_BUCKET, B2_REGION, B2_ENDPOINT, B2_KEY_ID, B2_APPLICATION_KEY
- *
- * Use a dedicated, scoped, non-production test bucket.
+ * These run ONLY when real B2 credentials are provided. They never run
+ * automatically from the default fake test environment. Set the following:
+ *   B2_BUCKET_NAME, B2_REGION, B2_ENDPOINT, B2_KEY_ID, B2_APPLICATION_KEY
  */
-const runIntegration = Boolean(process.env.B2_TEST_BUCKET && process.env.B2_KEY_ID);
+const hasRealCredentials = Boolean(
+  process.env.B2_BUCKET_NAME &&
+    process.env.B2_ENDPOINT?.startsWith('https://s3.') &&
+    process.env.B2_KEY_ID &&
+    process.env.B2_KEY_ID !== 'test-key-id' &&
+    process.env.B2_APPLICATION_KEY &&
+    process.env.B2_APPLICATION_KEY !== 'test-application-key',
+);
 
-describe.skipIf(!runIntegration)('Backblaze B2 storage (real bucket)', () => {
+describe.skipIf(!hasRealCredentials)('Backblaze B2 storage (real bucket)', () => {
   const env = {
-    B2_BUCKET_NAME: process.env.B2_TEST_BUCKET!,
+    B2_BUCKET_NAME: process.env.B2_BUCKET_NAME!,
     B2_REGION: process.env.B2_REGION!,
     B2_ENDPOINT: process.env.B2_ENDPOINT!,
     B2_KEY_ID: process.env.B2_KEY_ID!,
