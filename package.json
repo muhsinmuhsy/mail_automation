@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:opennext": "opennextjs-cloudflare build",
+    "build:worker": "wrangler deploy --dry-run",
+    "deploy:worker": "wrangler deploy",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -22,7 +23,6 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1121.0",
     "@neondatabase/auth": "^0.5.0-beta",
-    "@opennextjs/cloudflare": "^1.20.4",
     "@prisma/adapter-neon": "^6.7.0",
     "@prisma/client": "^7.10.0",
     "next": "16.3.2",
@@ -46,7 +46,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
     "jsdom": "^30.0.1",
-    "opennextjs-cloudflare": "^1.0.0",
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
     "typescript": "^5",

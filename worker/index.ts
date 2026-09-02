@@ -1,7 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore .open-next/worker.js is generated at build time
-import handler from '../.open-next/worker.js';
-
 import { createPrisma } from '../lib/db/prisma';
 import { processQueueJob } from '../lib/jobs/consumer';
 import { scheduleDueJobs, recoverStuckJobs, completeFinishedCampaigns } from '../lib/jobs/scheduler';
@@ -12,7 +8,23 @@ type QueueEnv = Record<string, unknown> & {
 };
 
 const workerHandler = {
-  fetch: handler.fetch,
+  fetch(request: Request) {
+    const url = new URL(request.url);
+    if (url.pathname === '/health' || url.pathname === '/api/health') {
+      return Response.json({ status: 'ok', service: 'mail-automation-worker' });
+    }
+
+    return Response.json(
+      {
+        success: false,
+        error: {
+          type: 'NOT_FOUND',
+          message: 'This Cloudflare Worker only handles background automation.',
+        },
+      },
+      { status: 404 }
+    );
+  },
 
   async scheduled(event: ScheduledEvent, env: Record<string, unknown>) {
     const prisma = createPrisma(env.DATABASE_URL as string);

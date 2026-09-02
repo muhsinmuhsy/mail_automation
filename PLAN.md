@@ -15,43 +15,41 @@
 
   ## Final Architecture
 
-   ```
-                       YOUR DOMAIN
-                           │
-                           ▼
-                 ┌─────────────────────┐
-                 │   ONE Cloudflare    │
-                 │       Worker        │
-                 │                     │
-                 │     Next.js         │
-                 │     fetch()         │
-                 │     scheduled()     │
-                 │     queue()         │
-                 └──────────┬──────────┘
-                           │
-             ┌──────────────┼──────────────┐
-             ▼              ▼              ▼
-         Neon DB        Neon Auth      Backblaze B2
-             │          (private)         │
-             │                           │
-             │                           ▼
-             │                   Resume PDFs (PDF)
-             │
-             ▼
-         Email Jobs
-             │
-             ▼
-         Queue
-             │
-             ▼
-       Queue Consumer
-             │
-             ▼
-         Email Provider
-             │
-             ▼
-         Gmail SMTP
-   ```
+  **Architecture change:** We are changing into a zero-cost-friendly split
+  deployment:
+
+  - Vercel hosts the Next.js web app, dashboard, auth pages, and user/admin API
+    routes.
+  - Cloudflare Free runs a tiny background Worker only for `scheduled()` Cron
+    and `queue()` consumer automation.
+  - Neon PostgreSQL remains the shared source of truth between Vercel and the
+    Cloudflare Worker.
+  - Backblaze B2 remains the private resume PDF storage provider.
+  - Gmail SMTP remains the MVP email provider.
+
+  New flow:
+
+  ```text
+  User opens app
+    -> Vercel serves Next.js pages and API routes
+    -> User creates campaign
+    -> Vercel API writes campaigns and email_jobs to Neon DB
+    -> Cloudflare Cron runs every minute
+    -> Tiny Cloudflare Worker claims due email_jobs from Neon DB
+    -> Worker pushes claimed job IDs to Cloudflare Queue
+    -> Cloudflare Queue delivers messages to the Worker consumer
+    -> Worker consumer loads job/account/template/resume data
+    -> Worker downloads resume from Backblaze B2 when needed
+    -> Worker sends through Gmail SMTP
+    -> Worker updates email_jobs/email_logs/usage tables in Neon DB
+    -> Vercel dashboard reads Neon DB and shows current status
+  ```
+
+  This replaces the previous single-Cloudflare-Worker deployment for the full
+  Next.js application. The product behavior remains the same, but the runtime
+  boundary changes so the Cloudflare Worker can stay under the Free-plan Worker
+  size limit.
+   **Runtime boundary:** Vercel is the public web/API runtime. Cloudflare is only the background automation runtime for Cron and Queue.
 
    **Storage abstraction:** The application never talks to Backblaze B2
    directly. It depends on a `StorageService` interface; `B2StorageService`
@@ -76,7 +74,7 @@
                        Resume PDFs
    ```
 
-   **Note:** Single Worker deployment. Cloudflare supports one Worker being both a Queue producer and consumer, with `fetch()`, `scheduled()`, and `queue()` handlers in the same runtime. The email sending layer is provider-neutral; Gmail is the only implemented provider for MVP. The file storage layer is also provider-neutral through a `StorageService` interface; Backblaze B2 (S3-Compatible API) is the only implemented storage provider for MVP.
+   **Note:** Split deployment. Vercel serves the Next.js app/API, while one small Cloudflare Worker handles `scheduled()` and `queue()` for background email automation. The email sending layer is provider-neutral; Gmail is the only implemented provider for MVP. The file storage layer is also provider-neutral through a `StorageService` interface; Backblaze B2 (S3-Compatible API) is the only implemented storage provider for MVP.
 
   ---
 
@@ -85,12 +83,12 @@
   | Layer | Technology |
   |-------|-----------|
   | Frontend | Next.js + TypeScript + Tailwind CSS |
-  | Next.js Runtime | Cloudflare Workers via OpenNext adapter |
+  | Next.js Runtime | Vercel Hobby deployment |
    | Database | Neon PostgreSQL |
    | Auth | Neon Auth |
    | File Storage | Backblaze B2 Cloud Storage (S3-Compatible API) |
-   | Queue | Cloudflare Queues |
-   | Scheduler | Cloudflare Cron |
+   | Queue | Cloudflare Queues via tiny background Worker |
+   | Scheduler | Cloudflare Cron via tiny background Worker |
    | Email | Gmail SMTP port 587 (STARTTLS) |
 
    ### Storage Provider Decision
@@ -668,9 +666,15 @@
 
    ---
 
-   ## OpenNext Worker Integration
+   ## Split Vercel + Cloudflare Worker Integration
 
-  Use the current `@opennextjs/cloudflare` deployment model.
+  Use the zero-cost-friendly split deployment model.
+
+  - Vercel deploys the Next.js app and API routes with `next build`.
+  - Cloudflare deploys only `worker/index.ts` with Wrangler.
+  - The Cloudflare Worker must not import the generated Next.js app bundle.
+  - The Worker exposes only background automation handlers plus a minimal
+    health/info `fetch()` response.
 
    Wrangler uses:
    ```toml
@@ -681,16 +685,14 @@
    compatibility_flags = ["nodejs_compat"]
    ```
 
-  `worker/index.ts` imports the generated OpenNext Worker and exposes the
-  application's additional handlers:
+  `worker/index.ts` exposes the background handlers:
 
   ```ts
   // worker/index.ts
-  // @ts-ignore .open-next/worker.js is generated at build time
-  import handler from './.open-next/worker.js';
-
   export default {
-    fetch: handler.fetch,
+    fetch(request: Request) {
+      // Minimal health/info endpoint only. Next.js is served by Vercel.
+    },
 
     async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
       // Cron handler: enqueue due email jobs
@@ -702,11 +704,8 @@
   };
   ```
 
-  The generated `.open-next/worker.js` is never edited directly. Builds
-  regenerate it automatically. `worker/index.ts` is the only manual
-  deployment entrypoint.
-
-  Do not deploy a second Worker for Cron or Queue.
+  Do not run the full Next.js application inside the Cloudflare Worker. Keeping
+  the Worker small is required for the Cloudflare Free-plan Worker size limit.
 
   ---
 
@@ -829,13 +828,13 @@
   │           └── migration.sql
   ├── prisma.config.ts
   ├── public/
-  ├── open-next.config.ts
+  ├── vercel.json
   ├── wrangler.toml
   ├── package.json
   └── README.md
   ```
 
-   **Note:** Single Worker deployment using Next.js on Cloudflare Workers via OpenNext. The `worker/` directory contains handlers for scheduled jobs and Queue consumption. The `lib/email/providers/` directory contains a provider-neutral email sending layer; only `gmail/` is implemented for MVP. The `lib/storage/` directory contains a provider-neutral `StorageService` interface; only `b2/` (Backblaze B2 S3-Compatible API) is implemented for MVP. Database access goes through Prisma ORM in `lib/db/prisma.ts`.
+   **Note:** Split deployment using Vercel for Next.js and Cloudflare Workers for background automation. The `worker/` directory contains handlers for scheduled jobs and Queue consumption only. The `lib/email/providers/` directory contains a provider-neutral email sending layer; only `gmail/` is implemented for MVP. The `lib/storage/` directory contains a provider-neutral `StorageService` interface; only `b2/` (Backblaze B2 S3-Compatible API) is implemented for MVP. Database access goes through Prisma ORM in `lib/db/prisma.ts`.
 
   ---
 
@@ -1203,7 +1202,8 @@
 
   ### Cloudflare Compatibility
 
-  The application runs on Cloudflare Workers through OpenNext.
+  The Next.js application runs on Vercel. Background automation runs in a
+  small Cloudflare Worker.
 
   Use Prisma's edge-compatible PostgreSQL configuration for the Worker
   runtime.
@@ -1233,8 +1233,8 @@
   }
   ```
 
-  `DATABASE_URL` must be provided as a Cloudflare Worker secret in
-  production.
+  `DATABASE_URL` must be provided as a Vercel environment variable for the
+  app/API and as a Cloudflare Worker secret for background automation.
 
   Each Worker handler (`fetch`, `scheduled`, `queue`) receives the
   Worker `env` and creates its own Prisma instance via
@@ -1249,7 +1249,8 @@
 
   Production:
 
-  Store DATABASE_URL as a Cloudflare Worker secret.
+  Store DATABASE_URL as a Vercel environment variable and as a Cloudflare
+  Worker secret.
 
   Never expose DATABASE_URL to client-side code.
 
@@ -1259,13 +1260,12 @@
 
   lib/db/prisma.ts
 
-  The module exports `createPrisma(databaseUrl)`. Each Worker invocation
-  (`fetch`, `scheduled`, `queue`) creates its own Prisma instance from
-  the Worker `env.DATABASE_URL`.
+  The module exports `createPrisma(databaseUrl)` for Worker/background
+  invocations and `getPrisma()` for the Vercel app/API runtime.
 
-  Do not use a long-lived module-level Prisma singleton. Cloudflare
-  Worker invocations are short-lived and may be executed on different
-  isolates; use an invocation-scoped Prisma instance.
+  Cloudflare Worker invocations (`scheduled`, `queue`) create their own Prisma
+  instance from `env.DATABASE_URL`. The Vercel app/API may reuse a process-level
+  Prisma client through `getPrisma()` to avoid exhausting database connections.
 
   ### Migrations
 
@@ -2435,7 +2435,7 @@
   - **Explicit ownership check on every user-owned record: verify `record.user_id == currentUser.id` before any operation**
   - **Cross-reference ownership validation: when creating campaigns or jobs, verify all referenced records belong to the same user: `email_account.user_id`, `resume.user_id`, `template.user_id`, `contact.user_id` must all match `currentUser.id`**
   - Validate file uploads (PDF only, max 5MB)
-  - Protect HTTP/API endpoints with Cloudflare Workers Rate Limiting for request abuse protection
+  - Protect HTTP/API endpoints with app/platform rate limiting for request abuse protection
   - Enforce exact email sending quotas through EmailLimitService + Neon PostgreSQL
   - Do not send cancelled/paused jobs
   - Claim jobs atomically to prevent duplicates
@@ -2841,7 +2841,7 @@
 
   Use two separate systems for different purposes:
 
-  **Cloudflare Workers Rate Limiting API** — request/API abuse protection:
+  **Application/platform rate limiting** - request/API abuse protection:
   - Login/register flooding
   - API endpoint abuse
   - CSV upload spam
@@ -2849,64 +2849,47 @@
   - Campaign creation spam
   - SMTP test endpoint abuse
 
-  Cloudflare's counters are eventually consistent and not suitable for accurate accounting.
+  Request-abuse counters are not suitable for exact email quota accounting.
 
-  **Neon PostgreSQL** — exact email quota accounting:
+  **Neon PostgreSQL** - exact email quota accounting:
   - Per-user daily email limits
   - Global daily email limits
   - Subscription-based limits
 
-  This separation keeps the architecture simple and Cloudflare-native while ensuring accurate email accounting.
+  This separation keeps request-abuse protection independent from exact email
+  accounting.
 
   ```
   REQUEST
-    │
-    ▼
-  Cloudflare Rate Limiting
-    │
-    ├── ALLOW
-    │      │
-    │      ▼
-    │   Neon Auth
-    │      │
-    │      ▼
-    │   Application API
-    │
-    └── 429 Too Many Requests
+    |
+    v
+  App/API Rate Limiting
+    |
+    +-- ALLOW
+    |     |
+    |     v
+    |  Neon Auth
+    |     |
+    |     v
+    |  Application API
+    |
+    +-- 429 Too Many Requests
   ```
 
   For actual sending:
   ```
   Queue Consumer
-    ↓
-  EmailLimitService
-    ↓
-  Neon PostgreSQL atomic quota
-    ↓
-  Gmail SMTP
+    -> EmailLimitService
+    -> Neon PostgreSQL atomic quota
+    -> Gmail SMTP
   ```
 
-  Do not use Cloudflare rate limiting for email quota accounting.
+  Do not use request-abuse rate limiting for email quota accounting.
 
   ### Unauthenticated Rate Limits
 
-  Apply Cloudflare Workers Rate Limiting before authentication for
-  unauthenticated endpoints. Keys are based on IP + endpoint.
-
-  ```
-  Request (no session)
-    ↓
-  Cloudflare Rate Limiting
-    │   key: IP + endpoint
-    │
-    ├── ALLOW
-    │      ↓
-    │   Neon Auth
-    │      ↓
-    │   Application API
-    │
-    └── 429 Too Many Requests
-  ```
+  Apply app/API rate limiting before authentication for unauthenticated
+  endpoints. Keys are based on IP + endpoint.
 
   Suggested initial limits:
 
@@ -2917,25 +2900,8 @@
 
   ### Authenticated Rate Limits
 
-  Apply Cloudflare Workers Rate Limiting after authentication for
-  application APIs. Keys are based on the authenticated user ID + endpoint.
-
-  ```
-  Request (with session)
-    ↓
-  Neon Auth
-    ↓
-  Cloudflare Rate Limiting
-        key: user:{userId}:{endpoint}
-    │
-    ├── ALLOW
-    │      ↓
-    │   Authorization
-    │      ↓
-    │   Application API
-    │
-    └── 429 Too Many Requests
-  ```
+  Apply app/API rate limiting after authentication for application APIs. Keys
+  are based on the authenticated user ID + endpoint.
 
   Example keys:
 
@@ -2951,23 +2917,12 @@
 
   ### Rate Limit Configuration
 
-  Use the Cloudflare Workers Rate Limiting API through Wrangler bindings.
+  Use the application's rate-limit abstraction for Vercel API routes. If the
+  public domain is proxied through Cloudflare later, Cloudflare WAF/rate-limit
+  rules may be added at the edge, but the tiny background Worker does not need
+  request-abuse rate-limit bindings.
 
-  Create separate rate-limit bindings/configurations for:
-  - unauthenticated authentication endpoints (IP + endpoint keys)
-  - authenticated API operations (user ID + endpoint keys)
-  - expensive email-related operations
-
-  Return HTTP 429 when the limit is exceeded.
-  Include `Retry-After` when practical.
-
-  Do not store Cloudflare rate-limit counters in PostgreSQL.
-  Do not use Cloudflare rate limiting for exact email quota accounting.
-
-  **Implementation requirement:** Use Wrangler 4.36.0 or later, which supports the Workers Rate Limiting API.
-
-  ---
-
+  Do not use request-abuse rate limiting for exact email quota accounting.
   ## Testing Strategy
 
   Testing is a required part of every feature. No feature is considered
@@ -3549,7 +3504,7 @@
   - Gmail SMTP
    - Backblaze B2 (storage adapter)
   - Cloudflare Queue
-  - Cloudflare Rate Limiting
+  - App/platform rate limiting
 
   Have separate integration/E2E suites that use controlled real
   environments.
@@ -3668,12 +3623,15 @@
       "test:smoke": "playwright test tests/e2e/smoke",
       "typecheck": "tsc --noEmit",
       "lint": "eslint .",
-      "build": "opennextjs-cloudflare build"
+      "build": "next build",
+      "build:worker": "wrangler deploy --dry-run",
+      "deploy:worker": "wrangler deploy"
     }
   }
   ```
 
-  The exact build command can follow the final OpenNext configuration.
+  `build` verifies the Vercel/Next.js app. `build:worker` verifies the tiny
+  Cloudflare background Worker bundle and bindings without uploading.
 
   ### Test Directory Structure
 
@@ -3801,7 +3759,7 @@
   - Configure `NEON_AUTH_BASE_URL` and `NEON_AUTH_COOKIE_SECRET`
   - Create database schema
   - Configure Cloudflare Worker with Queue + Cron
-  - Configure Cloudflare Workers Rate Limiting API (Wrangler 4.36.0+)
+  - Configure app/platform request-abuse rate limiting
 
   ### Milestone 2 — User Account
   - Neon Auth setup (NEON_AUTH_BASE_URL, NEON_AUTH_COOKIE_SECRET)
@@ -3978,12 +3936,12 @@
    ## Cloudflare Is Still Used
 
    Only the storage provider changed (Cloudflare R2 → Backblaze B2).
-   Cloudflare remains the compute/runtime platform:
+   Cloudflare remains the background automation platform:
 
    - Cloudflare Workers
    - Cloudflare Queues
    - Cloudflare Cron
-   - Cloudflare Rate Limiting
+   - Optional Cloudflare edge/WAF rate limiting if the public domain is proxied
 
    ```
                          Cloudflare
@@ -3991,7 +3949,7 @@
                     │ Workers          │
                     │ Queues           │
                     │ Cron             │
-                    │ Rate Limiting    │
+                    │ Background Jobs  │
                     └────────┬─────────┘
                              │
                ┌─────────────┼──────────────┐

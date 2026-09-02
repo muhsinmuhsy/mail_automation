@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => {
-  const handlerFetch = vi.fn();
   const processQueueJob = vi.fn();
   const scheduleDueJobs = vi.fn();
   const recoverStuckJobs = vi.fn();
@@ -13,7 +12,6 @@ const mocks = vi.hoisted(() => {
   };
   const createPrisma = vi.fn((..._a: unknown[]) => prismaMock);
   return {
-    handlerFetch,
     processQueueJob,
     scheduleDueJobs,
     recoverStuckJobs,
@@ -63,7 +61,6 @@ const env = (overrides: Record<string, unknown> = {}) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.handlerFetch.mockResolvedValue(new Response('ok'));
   mocks.processQueueJob.mockResolvedValue(undefined);
   mocks.scheduleDueJobs.mockResolvedValue([]);
   mocks.recoverStuckJobs.mockResolvedValue(undefined);
@@ -74,13 +71,27 @@ beforeEach(() => {
 
 describe('worker/index', () => {
   describe('fetch', () => {
-    it('delegates to the underlying open-next handler', async () => {
-      const req = new Request('https://api.test/');
-      const ctx = {};
-      const result = await workerHandler.fetch(req as never, env() as never, ctx as never);
-      const calls = (globalThis as unknown as Record<string, unknown[]>).__workerFetchCalls ?? [];
-      expect(calls[calls.length - 1]).toEqual([req, env(), ctx]);
-      expect(result).toBeTruthy();
+    it('returns a small health response', async () => {
+      const result = await workerHandler.fetch(new Request('https://worker.test/health'));
+
+      expect(result.status).toBe(200);
+      await expect(result.json()).resolves.toEqual({
+        status: 'ok',
+        service: 'mail-automation-worker',
+      });
+    });
+
+    it('does not serve the Next.js app from Cloudflare Worker fetch', async () => {
+      const result = await workerHandler.fetch(new Request('https://worker.test/dashboard'));
+
+      expect(result.status).toBe(404);
+      await expect(result.json()).resolves.toEqual({
+        success: false,
+        error: {
+          type: 'NOT_FOUND',
+          message: 'This Cloudflare Worker only handles background automation.',
+        },
+      });
     });
   });
 

@@ -6,9 +6,9 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 /**
- * Returns a process/worker-scoped Prisma client. A single instance is reused
- * across invocations to avoid exhausting database connections. The Neon
- * adapter is used so the client works in the Cloudflare Workers runtime.
+ * Returns a process-scoped Prisma client for the Next.js app/API runtime. A
+ * single instance is reused to avoid exhausting database connections. The Neon
+ * adapter keeps PostgreSQL access compatible with serverless runtimes.
  */
 export function getPrisma(): PrismaClient {
   if (globalForPrisma.__prisma) {
