@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CampaignWizard } from '@/components/campaigns/CampaignWizard';
+import {
+  CampaignWizard,
+  type CampaignSelectOption,
+  type CampaignSubmitData,
+} from '@/components/campaigns/CampaignWizard';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -51,11 +55,38 @@ interface CampaignRow {
   created_at: string;
 }
 
-interface WizardData {
+interface EmailAccountRow {
+  id: string;
+  provider: string;
+  email: string;
+  is_active: boolean;
+}
+
+interface ResumeRow {
+  id: string;
+  filename: string;
+  is_default: boolean;
+}
+
+interface TemplateRow {
+  id: string;
   name: string;
-  emailAccountId: string;
-  resumeId: string;
-  templateId: string;
+  subject: string;
+}
+
+interface ContactRow {
+  id: string;
+  name: string;
+  email: string;
+  company: string | null;
+  job_title: string | null;
+}
+
+interface CampaignOptions {
+  emailAccounts: CampaignSelectOption[];
+  resumes: CampaignSelectOption[];
+  templates: CampaignSelectOption[];
+  contacts: CampaignSelectOption[];
 }
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<ApiResponse<T>> {
@@ -80,6 +111,14 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showWizard, setShowWizard] = useState(false);
+  const [options, setOptions] = useState<CampaignOptions>({
+    emailAccounts: [],
+    resumes: [],
+    templates: [],
+    contacts: [],
+  });
+  const [optionsLoading, setOptionsLoading] = useState(false);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
   const [busyCampaignId, setBusyCampaignId] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<CampaignRow | null>(null);
   const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'error' } | null>(
@@ -138,6 +177,65 @@ export default function CampaignsPage() {
     void load();
   };
 
+  const loadCampaignOptions = useCallback(async () => {
+    setOptionsLoading(true);
+    setOptionsError(null);
+    try {
+      const [accounts, resumes, templates, contacts] = await Promise.all([
+        requestJson<EmailAccountRow[]>('/api/email-accounts?limit=100'),
+        requestJson<ResumeRow[]>('/api/resumes?limit=100'),
+        requestJson<TemplateRow[]>('/api/templates?limit=100'),
+        requestJson<ContactRow[]>('/api/contacts?limit=500'),
+      ]);
+
+      const responses = [accounts, resumes, templates, contacts];
+      if (responses.some((response) => response.status === 401)) {
+        router.replace('/login');
+        return;
+      }
+      const failure = responses.find((response) => !response.body.success);
+      if (failure && !failure.body.success) {
+        setOptionsError(failure.body.error.message);
+        return;
+      }
+
+      setOptions({
+        emailAccounts: accounts.body.success
+          ? accounts.body.data
+              .filter((account) => account.is_active)
+              .map((account) => ({
+                id: account.id,
+                label: `${account.email} (${account.provider})`,
+              }))
+          : [],
+        resumes: resumes.body.success
+          ? resumes.body.data.map((resume) => ({
+              id: resume.id,
+              label: resume.is_default ? `${resume.filename} (default)` : resume.filename,
+            }))
+          : [],
+        templates: templates.body.success
+          ? templates.body.data.map((template) => ({
+              id: template.id,
+              label: template.name,
+              description: template.subject,
+            }))
+          : [],
+        contacts: contacts.body.success
+          ? contacts.body.data.map((contact) => ({
+              id: contact.id,
+              label: contact.name,
+              description: [contact.email, contact.company, contact.job_title].filter(Boolean).join(' - '),
+            }))
+          : [],
+      });
+    } catch {
+      setOptionsError('Failed to load campaign options.');
+    } finally {
+      setOptionsLoading(false);
+    }
+  }, [router]);
+
   const runAction = async (campaign: CampaignRow, action: 'pause' | 'resume' | 'cancel') => {
     setBusyCampaignId(campaign.id);
     try {
@@ -161,7 +259,7 @@ export default function CampaignsPage() {
     }
   };
 
-  const createCampaign = async (data: WizardData) => {
+  const createCampaign = async (data: CampaignSubmitData) => {
     const { status: httpStatus, body } = await requestJson<CampaignRow>('/api/campaigns', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -170,10 +268,11 @@ export default function CampaignsPage() {
         email_account_id: data.emailAccountId,
         resume_id: data.resumeId,
         template_id: data.templateId,
-        contact_ids: [],
-        start_at: new Date().toISOString(),
-        timezone: 'UTC',
-        interval_minutes: 5,
+        contact_ids: data.contactIds,
+        start_at: data.startAt,
+        timezone: data.timezone,
+        interval_minutes: data.intervalMinutes,
+        daily_limit: data.dailyLimit,
       }),
     });
 
@@ -191,6 +290,11 @@ export default function CampaignsPage() {
     }
   };
 
+  const toggleWizard = () => {
+    if (!showWizard) void loadCampaignOptions();
+    setShowWizard((previous) => !previous);
+  };
+
   const filtered = Boolean(status || search.trim());
 
   return (
@@ -200,7 +304,7 @@ export default function CampaignsPage() {
           <h1 className="text-page-title font-semibold tracking-tight">Campaigns</h1>
           <p className="mt-2 text-body text-text-secondary">Create and manage your email campaigns.</p>
         </div>
-        <Button variant="primary" onClick={() => setShowWizard((previous) => !previous)}>
+        <Button variant="primary" onClick={toggleWizard}>
           {showWizard ? 'Cancel' : 'Create campaign'}
         </Button>
       </div>
@@ -226,7 +330,15 @@ export default function CampaignsPage() {
             </Link>
             .
           </p>
-          <CampaignWizard onSubmit={(data) => void createCampaign(data as WizardData)} />
+          {optionsError && <p role="alert" className="mb-4 text-sm text-error">{optionsError}</p>}
+          <CampaignWizard
+            emailAccounts={options.emailAccounts}
+            resumes={options.resumes}
+            templates={options.templates}
+            contacts={options.contacts}
+            loading={optionsLoading}
+            onSubmit={(data) => void createCampaign(data)}
+          />
         </div>
       )}
 
@@ -270,7 +382,13 @@ export default function CampaignsPage() {
           }
           action={
             filtered ? undefined : (
-              <Button variant="primary" onClick={() => setShowWizard(true)}>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setShowWizard(true);
+                  void loadCampaignOptions();
+                }}
+              >
                 Create campaign
               </Button>
             )

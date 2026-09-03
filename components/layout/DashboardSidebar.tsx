@@ -4,24 +4,24 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/email-accounts', label: 'Email Accounts', icon: '📧' },
-  { href: '/resumes', label: 'Resumes', icon: '📄' },
-  { href: '/contacts', label: 'Contacts', icon: '👥' },
-  { href: '/templates', label: 'Templates', icon: '📝' },
-  { href: '/campaigns', label: 'Campaigns', icon: '🚀' },
-  { href: '/emails', label: 'Emails', icon: '✉️' },
+  { href: '/dashboard', label: 'Dashboard', icon: 'DB' },
+  { href: '/email-accounts', label: 'Email Accounts', icon: 'EA' },
+  { href: '/resumes', label: 'Resumes', icon: 'RS' },
+  { href: '/contacts', label: 'Contacts', icon: 'CT' },
+  { href: '/templates', label: 'Templates', icon: 'TP' },
+  { href: '/campaigns', label: 'Campaigns', icon: 'CP' },
+  { href: '/emails', label: 'Emails', icon: 'EM' },
 ];
 
 export function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 shrink-0 border-r border-neutral-200 bg-surface flex flex-col">
+    <aside className="flex w-64 shrink-0 flex-col border-r border-neutral-200 bg-surface">
       <div className="p-6">
         <h2 className="text-lg font-semibold tracking-tight">Mail Automation</h2>
       </div>
-      <nav className="flex flex-col gap-1 px-3 py-2 flex-1">
+      <nav className="flex flex-1 flex-col gap-1 px-3 py-2" aria-label="Dashboard navigation">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
@@ -35,14 +35,19 @@ export function DashboardSidebar() {
                   : 'text-text-secondary hover:bg-selected hover:text-text-primary'
               }`}
             >
-              <span className="text-base">{item.icon}</span>
+              <span
+                aria-hidden="true"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-background text-[10px] font-semibold text-text-secondary"
+              >
+                {item.icon}
+              </span>
               {item.label}
             </Link>
           );
         })}
       </nav>
-      <div className="p-4 border-t border-neutral-200">
-        <p className="text-xs text-text-secondary">© 2026 Mail Automation</p>
+      <div className="border-t border-neutral-200 p-4">
+        <p className="text-xs text-text-secondary">2026 Mail Automation</p>
       </div>
     </aside>
   );

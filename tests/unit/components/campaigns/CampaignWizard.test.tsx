@@ -1,137 +1,134 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { CampaignWizard } from '@/components/campaigns/CampaignWizard';
+import { CampaignWizard, type CampaignSelectOption } from '@/components/campaigns/CampaignWizard';
 
-const STEP_LABELS = ['Campaign', 'Content', 'Contacts', 'Schedule', 'Review'];
+const options = {
+  emailAccounts: [
+    { id: 'account-1', label: 'sender@example.com (gmail)' },
+    { id: 'account-2', label: 'backup@example.com (gmail)' },
+  ],
+  resumes: [{ id: 'resume-1', label: 'Resume.pdf (default)' }],
+  templates: [{ id: 'template-1', label: 'Follow-up', description: 'Hello {{name}}' }],
+  contacts: [
+    { id: 'contact-1', label: 'Ada Lovelace', description: 'ada@example.com - Analytical Engines' },
+    { id: 'contact-2', label: 'Grace Hopper', description: 'grace@example.com' },
+  ],
+} satisfies Record<string, CampaignSelectOption[]>;
 
-function stepEl(index: number): HTMLElement {
-  const label = `${String(index + 1).padStart(2, '0')} ${STEP_LABELS[index]}`;
-  return screen.getByText(label);
+async function completeWizard(onSubmit = vi.fn()) {
+  const user = userEvent.setup();
+  render(<CampaignWizard {...options} onSubmit={onSubmit} />);
+
+  await user.type(screen.getByLabelText('Campaign name'), 'Hiring outreach');
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+  expect(screen.getByLabelText('Sending account')).toHaveValue('account-1');
+  expect(screen.getByLabelText('Resume')).toHaveValue('resume-1');
+  expect(screen.getByLabelText('Template')).toHaveValue('template-1');
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+  await user.click(screen.getByLabelText(/Ada Lovelace/));
+  await user.click(screen.getByLabelText(/Grace Hopper/));
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+  await user.clear(screen.getByLabelText('Start time'));
+  await user.type(screen.getByLabelText('Start time'), '2026-09-03T09:30');
+  await user.clear(screen.getByLabelText('Timezone'));
+  await user.type(screen.getByLabelText('Timezone'), 'Asia/Calcutta');
+  await user.clear(screen.getByLabelText('Interval minutes'));
+  await user.type(screen.getByLabelText('Interval minutes'), '10');
+  await user.clear(screen.getByLabelText('Daily limit'));
+  await user.type(screen.getByLabelText('Daily limit'), '20');
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+  return { user, onSubmit };
 }
 
 describe('CampaignWizard', () => {
-  it('renders all five zero-padded step labels', () => {
-    render(<CampaignWizard onSubmit={vi.fn()} />);
+  it('renders all five guided campaign creation steps', () => {
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
     expect(screen.getByText('01 Campaign')).toBeInTheDocument();
     expect(screen.getByText('02 Content')).toBeInTheDocument();
     expect(screen.getByText('03 Contacts')).toBeInTheDocument();
     expect(screen.getByText('04 Schedule')).toBeInTheDocument();
     expect(screen.getByText('05 Review')).toBeInTheDocument();
+    expect(screen.getByText('01 Campaign')).toHaveAttribute('aria-current', 'step');
   });
 
-  it('renders separators between steps but not after the last one', () => {
-    render(<CampaignWizard onSubmit={vi.fn()} />);
-    expect(screen.getAllByText('—')).toHaveLength(STEP_LABELS.length - 1);
-  });
+  it('blocks progress when the campaign name is missing', async () => {
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-  it('renders the embedded campaign form', () => {
-    render(<CampaignWizard onSubmit={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(screen.getByText('Campaign name is required.')).toBeInTheDocument();
     expect(screen.getByLabelText('Campaign name')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Create campaign' })).toBeInTheDocument();
   });
 
-  it('highlights only the first step initially', () => {
-    render(<CampaignWizard onSubmit={vi.fn()} />);
-    expect(stepEl(0)).toHaveClass('text-information');
-    for (let i = 1; i < STEP_LABELS.length; i++) {
-      expect(stepEl(i)).toHaveClass('text-text-secondary');
-    }
-  });
-
-  it('disables Back on the first step and enables Continue', () => {
-    render(<CampaignWizard onSubmit={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
-  });
-
-  it('advances to the next step on Continue', async () => {
+  it('shows real account, resume, and template options instead of empty selects', async () => {
     const user = userEvent.setup();
-    render(<CampaignWizard onSubmit={vi.fn()} />);
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Real options');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(stepEl(0)).toHaveClass('text-information');
-    expect(stepEl(1)).toHaveClass('text-information');
-    expect(stepEl(2)).toHaveClass('text-text-secondary');
-    expect(screen.getByRole('button', { name: 'Back' })).toBeEnabled();
+
+    expect(screen.getByRole('option', { name: 'sender@example.com (gmail)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Resume.pdf (default)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Follow-up' })).toBeInTheDocument();
   });
 
-  it('goes back to the previous step on Back', async () => {
+  it('requires at least one contact before schedule configuration', async () => {
     const user = userEvent.setup();
-    render(<CampaignWizard onSubmit={vi.fn()} />);
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'No contacts');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    await user.click(screen.getByRole('button', { name: 'Back' }));
-    expect(stepEl(1)).toHaveClass('text-text-secondary');
-    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(screen.getByText('Choose at least one contact.')).toBeInTheDocument();
+    expect(screen.getByText('Ada Lovelace')).toBeInTheDocument();
   });
 
-  it('disables Continue on the last step and highlights every step', async () => {
-    const user = userEvent.setup();
-    render(<CampaignWizard onSubmit={vi.fn()} />);
-    const cont = screen.getByRole('button', { name: 'Continue' });
-    for (let i = 0; i < STEP_LABELS.length - 1; i++) {
-      await user.click(cont);
-    }
-    expect(cont).toBeDisabled();
-    for (let i = 0; i < STEP_LABELS.length; i++) {
-      expect(stepEl(i)).toHaveClass('text-information');
-    }
-  });
-
-  it('cannot advance past the last step (clamped by Math.min)', async () => {
-    const user = userEvent.setup();
-    render(<CampaignWizard onSubmit={vi.fn()} />);
-    const cont = screen.getByRole('button', { name: 'Continue' });
-    for (let i = 0; i < 4; i++) await user.click(cont);
-    // Fire the handler directly since the button is now disabled.
-    await user.click(screen.getByRole('button', { name: 'Back' }));
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
-    expect(stepEl(4)).toHaveClass('text-text-secondary');
-  });
-
-  it('walks forward and backward through every step', async () => {
-    const user = userEvent.setup();
-    render(<CampaignWizard onSubmit={vi.fn()} />);
-    for (let i = 0; i < 4; i++) {
-      await user.click(screen.getByRole('button', { name: 'Continue' }));
-    }
-    for (let i = 0; i < 4; i++) {
-      await user.click(screen.getByRole('button', { name: 'Back' }));
-    }
-    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
-    expect(stepEl(1)).toHaveClass('text-text-secondary');
-  });
-
-  it('forwards the form submission to onSubmit', async () => {
-    const user = userEvent.setup();
+  it('submits the complete planned campaign payload from the review step', async () => {
     const onSubmit = vi.fn();
-    render(<CampaignWizard onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Wizard campaign');
-    await user.click(screen.getByRole('button', { name: 'Create campaign' }));
+    const { user } = await completeWizard(onSubmit);
+
+    expect(screen.getByText('Ready to launch')).toBeInTheDocument();
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Start campaign' }));
+
     expect(onSubmit).toHaveBeenCalledWith({
-      name: 'Wizard campaign',
-      emailAccountId: '',
-      resumeId: '',
-      templateId: '',
+      name: 'Hiring outreach',
+      emailAccountId: 'account-1',
+      resumeId: 'resume-1',
+      templateId: 'template-1',
+      contactIds: ['contact-1', 'contact-2'],
+      startAt: expect.stringMatching(/^2026-09-03T/),
+      timezone: 'Asia/Calcutta',
+      intervalMinutes: 10,
+      dailyLimit: 20,
     });
   });
 
-  it('keeps the form mounted while navigating steps', async () => {
+  it('keeps the review submit disabled until required selections exist', async () => {
     const user = userEvent.setup();
     render(<CampaignWizard onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Persisted');
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Incomplete');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(screen.getByLabelText('Campaign name')).toHaveValue('Persisted');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(screen.getByText('Choose a sending account.')).toBeInTheDocument();
   });
 
-  it('renders Back as the secondary variant and Continue as primary', () => {
-    render(<CampaignWizard onSubmit={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Back' })).toHaveClass('bg-surface');
-    expect(screen.getByRole('button', { name: 'Continue' })).toHaveClass('bg-information');
-  });
+  it('shows a loading state while campaign prerequisites are loading', () => {
+    render(<CampaignWizard loading onSubmit={vi.fn()} />);
 
-  it('renders the form inside a bordered panel', () => {
-    const { container } = render(<CampaignWizard onSubmit={vi.fn()} />);
-    const panel = container.querySelector('form')?.parentElement as HTMLElement;
-    expect(panel).toHaveClass('border', 'border-neutral-200', 'bg-background', 'p-6');
+    expect(screen.getByText('Loading campaign options...')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DashboardSidebar } from '@/components/layout/DashboardSidebar';
@@ -66,9 +66,9 @@ describe('DashboardSidebar', () => {
     expect(linkFor(label)).toHaveAttribute('href', href);
   });
 
-  it('renders the icon for each nav item', () => {
+  it('renders clean text markers for each nav item', () => {
     render(<DashboardSidebar />);
-    for (const icon of ['📊', '📧', '📄', '👥', '📝', '🚀', '✉️']) {
+    for (const icon of ['DB', 'EA', 'RS', 'CT', 'TP', 'CP', 'EM']) {
       expect(screen.getByText(icon)).toBeInTheDocument();
     }
   });
@@ -90,7 +90,7 @@ describe('DashboardSidebar', () => {
     pathnameRef.current = '/dashboard';
     render(<DashboardSidebar />);
     expect(linkFor('Dashboard')).toHaveClass(ACTIVE_CLASS);
-    for (const label of ALL_LABELS.filter((l) => l !== 'Dashboard')) {
+    for (const label of ALL_LABELS.filter((item) => item !== 'Dashboard')) {
       expect(linkFor(label)).toHaveClass(INACTIVE_CLASS);
     }
   });
@@ -111,9 +111,9 @@ describe('DashboardSidebar', () => {
     }
   });
 
-  it('renders the footer copyright', () => {
+  it('renders the footer year and product name', () => {
     render(<DashboardSidebar />);
-    expect(screen.getByText('© 2026 Mail Automation')).toBeInTheDocument();
+    expect(screen.getByText('2026 Mail Automation')).toBeInTheDocument();
   });
 
   it('allows clicking a nav link without throwing', async () => {

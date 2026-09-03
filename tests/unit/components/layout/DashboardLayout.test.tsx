@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -27,14 +27,15 @@ describe('DashboardLayout', () => {
     expect(main).toHaveTextContent('page body');
   });
 
-  it('renders the sidebar navigation', () => {
+  it('renders desktop and mobile navigation landmarks', () => {
     render(
       <DashboardLayout>
         <span>x</span>
       </DashboardLayout>
     );
-    expect(screen.getByRole('navigation')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Contacts$/ })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Dashboard navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Mobile dashboard navigation' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Contacts$/ }).length).toBeGreaterThan(0);
   });
 
   it('renders the dashboard header', () => {
@@ -44,7 +45,7 @@ describe('DashboardLayout', () => {
       </DashboardLayout>
     );
     expect(screen.getByRole('banner')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Account ▾' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument();
   });
 
   it('marks the Dashboard item active for a nested dashboard route via prefix match', () => {
@@ -53,25 +54,25 @@ describe('DashboardLayout', () => {
         <span>x</span>
       </DashboardLayout>
     );
-    expect(screen.getByRole('link', { name: /Dashboard$/ })).toHaveClass('bg-selected');
+    expect(screen.getAllByRole('link', { name: /Dashboard$/ })[0]).toHaveClass('bg-selected');
   });
 
-  it('applies a full-height flex shell', () => {
+  it('applies a responsive full-height shell', () => {
     const { container } = render(
       <DashboardLayout>
         <span>x</span>
       </DashboardLayout>
     );
-    expect(container.firstChild).toHaveClass('min-h-screen', 'flex');
+    expect(container.firstChild).toHaveClass('min-h-screen', 'flex', 'flex-col', 'md:flex-row');
   });
 
-  it('makes the main content area scrollable with padding', () => {
+  it('makes the main content area scrollable with responsive padding', () => {
     render(
       <DashboardLayout>
         <span>x</span>
       </DashboardLayout>
     );
-    expect(screen.getByRole('main')).toHaveClass('flex-1', 'p-8', 'overflow-auto');
+    expect(screen.getByRole('main')).toHaveClass('flex-1', 'overflow-auto', 'p-4', 'md:p-8');
   });
 
   it('renders multiple children', () => {
@@ -97,18 +98,18 @@ describe('DashboardLayout', () => {
         <span>x</span>
       </DashboardLayout>
     );
-    await user.click(screen.getByRole('button', { name: 'Account ▾' }));
+    await user.click(screen.getByRole('button', { name: 'Account' }));
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
   });
 
-  it('orders the sidebar before the content column', () => {
+  it('wraps the sidebar before the content column on desktop', () => {
     const { container } = render(
       <DashboardLayout>
         <span>x</span>
       </DashboardLayout>
     );
     const shell = container.firstElementChild as HTMLElement;
-    expect(shell.children[0].tagName).toBe('ASIDE');
-    expect(shell.children[1]).toHaveClass('flex-1', 'min-w-0', 'flex', 'flex-col');
+    expect(shell.children[0]).toHaveClass('hidden', 'md:block');
+    expect(shell.children[1]).toHaveClass('flex', 'min-w-0', 'flex-1', 'flex-col');
   });
 });

@@ -31,4 +31,10 @@ describe('StatusBadge', () => {
     const span = container.querySelector('span') as HTMLElement;
     expect(span.className).toContain('bg-selected');
   });
+
+  it('includes a non-color marker alongside the status label', () => {
+    render(<StatusBadge status="SENT" />);
+    expect(screen.getByText('OK')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText('Sent')).toBeInTheDocument();
+  });
 });

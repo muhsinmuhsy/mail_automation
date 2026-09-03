@@ -1,21 +1,22 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { Dropdown } from '@/components/ui/Dropdown';
 
 export function DashboardHeader() {
   return (
-    <header className="flex items-center justify-between border-b border-neutral-200 bg-background px-8 py-4">
-      <div>
-        <h1 className="text-lg font-semibold text-text-primary">Mail Automation</h1>
-        <p className="text-sm text-text-secondary">
+    <header className="flex items-center justify-between gap-4 border-b border-neutral-200 bg-background px-4 py-4 md:px-8">
+      <div className="min-w-0">
+        <h1 className="truncate text-lg font-semibold text-text-primary">Mail Automation</h1>
+        <p className="hidden text-sm text-text-secondary sm:block">
           Welcome. Here&apos;s what&apos;s happening today.
         </p>
       </div>
       <Dropdown
         trigger={
-          <button className="flex items-center gap-2 rounded-[var(--radius-md)] border border-neutral-200 bg-background px-3 py-2 text-sm font-medium text-text-primary hover:bg-selected">
-            Account ▾
-          </button>
+          <Button variant="secondary" size="sm">
+            Account
+          </Button>
         }
         items={[
           { label: 'Profile', href: '/profile' },

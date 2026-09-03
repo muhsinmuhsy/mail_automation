@@ -2151,12 +2151,11 @@
   ## Worker Handlers
 
   ### fetch()
-  - Serve Next.js app
-  - Authenticate requests
-  - CRUD for email_accounts, resumes, contacts, templates, campaigns via Prisma
-  - Test email account connection
-  - Enqueue single email
-  - Health/readiness endpoint (`GET /api/health`)
+  - Do not serve the Next.js app; Vercel owns the public app/API runtime
+  - Return a minimal background Worker health/info response
+  - Return a safe `404` for non-background routes
+  - Keep all CRUD/API routes in the Vercel-hosted Next.js app
+  - Keep the Worker bundle small enough for the Cloudflare Free-plan limit
 
   ### scheduled()
   - Run every minute

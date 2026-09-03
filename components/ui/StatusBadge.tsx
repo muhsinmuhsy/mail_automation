@@ -2,19 +2,19 @@
 
 import { Badge } from './Badge';
 
-const statusStyles: Record<string, { label: string; variant: 'default' | 'success' | 'warning' | 'error' | 'information' }> = {
-  SCHEDULED: { label: 'Scheduled', variant: 'information' },
-  QUEUED: { label: 'Queued', variant: 'information' },
-  PROCESSING: { label: 'Sending', variant: 'warning' },
-  RETRY_WAIT: { label: 'Waiting to retry', variant: 'warning' },
-  SENT: { label: 'Sent', variant: 'success' },
-  FAILED: { label: 'Failed', variant: 'error' },
-  CANCELLED: { label: 'Cancelled', variant: 'default' },
-  DELIVERY_UNKNOWN: { label: 'Delivery status unknown', variant: 'warning' },
-  DRAFT: { label: 'Draft', variant: 'default' },
-  ACTIVE: { label: 'Active', variant: 'success' },
-  PAUSED: { label: 'Paused', variant: 'warning' },
-  COMPLETED: { label: 'Completed', variant: 'success' },
+const statusStyles: Record<string, { label: string; marker: string; variant: 'default' | 'success' | 'warning' | 'error' | 'information' }> = {
+  SCHEDULED: { label: 'Scheduled', marker: 'S', variant: 'information' },
+  QUEUED: { label: 'Queued', marker: 'Q', variant: 'information' },
+  PROCESSING: { label: 'Sending', marker: 'P', variant: 'warning' },
+  RETRY_WAIT: { label: 'Waiting to retry', marker: 'R', variant: 'warning' },
+  SENT: { label: 'Sent', marker: 'OK', variant: 'success' },
+  FAILED: { label: 'Failed', marker: '!', variant: 'error' },
+  CANCELLED: { label: 'Cancelled', marker: 'X', variant: 'default' },
+  DELIVERY_UNKNOWN: { label: 'Delivery status unknown', marker: '?', variant: 'warning' },
+  DRAFT: { label: 'Draft', marker: 'D', variant: 'default' },
+  ACTIVE: { label: 'Active', marker: 'A', variant: 'success' },
+  PAUSED: { label: 'Paused', marker: 'P', variant: 'warning' },
+  COMPLETED: { label: 'Completed', marker: 'OK', variant: 'success' },
 };
 
 interface StatusBadgeProps {
@@ -22,6 +22,11 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const config = statusStyles[status] || { label: status, variant: 'default' as const };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  const config = statusStyles[status] || { label: status, marker: '-', variant: 'default' as const };
+  return (
+    <Badge variant={config.variant}>
+      <span aria-hidden="true" className="mr-1 font-semibold">{config.marker}</span>
+      {config.label}
+    </Badge>
+  );
 }

@@ -1,16 +1,43 @@
 'use client';
 
 import { ReactNode } from 'react';
+import Link from 'next/link';
 import { DashboardSidebar } from './DashboardSidebar';
 import { DashboardHeader } from './DashboardHeader';
 
+const mobileNavItems = [
+  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/campaigns', label: 'Campaigns' },
+  { href: '/emails', label: 'Emails' },
+  { href: '/contacts', label: 'Contacts' },
+  { href: '/resumes', label: 'Resumes' },
+  { href: '/templates', label: 'Templates' },
+  { href: '/email-accounts', label: 'Accounts' },
+];
+
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen flex">
-      <DashboardSidebar />
-      <div className="flex-1 min-w-0 flex flex-col">
+    <div className="flex min-h-screen min-w-0 flex-col md:flex-row">
+      <div className="hidden md:block">
+        <DashboardSidebar />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader />
-        <main className="flex-1 p-8 overflow-auto">
+        <nav
+          className="flex gap-2 overflow-x-auto border-b border-neutral-200 bg-surface px-4 py-2 md:hidden"
+          aria-label="Mobile dashboard navigation"
+        >
+          {mobileNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="shrink-0 rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-text-secondary hover:bg-selected hover:text-text-primary"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <main className="flex-1 overflow-auto p-4 md:p-8">
           {children}
         </main>
       </div>
