@@ -38,12 +38,12 @@ describe('EmailAccountEditDialog', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders a required password input with a placeholder', () => {
+  it('renders a required password input with an autocomplete hint', () => {
     setup();
     const input = screen.getByLabelText('App Password');
     expect(input).toHaveAttribute('type', 'password');
     expect(input).toBeRequired();
-    expect(input).toHaveAttribute('placeholder', 'xxxx xxxx xxxx xxxx');
+    expect(input).toHaveAttribute('autocomplete', 'current-password');
     expect(input).toHaveValue('');
   });
 

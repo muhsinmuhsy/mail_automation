@@ -36,6 +36,8 @@ describe('EmailAccountForm', () => {
   it('uses an email input type', () => {
     render(<EmailAccountForm onSubmit={vi.fn()} />);
     expect(screen.getByLabelText('Email')).toHaveAttribute('type', 'email');
+    expect(screen.getByLabelText('Email')).toBeRequired();
+    expect(screen.getByLabelText('Provider')).toBeRequired();
   });
 
   it('renders a Connect submit button', () => {
@@ -68,12 +70,12 @@ describe('EmailAccountForm', () => {
     expect(onSubmit).toHaveBeenCalledWith({ provider: 'gmail', email: 'user@gmail.com' });
   });
 
-  it('submits empty values when nothing is chosen (no client-side validation)', async () => {
+  it('does not submit empty values through the visible submit button', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
     render(<EmailAccountForm onSubmit={onSubmit} />);
     await user.click(screen.getByRole('button', { name: 'Connect' }));
-    expect(onSubmit).toHaveBeenCalledWith({ provider: '', email: '' });
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('prevents the default browser submission', () => {
@@ -81,15 +83,16 @@ describe('EmailAccountForm', () => {
     expect(fireEvent.submit(container.querySelector('form') as HTMLFormElement)).toBe(false);
   });
 
-  it('can switch the provider back to the placeholder', async () => {
+  it('blocks submission after switching the provider back to the placeholder', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
     render(<EmailAccountForm onSubmit={onSubmit} />);
     const select = screen.getByLabelText('Provider');
     await user.selectOptions(select, 'microsoft');
     await user.selectOptions(select, '');
+    await user.type(screen.getByLabelText('Email'), 'ops@corp.io');
     await user.click(screen.getByRole('button', { name: 'Connect' }));
-    expect(onSubmit).toHaveBeenCalledWith({ provider: '', email: '' });
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('associates labels with controls through matching ids', () => {

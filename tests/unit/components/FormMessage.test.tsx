@@ -6,11 +6,13 @@ describe('FormMessage', () => {
   it('renders a success message', () => {
     const { container } = render(<FormMessage type="success" message="Saved" />);
     expect(screen.getByText('Saved')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Saved');
     expect(container.firstChild).toHaveClass('bg-success-light');
   });
 
   it('renders an error message', () => {
     const { container } = render(<FormMessage type="error" message="Bad" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Bad');
     expect(container.firstChild).toHaveClass('bg-error-light');
   });
 

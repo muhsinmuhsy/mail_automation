@@ -4,10 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { ProviderSelector } from '@/components/email-accounts/ProviderSelector';
 
 const PROVIDERS: Array<[string, string, string]> = [
-  ['gmail', 'Gmail', '📧'],
-  ['microsoft', 'Microsoft', '📨'],
-  ['yahoo', 'Yahoo', '📩'],
-  ['custom_smtp', 'Custom SMTP', '⚙️'],
+  ['gmail', 'Gmail', 'G'],
+  ['microsoft', 'Microsoft', 'M'],
+  ['yahoo', 'Yahoo', 'Y'],
+  ['custom_smtp', 'Custom SMTP', 'SMTP'],
 ];
 
 describe('ProviderSelector', () => {
@@ -19,16 +19,16 @@ describe('ProviderSelector', () => {
     }
   });
 
-  it('renders each provider icon', () => {
+  it('renders each provider marker as decorative text', () => {
     render(<ProviderSelector selected="" onSelect={vi.fn()} />);
-    for (const [, , icon] of PROVIDERS) {
-      expect(screen.getByText(icon)).toBeInTheDocument();
+    for (const [, , marker] of PROVIDERS) {
+      expect(screen.getByText(marker)).toHaveAttribute('aria-hidden', 'true');
     }
   });
 
-  it('renders the providers in a two-column grid', () => {
+  it('renders the providers in a responsive grid', () => {
     const { container } = render(<ProviderSelector selected="" onSelect={vi.fn()} />);
-    expect(container.firstChild).toHaveClass('grid', 'grid-cols-2', 'gap-3');
+    expect(container.firstChild).toHaveClass('grid', 'grid-cols-1', 'sm:grid-cols-2', 'gap-3');
   });
 
   it('marks no provider as selected when the selection is empty', () => {
@@ -36,6 +36,7 @@ describe('ProviderSelector', () => {
     for (const button of screen.getAllByRole('button')) {
       expect(button).toHaveClass('border-neutral-200');
       expect(button).not.toHaveClass('border-information');
+      expect(button).toHaveAttribute('aria-pressed', 'false');
     }
   });
 
@@ -43,6 +44,7 @@ describe('ProviderSelector', () => {
     render(<ProviderSelector selected={id} onSelect={vi.fn()} />);
     const selected = screen.getByRole('button', { name: new RegExp(name) });
     expect(selected).toHaveClass('border-information', 'bg-information-light');
+    expect(selected).toHaveAttribute('aria-pressed', 'true');
     const others = screen
       .getAllByRole('button')
       .filter((b) => b !== selected);

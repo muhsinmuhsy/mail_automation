@@ -301,7 +301,7 @@ export default function CampaignsPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-page-title font-semibold tracking-tight">Campaigns</h1>
+          <h1 className="text-page-title font-semibold">Campaigns</h1>
           <p className="mt-2 text-body text-text-secondary">Create and manage your email campaigns.</p>
         </div>
         <Button variant="primary" onClick={toggleWizard}>

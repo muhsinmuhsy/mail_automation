@@ -112,7 +112,7 @@ export default function AdminSettingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-page-title font-semibold tracking-tight">Settings</h1>
+        <h1 className="text-page-title font-semibold">Settings</h1>
         <p className="mt-2 text-body text-text-secondary">
           Global sending limits and the system-wide email sending switch.
         </p>

@@ -11,5 +11,12 @@ export function FormMessage({ type, message }: FormMessageProps) {
     warning: 'text-warning-text bg-warning-light border-warning/20',
   };
 
-  return <div className={`rounded-[var(--radius-md)] border px-4 py-3 text-sm ${colors[type]}`}>{message}</div>;
+  return (
+    <div
+      role={type === 'error' ? 'alert' : 'status'}
+      className={`rounded-[var(--radius-md)] border px-4 py-3 text-sm ${colors[type]}`}
+    >
+      {message}
+    </div>
+  );
 }

@@ -47,7 +47,7 @@ export function EmailAccountEditDialog({
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
           required
-          placeholder="xxxx xxxx xxxx xxxx"
+          autoComplete="current-password"
         />
         <div className="flex justify-end gap-3">
           <Button variant="secondary" type="button" onClick={() => handleOpenChange(false)} disabled={loading}>

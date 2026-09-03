@@ -144,7 +144,7 @@ export default function AdminCampaignsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-page-title font-semibold tracking-tight">Campaigns</h1>
+        <h1 className="text-page-title font-semibold">Campaigns</h1>
         <p className="mt-2 text-body text-text-secondary">
           All campaigns across all users. Pause or cancel a campaign that needs to stop sending.
         </p>

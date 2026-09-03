@@ -162,7 +162,7 @@ export default function EmailAccountsPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Email Accounts</h1>
+        <h1 className="text-3xl font-semibold">Email Accounts</h1>
         <p className="mt-2 text-text-secondary">Manage your email sending accounts.</p>
       </div>
 

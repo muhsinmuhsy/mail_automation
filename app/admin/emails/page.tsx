@@ -96,7 +96,7 @@ export default function AdminEmailsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-page-title font-semibold tracking-tight">Emails</h1>
+        <h1 className="text-page-title font-semibold">Emails</h1>
         <p className="mt-2 text-body text-text-secondary">Email jobs across all users.</p>
       </div>
 

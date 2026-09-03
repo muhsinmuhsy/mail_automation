@@ -46,16 +46,16 @@ describe('ProviderConnectionDialog', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders required email and password inputs with placeholders', () => {
+  it('renders required email and password inputs with autocomplete hints', () => {
     setup();
     const email = screen.getByLabelText('Email');
     const secret = screen.getByLabelText('App Password');
     expect(email).toHaveAttribute('type', 'email');
     expect(email).toBeRequired();
-    expect(email).toHaveAttribute('placeholder', 'you@gmail.com');
+    expect(email).toHaveAttribute('autocomplete', 'email');
     expect(secret).toHaveAttribute('type', 'password');
     expect(secret).toBeRequired();
-    expect(secret).toHaveAttribute('placeholder', 'xxxx xxxx xxxx xxxx');
+    expect(secret).toHaveAttribute('autocomplete', 'current-password');
   });
 
   it('shows no error message initially', () => {

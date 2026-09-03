@@ -3,7 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
   testMatch: '**/*.spec.ts',
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
   reporter: [['list']],
   webServer: {
     command: 'npm run dev',

@@ -24,6 +24,7 @@ describe('ContactImport', () => {
     const input = fileInput(container);
     expect(input).toBeInTheDocument();
     expect(input).toHaveAttribute('accept', '.csv');
+    expect(input).toHaveClass('sr-only');
   });
 
   it('renders the choose-file button', () => {
@@ -41,6 +42,7 @@ describe('ContactImport', () => {
     expect(onImport).toHaveBeenCalledTimes(1);
     expect(onImport.mock.calls[0][0]).toBe(file);
     expect(onImport.mock.calls[0][0].name).toBe('contacts.csv');
+    expect(screen.getByRole('status')).toHaveTextContent('Selected file: contacts.csv');
   });
 
   it('only reports the first file when several are selected', async () => {
@@ -76,16 +78,15 @@ describe('ContactImport', () => {
     expect(clickSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('clicks the first file input in the document when several are mounted (known limitation)', async () => {
+  it('uses the file input that belongs to the clicked import widget', async () => {
     const user = userEvent.setup();
     const first = render(<ContactImport onImport={vi.fn()} />);
     const second = render(<ContactImport onImport={vi.fn()} />);
     const firstSpy = vi.spyOn(fileInput(first.container), 'click').mockImplementation(() => {});
     const secondSpy = vi.spyOn(fileInput(second.container), 'click').mockImplementation(() => {});
-    // The component queries `document` globally, so the second card drives the first input.
     await user.click(screen.getAllByRole('button', { name: 'Choose CSV file' })[1]);
-    expect(firstSpy).toHaveBeenCalledTimes(1);
-    expect(secondSpy).not.toHaveBeenCalled();
+    expect(firstSpy).not.toHaveBeenCalled();
+    expect(secondSpy).toHaveBeenCalledTimes(1);
   });
 
   it('accepts a second import after the first', async () => {

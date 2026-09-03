@@ -7,6 +7,7 @@ describe('SearchInput', () => {
     render(<SearchInput value="" onChange={vi.fn()} />);
     const input = screen.getByDisplayValue('') as HTMLInputElement;
     expect(input).toHaveAttribute('type', 'search');
+    expect(screen.getByRole('searchbox', { name: 'Search' })).toBeInTheDocument();
   });
 
   it('uses a default placeholder', () => {
@@ -15,8 +16,9 @@ describe('SearchInput', () => {
   });
 
   it('uses a custom placeholder', () => {
-    render(<SearchInput value="" onChange={vi.fn()} placeholder="Find users" />);
+    render(<SearchInput value="" onChange={vi.fn()} placeholder="Find users" label="Search users" />);
     expect(screen.getByPlaceholderText('Find users')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search users' })).toBeInTheDocument();
   });
 
   it('reflects the controlled value', () => {

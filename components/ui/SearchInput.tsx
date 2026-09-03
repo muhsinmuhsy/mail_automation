@@ -4,13 +4,15 @@ interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  label?: string;
 }
 
-export function SearchInput({ value, onChange, placeholder }: SearchInputProps) {
+export function SearchInput({ value, onChange, placeholder, label = 'Search' }: SearchInputProps) {
   return (
     <div className="relative">
       <input
         type="search"
+        aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder || 'Search...'}

@@ -2,6 +2,9 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { forgotPassword } from './actions';
+import { Button } from '@/components/ui/Button';
+import { FormMessage } from '@/components/ui/FormMessage';
+import { Input } from '@/components/ui/Input';
 
 export default function ForgotPasswordPage() {
   const [state, action, isPending] = useActionState(forgotPassword, null);
@@ -9,7 +12,10 @@ export default function ForgotPasswordPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
-        <h1 className="text-page-title font-semibold tracking-tight">Reset your password</h1>
+        <div className="mx-auto mb-8 flex h-11 w-11 items-center justify-center rounded-[var(--radius-lg)] border border-neutral-200 bg-surface text-sm font-semibold text-text-primary shadow-subtle">
+          MA
+        </div>
+        <h1 className="text-page-title font-semibold">Reset your password</h1>
         <p className="mt-2 text-body text-text-secondary">
           Enter your email and we&apos;ll send you a reset link
         </p>
@@ -17,31 +23,20 @@ export default function ForgotPasswordPage() {
 
       <form action={action} className="flex flex-col gap-4">
         {(state?.success) && (
-          <p className="text-sm text-success-text">Check your email for a reset link.</p>
+          <FormMessage type="success" message="Check your email for a reset link." />
         )}
         {(state?.error && !state?.success) && (
-          <p className="text-sm text-error">{state.error}</p>
+          <FormMessage type="error" message={state.error} />
         )}
-        <div className="flex flex-col gap-2">
-          <label htmlFor="email" className="text-sm font-medium text-text-primary">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            className="flex h-10 w-full rounded-[var(--radius-md)] border border-neutral-200 bg-background px-3 py-2 text-sm placeholder:text-text-secondary focus:border-information focus:outline-none focus:ring-2 focus:ring-information/20"
-          />
-        </div>
+        <Input id="email" name="email" type="email" label="Email" autoComplete="email" required />
 
-        <button
+        <Button
           type="submit"
-          disabled={isPending}
-          className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90 active:scale-[0.98] transition-all disabled:opacity-50"
+          loading={isPending}
+          className="w-full"
         >
-          {isPending ? 'Sending...' : 'Send reset link'}
-        </button>
+          Send reset link
+        </Button>
       </form>
 
       <div className="text-center text-body text-text-secondary">

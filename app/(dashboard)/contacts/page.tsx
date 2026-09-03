@@ -35,7 +35,7 @@ export default function ContactsPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Contacts</h1>
+        <h1 className="text-3xl font-semibold">Contacts</h1>
         <p className="mt-2 text-text-secondary">Manage your contacts for campaigns.</p>
       </div>
 

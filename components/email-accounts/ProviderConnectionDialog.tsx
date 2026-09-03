@@ -46,7 +46,7 @@ export function ProviderConnectionDialog({ open, onOpenChange, provider, onConne
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          placeholder="you@gmail.com"
+          autoComplete="email"
         />
         <Input
           label="App Password"
@@ -54,7 +54,7 @@ export function ProviderConnectionDialog({ open, onOpenChange, provider, onConne
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
           required
-          placeholder="xxxx xxxx xxxx xxxx"
+          autoComplete="current-password"
         />
         <div className="flex justify-end gap-3">
           <Button variant="secondary" type="button" onClick={() => onOpenChange(false)}>

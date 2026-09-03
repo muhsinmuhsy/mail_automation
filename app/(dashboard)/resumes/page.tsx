@@ -34,7 +34,7 @@ export default function ResumesPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Resumes</h1>
+        <h1 className="text-3xl font-semibold">Resumes</h1>
         <p className="mt-2 text-text-secondary">Upload and manage your resumes.</p>
       </div>
 

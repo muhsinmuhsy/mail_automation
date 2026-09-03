@@ -13,7 +13,7 @@ export default function TemplatesPage() {
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Templates</h1>
+          <h1 className="text-3xl font-semibold">Templates</h1>
           <p className="mt-2 text-text-secondary">Create and manage email templates.</p>
         </div>
         <button

@@ -144,7 +144,7 @@ export default function AdminUsersPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-page-title font-semibold tracking-tight">Users</h1>
+        <h1 className="text-page-title font-semibold">Users</h1>
         <p className="mt-2 text-body text-text-secondary">
           Manage user accounts, account status and per-user daily email limits.
         </p>

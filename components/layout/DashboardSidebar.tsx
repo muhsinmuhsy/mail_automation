@@ -19,7 +19,7 @@ export function DashboardSidebar() {
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-neutral-200 bg-surface">
       <div className="p-6">
-        <h2 className="text-lg font-semibold tracking-tight">Mail Automation</h2>
+        <h2 className="text-lg font-semibold">Mail Automation</h2>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-3 py-2" aria-label="Dashboard navigation">
         {navItems.map((item) => {

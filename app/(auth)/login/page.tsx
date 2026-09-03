@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { useActionState } from 'react';
 import { signInWithEmail } from './actions';
 import GoogleSignInButton from '@/components/ui/GoogleSignInButton';
+import { Button } from '@/components/ui/Button';
+import { FormMessage } from '@/components/ui/FormMessage';
+import { Input } from '@/components/ui/Input';
 
 export default function LoginPage() {
   const [state, action, isPending] = useActionState(signInWithEmail, null);
@@ -10,7 +13,10 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
-        <h1 className="text-page-title font-semibold tracking-tight">Welcome back</h1>
+        <div className="mx-auto mb-8 flex h-11 w-11 items-center justify-center rounded-[var(--radius-lg)] border border-neutral-200 bg-surface text-sm font-semibold text-text-primary shadow-subtle">
+          MA
+        </div>
+        <h1 className="text-page-title font-semibold">Welcome back</h1>
         <p className="mt-2 text-body text-text-secondary">
           Sign in to your account
         </p>
@@ -26,41 +32,19 @@ export default function LoginPage() {
 
       <form action={action} className="flex flex-col gap-4">
         {state?.error && (
-          <p className="text-sm text-error">{state.error}</p>
+          <FormMessage type="error" message={state.error} />
         )}
-        <div className="flex flex-col gap-2">
-          <label htmlFor="email" className="text-sm font-medium text-text-primary">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            className="flex h-10 w-full rounded-[var(--radius-md)] border border-neutral-200 bg-background px-3 py-2 text-sm placeholder:text-text-secondary focus:border-information focus:outline-none focus:ring-2 focus:ring-information/20"
-          />
-        </div>
+        <Input id="email" name="email" type="email" label="Email" autoComplete="email" required />
 
-        <div className="flex flex-col gap-2">
-          <label htmlFor="password" className="text-sm font-medium text-text-primary">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            className="flex h-10 w-full rounded-[var(--radius-md)] border border-neutral-200 bg-background px-3 py-2 text-sm placeholder:text-text-secondary focus:border-information focus:outline-none focus:ring-2 focus:ring-information/20"
-          />
-        </div>
+        <Input id="password" name="password" type="password" label="Password" autoComplete="current-password" required />
 
-        <button
+        <Button
           type="submit"
-          disabled={isPending}
-          className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90 active:scale-[0.98] transition-all disabled:opacity-50"
+          loading={isPending}
+          className="w-full"
         >
-          {isPending ? 'Signing in...' : 'Sign in'}
-        </button>
+          Sign in
+        </Button>
       </form>
 
       <div className="text-center text-body text-text-secondary">

@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-background px-4">
       <main className="w-full max-w-3xl flex flex-col items-center gap-8 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight text-text-primary">
+        <h1 className="text-4xl font-semibold text-text-primary">
           Mail Automation
         </h1>
         <p className="text-lg text-text-secondary max-w-md">
