@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
-export function ContactForm({ onSubmit }: { onSubmit: (data: { name: string; email: string; company?: string }) => Promise<void> }) {
+interface ContactFormProps {
+  onSubmit: (data: { name: string; email: string; company?: string }) => Promise<void | boolean>;
+}
+
+export function ContactForm({ onSubmit }: ContactFormProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
@@ -16,8 +20,12 @@ export function ContactForm({ onSubmit }: { onSubmit: (data: { name: string; ema
         e.preventDefault();
         setPending(true);
         try {
-          await onSubmit({ name, email, company: company || undefined });
-          setName(''); setEmail(''); setCompany('');
+          const ok = await onSubmit({ name, email, company: company || undefined });
+          if (ok !== false) {
+            setName('');
+            setEmail('');
+            setCompany('');
+          }
         } finally {
           setPending(false);
         }

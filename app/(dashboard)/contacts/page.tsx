@@ -4,6 +4,7 @@ import { ContactCard } from '@/components/contacts/ContactCard';
 import { ContactForm } from '@/components/contacts/ContactForm';
 import { ContactImport } from '@/components/contacts/ContactImport';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useEffect, useState } from 'react';
 
 type ApiResponse<T> = { data: T; message?: string };
@@ -11,6 +12,7 @@ type Contact = { id: string; name: string; email: string; company?: string };
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,6 +27,8 @@ export default function ContactsPage() {
       } catch (cause) {
         if (!active) return;
         setError((cause as Error).message);
+      } finally {
+        if (active) setLoading(false);
       }
     })();
     return () => {
@@ -46,8 +50,9 @@ export default function ContactsPage() {
             setError(null);
             const response = await fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             const payload = await response.json() as ApiResponse<{ id: string; name: string; email: string; company?: string }>;
-            if (!response.ok) { const message = payload.message || 'Unable to save contact.'; setError(message); throw new Error(message); }
+            if (!response.ok) { const message = payload.message || 'Unable to save contact.'; setError(message); return false; }
             setContacts((previous) => [...previous, payload.data]);
+            return true;
           }} />
         </div>
 
@@ -61,7 +66,11 @@ export default function ContactsPage() {
 
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
 
-      {contacts.length === 0 ? (
+      {loading ? (
+        <div className="py-12 flex justify-center">
+          <LoadingSpinner />
+        </div>
+      ) : contacts.length === 0 ? (
         <EmptyState
           title="No contacts yet"
           description="Add your first contact or import from CSV."
