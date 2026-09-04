@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 
-export function TemplateForm({ onSubmit }: { onSubmit: (data: { name: string; subject: string; body: string }) => void }) {
+interface TemplateFormProps {
+  onSubmit: (data: { name: string; subject: string; body: string }) => void | Promise<void>;
+  saving?: boolean;
+  error?: string | null;
+}
+
+export function TemplateForm({ onSubmit, saving = false, error }: TemplateFormProps) {
   const [name, setName] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
@@ -21,7 +27,10 @@ export function TemplateForm({ onSubmit }: { onSubmit: (data: { name: string; su
       <Input label="Template name" value={name} onChange={(e) => setName(e.target.value)} required />
       <Input label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} required />
       <Textarea label="Body" value={body} onChange={(e) => setBody(e.target.value)} required />
-      <Button type="submit">Save template</Button>
+      {error && <p role="alert" className="text-sm text-error">{error}</p>}
+      <Button type="submit" disabled={saving}>
+        {saving ? 'Saving...' : 'Save template'}
+      </Button>
     </form>
   );
 }

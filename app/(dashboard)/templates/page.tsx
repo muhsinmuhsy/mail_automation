@@ -3,11 +3,67 @@
 import { TemplateCard } from '@/components/templates/TemplateCard';
 import { TemplateForm } from '@/components/templates/TemplateForm';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+type Template = { id: string; name: string; subject: string; created_at: string };
+type ApiEnvelope<T> =
+  | { success: true; data: T; message?: string }
+  | { success: false; error: { message: string; fields?: Record<string, string> } };
 
 export default function TemplatesPage() {
-  const [templates, setTemplates] = useState<Array<{ id: string; name: string; subject: string }>>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const response = await fetch('/api/templates');
+        const payload = (await response.json()) as ApiEnvelope<Template[]>;
+        if (!active) return;
+        if (!payload.success) {
+          throw new Error(payload.error.message);
+        }
+        setTemplates(payload.data);
+        setError(null);
+      } catch (cause) {
+        if (!active) return;
+        setError((cause as Error).message);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSubmit = async (data: { name: string; subject: string; body: string }) => {
+    setSaving(true);
+    setFormError(null);
+    try {
+      const response = await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const payload = (await response.json()) as ApiEnvelope<Template>;
+      if (!payload.success) {
+        setFormError(payload.error.message);
+        return;
+      }
+      setTemplates((prev) => [payload.data, ...prev]);
+      setShowForm(false);
+    } catch {
+      setFormError('Unable to save template.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -26,14 +82,17 @@ export default function TemplatesPage() {
 
       {showForm && (
         <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
-          <TemplateForm onSubmit={(data) => {
-            setTemplates((prev) => [...prev, { id: Date.now().toString(), ...data }]);
-            setShowForm(false);
-          }} />
+          <TemplateForm onSubmit={handleSubmit} saving={saving} error={formError} />
         </div>
       )}
 
-      {templates.length === 0 ? (
+      {error && <p role="alert" className="text-sm text-error">{error}</p>}
+
+      {loading ? (
+        <div className="py-12 flex justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-information" />
+        </div>
+      ) : templates.length === 0 ? (
         <EmptyState
           title="No templates yet"
           description="Create your first email template to get started."

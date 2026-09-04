@@ -110,4 +110,14 @@ describe('TemplateForm', () => {
     expect(screen.getByLabelText('Subject')).toHaveAttribute('id', 'subject');
     expect(screen.getByLabelText('Body')).toHaveAttribute('id', 'body');
   });
+
+  it('disables the submit button and shows saving text when saving', () => {
+    render(<TemplateForm onSubmit={vi.fn()} saving />);
+    expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
+  });
+
+  it('renders an error message when provided', () => {
+    render(<TemplateForm onSubmit={vi.fn()} error="Something went wrong" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Something went wrong');
+  });
 });
