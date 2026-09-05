@@ -5,6 +5,49 @@ import AttachmentsPage from '@/app/(dashboard)/attachments/page';
 
 afterEach(() => vi.unstubAllGlobals());
 
+describe('AttachmentsPage loading', () => {
+  it('shows a loader while fetching attachments', async () => {
+    let resolveFetch: (value: { ok: boolean; json: () => Promise<{ data: [] }> }) => void;
+    const fetchPromise = new Promise<{ ok: boolean; json: () => Promise<{ data: [] }> }>((resolve) => {
+      resolveFetch = resolve;
+    });
+    const fetchMock = vi.fn().mockReturnValue(fetchPromise);
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<AttachmentsPage />);
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.queryByText('No attachments uploaded yet')).not.toBeInTheDocument();
+
+    resolveFetch!({ ok: true, json: async () => ({ data: [] }) });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText('No attachments uploaded yet')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('shows attachments after loading completes with data', async () => {
+    let resolveFetch: (value: { ok: boolean; json: () => Promise<{ data: { id: string; filename: string; size_bytes: number; is_default: boolean }[] }> }) => void;
+    const fetchPromise = new Promise<{ ok: boolean; json: () => Promise<{ data: { id: string; filename: string; size_bytes: number; is_default: boolean }[] }> }>((resolve) => {
+      resolveFetch = resolve;
+    });
+    const fetchMock = vi.fn().mockReturnValue(fetchPromise);
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<AttachmentsPage />);
+    expect(screen.getByRole('status')).toBeInTheDocument();
+
+    resolveFetch!({
+      ok: true,
+      json: async () => ({
+        data: [{ id: '1', filename: 'cv.pdf', size_bytes: 1024, is_default: false }],
+      }),
+    });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText('cv.pdf')).toBeInTheDocument();
+    expect(screen.queryByText('No attachments uploaded yet')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+});
+
 describe('AttachmentsPage uploads', () => {
   it.each(['api', 'network'])('displays %s failures and lets the user retry', async (failure) => {
     const fetchMock = vi.fn().mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });

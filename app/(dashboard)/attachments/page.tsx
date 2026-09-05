@@ -3,6 +3,7 @@
 import { AttachmentCard } from '@/components/attachments/AttachmentCard';
 import { AttachmentUpload } from '@/components/attachments/AttachmentUpload';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useEffect, useState } from 'react';
 
 type Attachment = { id: string; filename: string; size_bytes: number; is_default: boolean };
@@ -11,12 +12,13 @@ type ApiResponse<T> = { data: T; message?: string; error?: { message: string } }
 export default function AttachmentsPage() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-const response = await fetch('/api/attachments');
+        const response = await fetch('/api/attachments');
         const payload = (await response.json()) as ApiResponse<Attachment[]>;
         if (!active) return;
         if (!response.ok) throw new Error(payload.error?.message || payload.message || 'Unable to load attachments.');
@@ -24,6 +26,8 @@ const response = await fetch('/api/attachments');
       } catch (cause) {
         if (!active) return;
         setError((cause as Error).message);
+      } finally {
+        if (active) setLoading(false);
       }
     })();
     return () => {
@@ -55,7 +59,11 @@ const response = await fetch('/api/attachments');
 
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
 
-      {attachments.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <LoadingSpinner />
+        </div>
+      ) : attachments.length === 0 ? (
         <EmptyState
           title="No attachments uploaded yet"
           description="Upload your first attachment to get started."
