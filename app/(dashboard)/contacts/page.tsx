@@ -14,6 +14,10 @@ export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -24,6 +28,7 @@ export default function ContactsPage() {
         if (!active) return;
         if (!response.ok) throw new Error(payload.message || 'Unable to load contacts.');
         setContacts(payload.data);
+        setError(null);
       } catch (cause) {
         if (!active) return;
         setError((cause as Error).message);
@@ -36,33 +41,60 @@ export default function ContactsPage() {
     };
   }, []);
 
+  const handleSubmit = async (data: { name: string; email: string; company?: string }) => {
+    setSaving(true);
+    setFormError(null);
+    try {
+      const response = await fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      const payload = (await response.json()) as ApiResponse<{ id: string; name: string; email: string; company?: string }>;
+      if (!response.ok) { const message = payload.message || 'Unable to save contact.'; setFormError(message); return; }
+      setContacts((previous) => [...previous, payload.data]);
+      setShowAddContact(false);
+    } catch {
+      setFormError('Unable to save contact.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-semibold">Contacts</h1>
-        <p className="mt-2 text-text-secondary">Manage your contacts for campaigns.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold">Contacts</h1>
+          <p className="mt-2 text-text-secondary">Manage your contacts for campaigns.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { setShowAddContact(!showAddContact); setShowImport(false); }}
+            className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
+          >
+            {showAddContact ? 'Cancel' : 'Add contact'}
+          </button>
+          <button
+            onClick={() => { setShowImport(!showImport); setShowAddContact(false); }}
+            className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-neutral-300 bg-background px-4 py-2 text-sm font-medium text-text-primary hover:bg-neutral-50"
+          >
+            {showImport ? 'Cancel' : 'Import contacts'}
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {showAddContact && (
         <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
           <h2 className="text-lg font-semibold text-text-primary">Add contact</h2>
-          <ContactForm onSubmit={async (data) => {
-            setError(null);
-            const response = await fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            const payload = await response.json() as ApiResponse<{ id: string; name: string; email: string; company?: string }>;
-            if (!response.ok) { const message = payload.message || 'Unable to save contact.'; setError(message); return false; }
-            setContacts((previous) => [...previous, payload.data]);
-            return true;
-          }} />
+          <ContactForm onSubmit={handleSubmit} saving={saving} error={formError} />
         </div>
+      )}
 
+      {showImport && (
         <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
           <h2 className="text-lg font-semibold text-text-primary">Import contacts</h2>
           <ContactImport onImport={(file) => {
             console.log('Importing', file.name);
           }} />
         </div>
-      </div>
+      )}
 
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
 

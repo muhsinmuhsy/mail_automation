@@ -99,6 +99,7 @@ describe('ContactsPage', () => {
 
     await waitFor(() => expect(screen.getByText('Existing')).toBeInTheDocument());
 
+    await user.click(screen.getByRole('button', { name: 'Add contact' }));
     await user.type(screen.getByLabelText('Name'), 'New Contact');
     await user.type(screen.getByLabelText('Email'), 'new@example.com');
     await user.type(screen.getByLabelText('Company'), 'NewCo');
@@ -135,6 +136,7 @@ describe('ContactsPage', () => {
 
     await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
 
+    await user.click(screen.getByRole('button', { name: 'Add contact' }));
     await user.type(screen.getByLabelText('Name'), 'Bad Contact');
     await user.type(screen.getByLabelText('Email'), 'bad@example.com');
     await user.click(screen.getByRole('button', { name: 'Save' }));
