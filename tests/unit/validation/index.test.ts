@@ -80,7 +80,7 @@ describe('lib/validation/index', () => {
         campaignSchema.parse({
           name: 'n',
           email_account_id: 'bad',
-          resume_id: 'bad',
+          attachment_id: 'bad',
           template_id: 'bad',
           contact_ids: [],
           start_at: '',

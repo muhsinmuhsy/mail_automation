@@ -111,7 +111,7 @@ describe('B2StorageService (extended)', () => {
   it('uploads with explicit contentLength, metadata and reports eTag/uploadedAt', async () => {
     const svc = B2StorageService.fromEnv(env());
     const res = await svc.upload({
-      key: 'resume/u1/a.pdf',
+      key: 'attachments/u1/a.pdf',
       body: new Uint8Array([1, 2, 3]),
       contentType: 'application/pdf',
       contentLength: 99,
@@ -119,7 +119,7 @@ describe('B2StorageService (extended)', () => {
     });
     expect(res.size).toBe(3);
     expect(res.metadata.contentType).toBe('application/pdf');
-    expect(res.metadata.eTag).toBe('"resume/u1/a.pdf-etag"');
+    expect(res.metadata.eTag).toBe('"attachments/u1/a.pdf-etag"');
     expect(res.metadata.sizeBytes).toBe(3);
     expect(res.metadata.uploadedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });

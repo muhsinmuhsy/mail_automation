@@ -109,11 +109,11 @@ describe('B2StorageService', () => {
   it('uploads and returns a stored object', async () => {
     const svc = B2StorageService.fromEnv(env());
     const result = await svc.upload({
-      key: 'resume/user-1/abc.pdf',
+      key: 'attachments/user-1/abc.pdf',
       body: new Uint8Array([1, 2, 3]),
       contentType: 'application/pdf',
     });
-    expect(result.key).toBe('resume/user-1/abc.pdf');
+    expect(result.key).toBe('attachments/user-1/abc.pdf');
     expect(result.size).toBe(3);
     expect(result.contentType).toBe('application/pdf');
   });
@@ -131,11 +131,11 @@ describe('B2StorageService', () => {
   it('generates a storage key deterministically from input (upload validation)', async () => {
     const svc = B2StorageService.fromEnv(env());
     const result = await svc.upload({
-      key: 'resume/user-1/abc.pdf',
+      key: 'attachments/user-1/abc.pdf',
       body: new Uint8Array([9]),
       contentType: 'application/pdf',
     });
-    expect(result.key).toMatch(/^resume\/user-1\//);
+    expect(result.key).toMatch(/^attachments\/user-1\//);
   });
 
   it('downloads an uploaded object as a ReadableStream', async () => {

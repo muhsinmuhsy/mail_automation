@@ -86,9 +86,9 @@ describe('Backblaze B2 security (static checks)', () => {
   });
 
   it('download of another user object requires the correct storage_key (authorization is enforced at the application layer)', async () => {
-    // Cross-user access prevention is enforced by the application: a resume is
+    // Cross-user access prevention is enforced by the application: an attachment is
     // only fetched using a storage_key that belongs to the authenticated user's
-    // resume record. The storage layer itself is key-scoped. This test asserts
+    // attachment record. The storage layer itself is key-scoped. This test asserts
     // the storage layer never relaxes key scoping.
     const mod = await import('@/lib/storage/b2/b2.storage');
     expect(mod.B2StorageService.name).toBe('B2StorageService');

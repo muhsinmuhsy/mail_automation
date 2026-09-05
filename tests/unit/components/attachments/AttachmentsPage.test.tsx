@@ -13,7 +13,7 @@ describe('AttachmentsPage uploads', () => {
     } else {
       fetchMock.mockRejectedValueOnce(new Error('Network unavailable.'));
     }
-    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ data: { id: 'resume-1', filename: 'cv.pdf', size_bytes: 100, is_default: false } }) });
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ data: { id: 'attachment-1', filename: 'cv.pdf', size_bytes: 100, is_default: false } }) });
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
     const { container } = render(<AttachmentsPage />);

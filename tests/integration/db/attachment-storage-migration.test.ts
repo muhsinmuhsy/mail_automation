@@ -16,18 +16,18 @@ describe.skipIf(!connectionString)('attachment storage migration (real PostgreSQ
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      const schema = `resume_test_${randomUUID().replaceAll('-', '')}`;
+      const schema = `attachment_test_${randomUUID().replaceAll('-', '')}`;
       await client.query(`CREATE SCHEMA "${schema}"`);
       await client.query(`SET LOCAL search_path TO "${schema}"`);
-      await client.query(`CREATE TABLE resumes (id integer PRIMARY KEY, "${column}" varchar(1024) NOT NULL)`);
-      await client.query(`INSERT INTO resumes VALUES (1, 'resumes/existing.pdf')`);
+      await client.query(`CREATE TABLE attachments (id integer PRIMARY KEY, "${column}" varchar(1024) NOT NULL)`);
+      await client.query(`INSERT INTO attachments VALUES (1, 'attachments/existing.pdf')`);
       await client.query(migration);
       await client.query(migration);
-      expect((await client.query('SELECT storage_key FROM resumes WHERE id = 1')).rows)
-        .toEqual([{ storage_key: 'resumes/existing.pdf' }]);
-      await client.query(`INSERT INTO resumes (id, storage_key) VALUES (2, 'resumes/new.pdf')`);
-      expect((await client.query('SELECT storage_key FROM resumes WHERE id = 2')).rows)
-        .toEqual([{ storage_key: 'resumes/new.pdf' }]);
+      expect((await client.query('SELECT storage_key FROM attachments WHERE id = 1')).rows)
+        .toEqual([{ storage_key: 'attachments/existing.pdf' }]);
+      await client.query(`INSERT INTO attachments (id, storage_key) VALUES (2, 'attachments/new.pdf')`);
+      expect((await client.query('SELECT storage_key FROM attachments WHERE id = 2')).rows)
+        .toEqual([{ storage_key: 'attachments/new.pdf' }]);
     } finally {
       await client.query('ROLLBACK');
       client.release();
