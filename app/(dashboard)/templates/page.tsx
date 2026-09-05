@@ -3,6 +3,7 @@
 import { TemplateCard } from '@/components/templates/TemplateCard';
 import { TemplateForm } from '@/components/templates/TemplateForm';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useEffect, useState } from 'react';
 
 type Template = { id: string; name: string; subject: string; created_at: string };
@@ -90,7 +91,7 @@ export default function TemplatesPage() {
 
       {loading ? (
         <div className="py-12 flex justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-information" />
+          <LoadingSpinner />
         </div>
       ) : templates.length === 0 ? (
         <EmptyState
