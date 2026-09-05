@@ -109,7 +109,7 @@ model Attachment {
   campaigns  Campaign[]
   email_jobs EmailJob[]
 
-  @@index([user_id], map: "idx_resumes_user_id")
+  @@index([user_id], map: "idx_attachments_user_id")
   @@map("attachments")
 }
 

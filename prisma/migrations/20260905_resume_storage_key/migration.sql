@@ -5,12 +5,12 @@ BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = current_schema()
-      AND table_name = 'resumes' AND column_name = 'r2_key'
+      AND table_name = 'attachments' AND column_name = 'r2_key'
   ) AND NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = current_schema()
-      AND table_name = 'resumes' AND column_name = 'storage_key'
+      AND table_name = 'attachments' AND column_name = 'storage_key'
   ) THEN
-    ALTER TABLE "resumes" RENAME COLUMN "r2_key" TO "storage_key";
+    ALTER TABLE "attachments" RENAME COLUMN "r2_key" TO "storage_key";
   END IF;
 END $$;
