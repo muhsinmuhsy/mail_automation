@@ -18,7 +18,7 @@ export const USER_MESSAGES: Record<string, string> = {
   SMTP_AUTH_FAILED: "We couldn't authenticate with your email provider. Please check your credentials.",
   DAILY_LIMIT_REACHED: "You've reached your daily email limit. Remaining emails will continue on the next available day.",
   CAMPAIGN_NOT_FOUND: 'Campaign not found.',
-  RESUME_NOT_FOUND: 'Resume not found.',
+  ATTACHMENT_NOT_FOUND: 'Attachment not found.',
   CONTACT_NOT_FOUND: 'Contact not found.',
   TEMPLATE_NOT_FOUND: 'Template not found.',
   EMAIL_ACCOUNT_NOT_FOUND: 'Email account not found.',
@@ -26,7 +26,7 @@ export const USER_MESSAGES: Record<string, string> = {
   CAMPAIGN_RESUMED: 'Campaign resumed.',
   CAMPAIGN_CANCELLED: 'Campaign cancelled.',
   TEST_EMAIL_SENT: 'Email test sent successfully.',
-  RESUME_UPLOADED: 'Resume uploaded successfully.',
+  ATTACHMENT_UPLOADED: 'Attachment uploaded successfully.',
   CONTACT_IMPORTED: 'Contacts imported successfully.',
 };
 

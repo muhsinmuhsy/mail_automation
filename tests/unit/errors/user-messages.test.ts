@@ -20,7 +20,7 @@ describe('lib/errors/user-messages', () => {
     expect(USER_MESSAGES.EMAIL_ACCOUNT_DUPLICATE).toBe('This email account is already connected.');
     expect(USER_MESSAGES.DAILY_LIMIT_REACHED).toContain('daily email limit');
     expect(USER_MESSAGES.CAMPAIGN_NOT_FOUND).toBe('Campaign not found.');
-    expect(USER_MESSAGES.RESUME_NOT_FOUND).toBe('Resume not found.');
+    expect(USER_MESSAGES.ATTACHMENT_NOT_FOUND).toBe('Attachment not found.');
     expect(USER_MESSAGES.CONTACT_NOT_FOUND).toBe('Contact not found.');
     expect(USER_MESSAGES.TEMPLATE_NOT_FOUND).toBe('Template not found.');
     expect(USER_MESSAGES.EMAIL_ACCOUNT_NOT_FOUND).toBe('Email account not found.');
@@ -28,13 +28,13 @@ describe('lib/errors/user-messages', () => {
     expect(USER_MESSAGES.CAMPAIGN_RESUMED).toBe('Campaign resumed.');
     expect(USER_MESSAGES.CAMPAIGN_CANCELLED).toBe('Campaign cancelled.');
     expect(USER_MESSAGES.TEST_EMAIL_SENT).toBe('Email test sent successfully.');
-    expect(USER_MESSAGES.RESUME_UPLOADED).toBe('Resume uploaded successfully.');
+    expect(USER_MESSAGES.ATTACHMENT_UPLOADED).toBe('Attachment uploaded successfully.');
     expect(USER_MESSAGES.CONTACT_IMPORTED).toBe('Contacts imported successfully.');
   });
 
   it('getUserMessage returns the specific message for a known code', () => {
     expect(getUserMessage('VALIDATION_ERROR')).toBe(USER_MESSAGES.VALIDATION_ERROR);
-    expect(getUserMessage('RESUME_NOT_FOUND')).toBe(USER_MESSAGES.RESUME_NOT_FOUND);
+    expect(getUserMessage('ATTACHMENT_NOT_FOUND')).toBe(USER_MESSAGES.ATTACHMENT_NOT_FOUND);
   });
 
   it('getUserMessage falls back to INTERNAL_ERROR for unknown codes', () => {
