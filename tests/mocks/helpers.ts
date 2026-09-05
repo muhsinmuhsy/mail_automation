@@ -34,7 +34,7 @@ export function createMockPrisma(): PrismaClient {
       count: vi.fn(),
       $on: undefined,
     },
-    resume: {
+    attachment: {
       findUnique: vi.fn(),
       findUniqueOrThrow: vi.fn(),
       findFirst: vi.fn(),
@@ -250,4 +250,3 @@ export function createMockStorageService(): StorageService {
     }),
   };
 }
-

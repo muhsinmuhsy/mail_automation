@@ -10,7 +10,7 @@
  */
 export type * from './models/User'
 export type * from './models/EmailAccount'
-export type * from './models/Resume'
+export type * from './models/Attachment'
 export type * from './models/Contact'
 export type * from './models/Template'
 export type * from './models/Campaign'

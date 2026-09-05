@@ -20,7 +20,7 @@ vi.mock('next/navigation', () => ({
 const ALL_LABELS = [
   'Dashboard',
   'Email Accounts',
-  'Resumes',
+  'Attachments',
   'Contacts',
   'Templates',
   'Campaigns',
@@ -56,7 +56,7 @@ describe('DashboardSidebar', () => {
   it.each([
     ['Dashboard', '/dashboard'],
     ['Email Accounts', '/email-accounts'],
-    ['Resumes', '/resumes'],
+    ['Attachments', '/attachments'],
     ['Contacts', '/contacts'],
     ['Templates', '/templates'],
     ['Campaigns', '/campaigns'],
@@ -68,7 +68,7 @@ describe('DashboardSidebar', () => {
 
   it('renders clean text markers for each nav item', () => {
     render(<DashboardSidebar />);
-    for (const icon of ['DB', 'EA', 'RS', 'CT', 'TP', 'CP', 'EM']) {
+    for (const icon of ['DB', 'EA', 'AT', 'CT', 'TP', 'CP', 'EM']) {
       expect(screen.getByText(icon)).toBeInTheDocument();
     }
   });
@@ -77,7 +77,7 @@ describe('DashboardSidebar', () => {
     pathnameRef.current = '/contacts';
     render(<DashboardSidebar />);
     expect(linkFor('Contacts')).toHaveClass(ACTIVE_CLASS);
-    expect(linkFor('Resumes')).toHaveClass(INACTIVE_CLASS);
+    expect(linkFor('Attachments')).toHaveClass(INACTIVE_CLASS);
   });
 
   it('marks an item active when the pathname is a nested child route', () => {
@@ -96,10 +96,10 @@ describe('DashboardSidebar', () => {
   });
 
   it('marks Dashboard active for any nested dashboard route via prefix match', () => {
-    pathnameRef.current = '/dashboard/resumes';
+    pathnameRef.current = '/dashboard/attachments';
     render(<DashboardSidebar />);
     expect(linkFor('Dashboard')).toHaveClass(ACTIVE_CLASS);
-    expect(linkFor('Resumes')).toHaveClass(INACTIVE_CLASS);
+    expect(linkFor('Attachments')).toHaveClass(INACTIVE_CLASS);
   });
 
   it('marks nothing active for an unrelated pathname', () => {

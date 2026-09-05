@@ -63,7 +63,7 @@ model User {
   created_at                DateTime @default(now()) @db.Timestamptz
 
   email_accounts    EmailAccount[]
-  resumes           Resume[]
+  attachments       Attachment[]
   contacts          Contact[]
   templates         Template[]
   campaigns         Campaign[]
@@ -95,7 +95,7 @@ model EmailAccount {
   @@map("email_accounts")
 }
 
-model Resume {
+model Attachment {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id    String   @db.Uuid
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -110,7 +110,7 @@ model Resume {
   email_jobs EmailJob[]
 
   @@index([user_id], map: "idx_resumes_user_id")
-  @@map("resumes")
+  @@map("attachments")
 }
 
 model Contact {
@@ -154,8 +154,8 @@ model Campaign {
   user               User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
   email_account_id   String           @db.Uuid
   email_account      EmailAccount     @relation(fields: [email_account_id], references: [id])
-  resume_id          String           @db.Uuid
-  resume             Resume           @relation(fields: [resume_id], references: [id])
+  attachment_id      String           @db.Uuid
+  attachment         Attachment       @relation(fields: [attachment_id], references: [id])
   template_id        String           @db.Uuid
   template           Template         @relation(fields: [template_id], references: [id])
   name               String           @db.VarChar(255)
@@ -185,8 +185,8 @@ model EmailJob {
   contact                 Contact       @relation(fields: [contact_id], references: [id])
   email_account_id        String        @db.Uuid
   email_account           EmailAccount  @relation(fields: [email_account_id], references: [id])
-  resume_id               String        @db.Uuid
-  resume                  Resume        @relation(fields: [resume_id], references: [id])
+  attachment_id           String        @db.Uuid
+  attachment              Attachment    @relation(fields: [attachment_id], references: [id])
   template_id             String        @db.Uuid
   template                Template      @relation(fields: [template_id], references: [id])
   to_email                String        @db.VarChar(255)

@@ -8,7 +8,7 @@ import {
   templateSchema,
   emailAccountSchema,
   campaignSchema,
-  resumeUploadSchema,
+  attachmentUploadSchema,
   systemSettingsSchema,
   paginationSchema,
 } from '@/lib/validation/index';
@@ -69,7 +69,7 @@ describe('lib/validation/index', () => {
         campaignSchema.parse({
           name: 'n',
           email_account_id: id,
-          resume_id: id,
+          attachment_id: id,
           template_id: id,
           contact_ids: [id],
           start_at: '2026-01-01T00:00:00Z',
@@ -89,11 +89,11 @@ describe('lib/validation/index', () => {
       ).toThrow();
     });
 
-    it('resumeUploadSchema enforces the 50MB ceiling', () => {
+    it('attachmentUploadSchema enforces the 50MB ceiling', () => {
       expect(
-        resumeUploadSchema.parse({ filename: 'r.pdf', size_bytes: 1000, content_type: 'application/pdf' }),
+        attachmentUploadSchema.parse({ filename: 'r.pdf', size_bytes: 1000, content_type: 'application/pdf' }),
       ).toBeDefined();
-      expect(() => resumeUploadSchema.parse({ filename: 'r.pdf', size_bytes: 50 * 1024 * 1024 + 1 })).toThrow();
+      expect(() => attachmentUploadSchema.parse({ filename: 'r.pdf', size_bytes: 50 * 1024 * 1024 + 1 })).toThrow();
     });
 
     it('systemSettingsSchema enforces bounds', () => {

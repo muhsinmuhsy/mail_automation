@@ -40,7 +40,7 @@ export type EmailJobMinAggregateOutputType = {
   campaign_id: string | null
   contact_id: string | null
   email_account_id: string | null
-  resume_id: string | null
+  attachment_id: string | null
   template_id: string | null
   to_email: string | null
   subject: string | null
@@ -62,7 +62,7 @@ export type EmailJobMaxAggregateOutputType = {
   campaign_id: string | null
   contact_id: string | null
   email_account_id: string | null
-  resume_id: string | null
+  attachment_id: string | null
   template_id: string | null
   to_email: string | null
   subject: string | null
@@ -84,7 +84,7 @@ export type EmailJobCountAggregateOutputType = {
   campaign_id: number
   contact_id: number
   email_account_id: number
-  resume_id: number
+  attachment_id: number
   template_id: number
   to_email: number
   subject: number
@@ -116,7 +116,7 @@ export type EmailJobMinAggregateInputType = {
   campaign_id?: true
   contact_id?: true
   email_account_id?: true
-  resume_id?: true
+  attachment_id?: true
   template_id?: true
   to_email?: true
   subject?: true
@@ -138,7 +138,7 @@ export type EmailJobMaxAggregateInputType = {
   campaign_id?: true
   contact_id?: true
   email_account_id?: true
-  resume_id?: true
+  attachment_id?: true
   template_id?: true
   to_email?: true
   subject?: true
@@ -160,7 +160,7 @@ export type EmailJobCountAggregateInputType = {
   campaign_id?: true
   contact_id?: true
   email_account_id?: true
-  resume_id?: true
+  attachment_id?: true
   template_id?: true
   to_email?: true
   subject?: true
@@ -269,7 +269,7 @@ export type EmailJobGroupByOutputType = {
   campaign_id: string | null
   contact_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -314,7 +314,7 @@ export type EmailJobWhereInput = {
   campaign_id?: Prisma.UuidNullableFilter<"EmailJob"> | string | null
   contact_id?: Prisma.UuidFilter<"EmailJob"> | string
   email_account_id?: Prisma.UuidFilter<"EmailJob"> | string
-  resume_id?: Prisma.UuidFilter<"EmailJob"> | string
+  attachment_id?: Prisma.UuidFilter<"EmailJob"> | string
   template_id?: Prisma.UuidFilter<"EmailJob"> | string
   to_email?: Prisma.StringFilter<"EmailJob"> | string
   subject?: Prisma.StringFilter<"EmailJob"> | string
@@ -332,7 +332,7 @@ export type EmailJobWhereInput = {
   campaign?: Prisma.XOR<Prisma.CampaignNullableScalarRelationFilter, Prisma.CampaignWhereInput> | null
   contact?: Prisma.XOR<Prisma.ContactScalarRelationFilter, Prisma.ContactWhereInput>
   email_account?: Prisma.XOR<Prisma.EmailAccountScalarRelationFilter, Prisma.EmailAccountWhereInput>
-  resume?: Prisma.XOR<Prisma.ResumeScalarRelationFilter, Prisma.ResumeWhereInput>
+  attachment?: Prisma.XOR<Prisma.AttachmentScalarRelationFilter, Prisma.AttachmentWhereInput>
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
   email_logs?: Prisma.EmailLogListRelationFilter
   reservations?: Prisma.EmailSendReservationListRelationFilter
@@ -344,7 +344,7 @@ export type EmailJobOrderByWithRelationInput = {
   campaign_id?: Prisma.SortOrderInput | Prisma.SortOrder
   contact_id?: Prisma.SortOrder
   email_account_id?: Prisma.SortOrder
-  resume_id?: Prisma.SortOrder
+  attachment_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   to_email?: Prisma.SortOrder
   subject?: Prisma.SortOrder
@@ -362,7 +362,7 @@ export type EmailJobOrderByWithRelationInput = {
   campaign?: Prisma.CampaignOrderByWithRelationInput
   contact?: Prisma.ContactOrderByWithRelationInput
   email_account?: Prisma.EmailAccountOrderByWithRelationInput
-  resume?: Prisma.ResumeOrderByWithRelationInput
+  attachment?: Prisma.AttachmentOrderByWithRelationInput
   template?: Prisma.TemplateOrderByWithRelationInput
   email_logs?: Prisma.EmailLogOrderByRelationAggregateInput
   reservations?: Prisma.EmailSendReservationOrderByRelationAggregateInput
@@ -377,7 +377,7 @@ export type EmailJobWhereUniqueInput = Prisma.AtLeast<{
   campaign_id?: Prisma.UuidNullableFilter<"EmailJob"> | string | null
   contact_id?: Prisma.UuidFilter<"EmailJob"> | string
   email_account_id?: Prisma.UuidFilter<"EmailJob"> | string
-  resume_id?: Prisma.UuidFilter<"EmailJob"> | string
+  attachment_id?: Prisma.UuidFilter<"EmailJob"> | string
   template_id?: Prisma.UuidFilter<"EmailJob"> | string
   to_email?: Prisma.StringFilter<"EmailJob"> | string
   subject?: Prisma.StringFilter<"EmailJob"> | string
@@ -395,7 +395,7 @@ export type EmailJobWhereUniqueInput = Prisma.AtLeast<{
   campaign?: Prisma.XOR<Prisma.CampaignNullableScalarRelationFilter, Prisma.CampaignWhereInput> | null
   contact?: Prisma.XOR<Prisma.ContactScalarRelationFilter, Prisma.ContactWhereInput>
   email_account?: Prisma.XOR<Prisma.EmailAccountScalarRelationFilter, Prisma.EmailAccountWhereInput>
-  resume?: Prisma.XOR<Prisma.ResumeScalarRelationFilter, Prisma.ResumeWhereInput>
+  attachment?: Prisma.XOR<Prisma.AttachmentScalarRelationFilter, Prisma.AttachmentWhereInput>
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
   email_logs?: Prisma.EmailLogListRelationFilter
   reservations?: Prisma.EmailSendReservationListRelationFilter
@@ -407,7 +407,7 @@ export type EmailJobOrderByWithAggregationInput = {
   campaign_id?: Prisma.SortOrderInput | Prisma.SortOrder
   contact_id?: Prisma.SortOrder
   email_account_id?: Prisma.SortOrder
-  resume_id?: Prisma.SortOrder
+  attachment_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   to_email?: Prisma.SortOrder
   subject?: Prisma.SortOrder
@@ -437,7 +437,7 @@ export type EmailJobScalarWhereWithAggregatesInput = {
   campaign_id?: Prisma.UuidNullableWithAggregatesFilter<"EmailJob"> | string | null
   contact_id?: Prisma.UuidWithAggregatesFilter<"EmailJob"> | string
   email_account_id?: Prisma.UuidWithAggregatesFilter<"EmailJob"> | string
-  resume_id?: Prisma.UuidWithAggregatesFilter<"EmailJob"> | string
+  attachment_id?: Prisma.UuidWithAggregatesFilter<"EmailJob"> | string
   template_id?: Prisma.UuidWithAggregatesFilter<"EmailJob"> | string
   to_email?: Prisma.StringWithAggregatesFilter<"EmailJob"> | string
   subject?: Prisma.StringWithAggregatesFilter<"EmailJob"> | string
@@ -471,7 +471,7 @@ export type EmailJobCreateInput = {
   campaign?: Prisma.CampaignCreateNestedOneWithoutEmail_jobsInput
   contact: Prisma.ContactCreateNestedOneWithoutEmail_jobsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutEmail_jobsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutEmail_jobsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutEmail_jobsInput
   template: Prisma.TemplateCreateNestedOneWithoutEmail_jobsInput
   email_logs?: Prisma.EmailLogCreateNestedManyWithoutEmail_jobInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutEmail_jobInput
@@ -483,7 +483,7 @@ export type EmailJobUncheckedCreateInput = {
   campaign_id?: string | null
   contact_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -519,7 +519,7 @@ export type EmailJobUpdateInput = {
   campaign?: Prisma.CampaignUpdateOneWithoutEmail_jobsNestedInput
   contact?: Prisma.ContactUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutEmail_jobsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutEmail_jobsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutEmail_jobsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_logs?: Prisma.EmailLogUpdateManyWithoutEmail_jobNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutEmail_jobNestedInput
@@ -531,7 +531,7 @@ export type EmailJobUncheckedUpdateInput = {
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -555,7 +555,7 @@ export type EmailJobCreateManyInput = {
   campaign_id?: string | null
   contact_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -593,7 +593,7 @@ export type EmailJobUncheckedUpdateManyInput = {
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -625,7 +625,7 @@ export type EmailJobCountOrderByAggregateInput = {
   campaign_id?: Prisma.SortOrder
   contact_id?: Prisma.SortOrder
   email_account_id?: Prisma.SortOrder
-  resume_id?: Prisma.SortOrder
+  attachment_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   to_email?: Prisma.SortOrder
   subject?: Prisma.SortOrder
@@ -651,7 +651,7 @@ export type EmailJobMaxOrderByAggregateInput = {
   campaign_id?: Prisma.SortOrder
   contact_id?: Prisma.SortOrder
   email_account_id?: Prisma.SortOrder
-  resume_id?: Prisma.SortOrder
+  attachment_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   to_email?: Prisma.SortOrder
   subject?: Prisma.SortOrder
@@ -673,7 +673,7 @@ export type EmailJobMinOrderByAggregateInput = {
   campaign_id?: Prisma.SortOrder
   contact_id?: Prisma.SortOrder
   email_account_id?: Prisma.SortOrder
-  resume_id?: Prisma.SortOrder
+  attachment_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   to_email?: Prisma.SortOrder
   subject?: Prisma.SortOrder
@@ -782,45 +782,45 @@ export type EmailJobUncheckedUpdateManyWithoutEmail_accountNestedInput = {
   deleteMany?: Prisma.EmailJobScalarWhereInput | Prisma.EmailJobScalarWhereInput[]
 }
 
-export type EmailJobCreateNestedManyWithoutResumeInput = {
-  create?: Prisma.XOR<Prisma.EmailJobCreateWithoutResumeInput, Prisma.EmailJobUncheckedCreateWithoutResumeInput> | Prisma.EmailJobCreateWithoutResumeInput[] | Prisma.EmailJobUncheckedCreateWithoutResumeInput[]
-  connectOrCreate?: Prisma.EmailJobCreateOrConnectWithoutResumeInput | Prisma.EmailJobCreateOrConnectWithoutResumeInput[]
-  createMany?: Prisma.EmailJobCreateManyResumeInputEnvelope
+export type EmailJobCreateNestedManyWithoutAttachmentInput = {
+  create?: Prisma.XOR<Prisma.EmailJobCreateWithoutAttachmentInput, Prisma.EmailJobUncheckedCreateWithoutAttachmentInput> | Prisma.EmailJobCreateWithoutAttachmentInput[] | Prisma.EmailJobUncheckedCreateWithoutAttachmentInput[]
+  connectOrCreate?: Prisma.EmailJobCreateOrConnectWithoutAttachmentInput | Prisma.EmailJobCreateOrConnectWithoutAttachmentInput[]
+  createMany?: Prisma.EmailJobCreateManyAttachmentInputEnvelope
   connect?: Prisma.EmailJobWhereUniqueInput | Prisma.EmailJobWhereUniqueInput[]
 }
 
-export type EmailJobUncheckedCreateNestedManyWithoutResumeInput = {
-  create?: Prisma.XOR<Prisma.EmailJobCreateWithoutResumeInput, Prisma.EmailJobUncheckedCreateWithoutResumeInput> | Prisma.EmailJobCreateWithoutResumeInput[] | Prisma.EmailJobUncheckedCreateWithoutResumeInput[]
-  connectOrCreate?: Prisma.EmailJobCreateOrConnectWithoutResumeInput | Prisma.EmailJobCreateOrConnectWithoutResumeInput[]
-  createMany?: Prisma.EmailJobCreateManyResumeInputEnvelope
+export type EmailJobUncheckedCreateNestedManyWithoutAttachmentInput = {
+  create?: Prisma.XOR<Prisma.EmailJobCreateWithoutAttachmentInput, Prisma.EmailJobUncheckedCreateWithoutAttachmentInput> | Prisma.EmailJobCreateWithoutAttachmentInput[] | Prisma.EmailJobUncheckedCreateWithoutAttachmentInput[]
+  connectOrCreate?: Prisma.EmailJobCreateOrConnectWithoutAttachmentInput | Prisma.EmailJobCreateOrConnectWithoutAttachmentInput[]
+  createMany?: Prisma.EmailJobCreateManyAttachmentInputEnvelope
   connect?: Prisma.EmailJobWhereUniqueInput | Prisma.EmailJobWhereUniqueInput[]
 }
 
-export type EmailJobUpdateManyWithoutResumeNestedInput = {
-  create?: Prisma.XOR<Prisma.EmailJobCreateWithoutResumeInput, Prisma.EmailJobUncheckedCreateWithoutResumeInput> | Prisma.EmailJobCreateWithoutResumeInput[] | Prisma.EmailJobUncheckedCreateWithoutResumeInput[]
-  connectOrCreate?: Prisma.EmailJobCreateOrConnectWithoutResumeInput | Prisma.EmailJobCreateOrConnectWithoutResumeInput[]
-  upsert?: Prisma.EmailJobUpsertWithWhereUniqueWithoutResumeInput | Prisma.EmailJobUpsertWithWhereUniqueWithoutResumeInput[]
-  createMany?: Prisma.EmailJobCreateManyResumeInputEnvelope
+export type EmailJobUpdateManyWithoutAttachmentNestedInput = {
+  create?: Prisma.XOR<Prisma.EmailJobCreateWithoutAttachmentInput, Prisma.EmailJobUncheckedCreateWithoutAttachmentInput> | Prisma.EmailJobCreateWithoutAttachmentInput[] | Prisma.EmailJobUncheckedCreateWithoutAttachmentInput[]
+  connectOrCreate?: Prisma.EmailJobCreateOrConnectWithoutAttachmentInput | Prisma.EmailJobCreateOrConnectWithoutAttachmentInput[]
+  upsert?: Prisma.EmailJobUpsertWithWhereUniqueWithoutAttachmentInput | Prisma.EmailJobUpsertWithWhereUniqueWithoutAttachmentInput[]
+  createMany?: Prisma.EmailJobCreateManyAttachmentInputEnvelope
   set?: Prisma.EmailJobWhereUniqueInput | Prisma.EmailJobWhereUniqueInput[]
   disconnect?: Prisma.EmailJobWhereUniqueInput | Prisma.EmailJobWhereUniqueInput[]
   delete?: Prisma.EmailJobWhereUniqueInput | Prisma.EmailJobWhereUniqueInput[]
   connect?: Prisma.EmailJobWhereUniqueInput | Prisma.EmailJobWhereUniqueInput[]
-  update?: Prisma.EmailJobUpdateWithWhereUniqueWithoutResumeInput | Prisma.EmailJobUpdateWithWhereUniqueWithoutResumeInput[]
-  updateMany?: Prisma.EmailJobUpdateManyWithWhereWithoutResumeInput | Prisma.EmailJobUpdateManyWithWhereWithoutResumeInput[]
+  update?: Prisma.EmailJobUpdateWithWhereUniqueWithoutAttachmentInput | Prisma.EmailJobUpdateWithWhereUniqueWithoutAttachmentInput[]
+  updateMany?: Prisma.EmailJobUpdateManyWithWhereWithoutAttachmentInput | Prisma.EmailJobUpdateManyWithWhereWithoutAttachmentInput[]
   deleteMany?: Prisma.EmailJobScalarWhereInput | Prisma.EmailJobScalarWhereInput[]
 }
 
-export type EmailJobUncheckedUpdateManyWithoutResumeNestedInput = {
-  create?: Prisma.XOR<Prisma.EmailJobCreateWithoutResumeInput, Prisma.EmailJobUncheckedCreateWithoutResumeInput> | Prisma.EmailJobCreateWithoutResumeInput[] | Prisma.EmailJobUncheckedCreateWithoutResumeInput[]
-  connectOrCreate?: Prisma.EmailJobCreateOrConnectWithoutResumeInput | Prisma.EmailJobCreateOrConnectWithoutResumeInput[]
-  upsert?: Prisma.EmailJobUpsertWithWhereUniqueWithoutResumeInput | Prisma.EmailJobUpsertWithWhereUniqueWithoutResumeInput[]
-  createMany?: Prisma.EmailJobCreateManyResumeInputEnvelope
+export type EmailJobUncheckedUpdateManyWithoutAttachmentNestedInput = {
+  create?: Prisma.XOR<Prisma.EmailJobCreateWithoutAttachmentInput, Prisma.EmailJobUncheckedCreateWithoutAttachmentInput> | Prisma.EmailJobCreateWithoutAttachmentInput[] | Prisma.EmailJobUncheckedCreateWithoutAttachmentInput[]
+  connectOrCreate?: Prisma.EmailJobCreateOrConnectWithoutAttachmentInput | Prisma.EmailJobCreateOrConnectWithoutAttachmentInput[]
+  upsert?: Prisma.EmailJobUpsertWithWhereUniqueWithoutAttachmentInput | Prisma.EmailJobUpsertWithWhereUniqueWithoutAttachmentInput[]
+  createMany?: Prisma.EmailJobCreateManyAttachmentInputEnvelope
   set?: Prisma.EmailJobWhereUniqueInput | Prisma.EmailJobWhereUniqueInput[]
   disconnect?: Prisma.EmailJobWhereUniqueInput | Prisma.EmailJobWhereUniqueInput[]
   delete?: Prisma.EmailJobWhereUniqueInput | Prisma.EmailJobWhereUniqueInput[]
   connect?: Prisma.EmailJobWhereUniqueInput | Prisma.EmailJobWhereUniqueInput[]
-  update?: Prisma.EmailJobUpdateWithWhereUniqueWithoutResumeInput | Prisma.EmailJobUpdateWithWhereUniqueWithoutResumeInput[]
-  updateMany?: Prisma.EmailJobUpdateManyWithWhereWithoutResumeInput | Prisma.EmailJobUpdateManyWithWhereWithoutResumeInput[]
+  update?: Prisma.EmailJobUpdateWithWhereUniqueWithoutAttachmentInput | Prisma.EmailJobUpdateWithWhereUniqueWithoutAttachmentInput[]
+  updateMany?: Prisma.EmailJobUpdateManyWithWhereWithoutAttachmentInput | Prisma.EmailJobUpdateManyWithWhereWithoutAttachmentInput[]
   deleteMany?: Prisma.EmailJobScalarWhereInput | Prisma.EmailJobScalarWhereInput[]
 }
 
@@ -999,7 +999,7 @@ export type EmailJobCreateWithoutUserInput = {
   campaign?: Prisma.CampaignCreateNestedOneWithoutEmail_jobsInput
   contact: Prisma.ContactCreateNestedOneWithoutEmail_jobsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutEmail_jobsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutEmail_jobsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutEmail_jobsInput
   template: Prisma.TemplateCreateNestedOneWithoutEmail_jobsInput
   email_logs?: Prisma.EmailLogCreateNestedManyWithoutEmail_jobInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutEmail_jobInput
@@ -1010,7 +1010,7 @@ export type EmailJobUncheckedCreateWithoutUserInput = {
   campaign_id?: string | null
   contact_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -1063,7 +1063,7 @@ export type EmailJobScalarWhereInput = {
   campaign_id?: Prisma.UuidNullableFilter<"EmailJob"> | string | null
   contact_id?: Prisma.UuidFilter<"EmailJob"> | string
   email_account_id?: Prisma.UuidFilter<"EmailJob"> | string
-  resume_id?: Prisma.UuidFilter<"EmailJob"> | string
+  attachment_id?: Prisma.UuidFilter<"EmailJob"> | string
   template_id?: Prisma.UuidFilter<"EmailJob"> | string
   to_email?: Prisma.StringFilter<"EmailJob"> | string
   subject?: Prisma.StringFilter<"EmailJob"> | string
@@ -1096,7 +1096,7 @@ export type EmailJobCreateWithoutEmail_accountInput = {
   user: Prisma.UserCreateNestedOneWithoutEmail_jobsInput
   campaign?: Prisma.CampaignCreateNestedOneWithoutEmail_jobsInput
   contact: Prisma.ContactCreateNestedOneWithoutEmail_jobsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutEmail_jobsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutEmail_jobsInput
   template: Prisma.TemplateCreateNestedOneWithoutEmail_jobsInput
   email_logs?: Prisma.EmailLogCreateNestedManyWithoutEmail_jobInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutEmail_jobInput
@@ -1107,7 +1107,7 @@ export type EmailJobUncheckedCreateWithoutEmail_accountInput = {
   user_id: string
   campaign_id?: string | null
   contact_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -1151,7 +1151,7 @@ export type EmailJobUpdateManyWithWhereWithoutEmail_accountInput = {
   data: Prisma.XOR<Prisma.EmailJobUpdateManyMutationInput, Prisma.EmailJobUncheckedUpdateManyWithoutEmail_accountInput>
 }
 
-export type EmailJobCreateWithoutResumeInput = {
+export type EmailJobCreateWithoutAttachmentInput = {
   id?: string
   to_email: string
   subject: string
@@ -1174,7 +1174,7 @@ export type EmailJobCreateWithoutResumeInput = {
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutEmail_jobInput
 }
 
-export type EmailJobUncheckedCreateWithoutResumeInput = {
+export type EmailJobUncheckedCreateWithoutAttachmentInput = {
   id?: string
   user_id: string
   campaign_id?: string | null
@@ -1197,30 +1197,30 @@ export type EmailJobUncheckedCreateWithoutResumeInput = {
   reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutEmail_jobInput
 }
 
-export type EmailJobCreateOrConnectWithoutResumeInput = {
+export type EmailJobCreateOrConnectWithoutAttachmentInput = {
   where: Prisma.EmailJobWhereUniqueInput
-  create: Prisma.XOR<Prisma.EmailJobCreateWithoutResumeInput, Prisma.EmailJobUncheckedCreateWithoutResumeInput>
+  create: Prisma.XOR<Prisma.EmailJobCreateWithoutAttachmentInput, Prisma.EmailJobUncheckedCreateWithoutAttachmentInput>
 }
 
-export type EmailJobCreateManyResumeInputEnvelope = {
-  data: Prisma.EmailJobCreateManyResumeInput | Prisma.EmailJobCreateManyResumeInput[]
+export type EmailJobCreateManyAttachmentInputEnvelope = {
+  data: Prisma.EmailJobCreateManyAttachmentInput | Prisma.EmailJobCreateManyAttachmentInput[]
   skipDuplicates?: boolean
 }
 
-export type EmailJobUpsertWithWhereUniqueWithoutResumeInput = {
+export type EmailJobUpsertWithWhereUniqueWithoutAttachmentInput = {
   where: Prisma.EmailJobWhereUniqueInput
-  update: Prisma.XOR<Prisma.EmailJobUpdateWithoutResumeInput, Prisma.EmailJobUncheckedUpdateWithoutResumeInput>
-  create: Prisma.XOR<Prisma.EmailJobCreateWithoutResumeInput, Prisma.EmailJobUncheckedCreateWithoutResumeInput>
+  update: Prisma.XOR<Prisma.EmailJobUpdateWithoutAttachmentInput, Prisma.EmailJobUncheckedUpdateWithoutAttachmentInput>
+  create: Prisma.XOR<Prisma.EmailJobCreateWithoutAttachmentInput, Prisma.EmailJobUncheckedCreateWithoutAttachmentInput>
 }
 
-export type EmailJobUpdateWithWhereUniqueWithoutResumeInput = {
+export type EmailJobUpdateWithWhereUniqueWithoutAttachmentInput = {
   where: Prisma.EmailJobWhereUniqueInput
-  data: Prisma.XOR<Prisma.EmailJobUpdateWithoutResumeInput, Prisma.EmailJobUncheckedUpdateWithoutResumeInput>
+  data: Prisma.XOR<Prisma.EmailJobUpdateWithoutAttachmentInput, Prisma.EmailJobUncheckedUpdateWithoutAttachmentInput>
 }
 
-export type EmailJobUpdateManyWithWhereWithoutResumeInput = {
+export type EmailJobUpdateManyWithWhereWithoutAttachmentInput = {
   where: Prisma.EmailJobScalarWhereInput
-  data: Prisma.XOR<Prisma.EmailJobUpdateManyMutationInput, Prisma.EmailJobUncheckedUpdateManyWithoutResumeInput>
+  data: Prisma.XOR<Prisma.EmailJobUpdateManyMutationInput, Prisma.EmailJobUncheckedUpdateManyWithoutAttachmentInput>
 }
 
 export type EmailJobCreateWithoutContactInput = {
@@ -1240,7 +1240,7 @@ export type EmailJobCreateWithoutContactInput = {
   user: Prisma.UserCreateNestedOneWithoutEmail_jobsInput
   campaign?: Prisma.CampaignCreateNestedOneWithoutEmail_jobsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutEmail_jobsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutEmail_jobsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutEmail_jobsInput
   template: Prisma.TemplateCreateNestedOneWithoutEmail_jobsInput
   email_logs?: Prisma.EmailLogCreateNestedManyWithoutEmail_jobInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutEmail_jobInput
@@ -1251,7 +1251,7 @@ export type EmailJobUncheckedCreateWithoutContactInput = {
   user_id: string
   campaign_id?: string | null
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -1313,7 +1313,7 @@ export type EmailJobCreateWithoutTemplateInput = {
   campaign?: Prisma.CampaignCreateNestedOneWithoutEmail_jobsInput
   contact: Prisma.ContactCreateNestedOneWithoutEmail_jobsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutEmail_jobsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutEmail_jobsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutEmail_jobsInput
   email_logs?: Prisma.EmailLogCreateNestedManyWithoutEmail_jobInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutEmail_jobInput
 }
@@ -1324,7 +1324,7 @@ export type EmailJobUncheckedCreateWithoutTemplateInput = {
   campaign_id?: string | null
   contact_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   to_email: string
   subject: string
   body: string
@@ -1384,7 +1384,7 @@ export type EmailJobCreateWithoutCampaignInput = {
   user: Prisma.UserCreateNestedOneWithoutEmail_jobsInput
   contact: Prisma.ContactCreateNestedOneWithoutEmail_jobsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutEmail_jobsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutEmail_jobsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutEmail_jobsInput
   template: Prisma.TemplateCreateNestedOneWithoutEmail_jobsInput
   email_logs?: Prisma.EmailLogCreateNestedManyWithoutEmail_jobInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutEmail_jobInput
@@ -1395,7 +1395,7 @@ export type EmailJobUncheckedCreateWithoutCampaignInput = {
   user_id: string
   contact_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -1457,7 +1457,7 @@ export type EmailJobCreateWithoutEmail_logsInput = {
   campaign?: Prisma.CampaignCreateNestedOneWithoutEmail_jobsInput
   contact: Prisma.ContactCreateNestedOneWithoutEmail_jobsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutEmail_jobsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutEmail_jobsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutEmail_jobsInput
   template: Prisma.TemplateCreateNestedOneWithoutEmail_jobsInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutEmail_jobInput
 }
@@ -1468,7 +1468,7 @@ export type EmailJobUncheckedCreateWithoutEmail_logsInput = {
   campaign_id?: string | null
   contact_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -1519,7 +1519,7 @@ export type EmailJobUpdateWithoutEmail_logsInput = {
   campaign?: Prisma.CampaignUpdateOneWithoutEmail_jobsNestedInput
   contact?: Prisma.ContactUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutEmail_jobsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutEmail_jobsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutEmail_jobsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutEmail_jobsNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutEmail_jobNestedInput
 }
@@ -1530,7 +1530,7 @@ export type EmailJobUncheckedUpdateWithoutEmail_logsInput = {
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1565,7 +1565,7 @@ export type EmailJobCreateWithoutReservationsInput = {
   campaign?: Prisma.CampaignCreateNestedOneWithoutEmail_jobsInput
   contact: Prisma.ContactCreateNestedOneWithoutEmail_jobsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutEmail_jobsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutEmail_jobsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutEmail_jobsInput
   template: Prisma.TemplateCreateNestedOneWithoutEmail_jobsInput
   email_logs?: Prisma.EmailLogCreateNestedManyWithoutEmail_jobInput
 }
@@ -1576,7 +1576,7 @@ export type EmailJobUncheckedCreateWithoutReservationsInput = {
   campaign_id?: string | null
   contact_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -1627,7 +1627,7 @@ export type EmailJobUpdateWithoutReservationsInput = {
   campaign?: Prisma.CampaignUpdateOneWithoutEmail_jobsNestedInput
   contact?: Prisma.ContactUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutEmail_jobsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutEmail_jobsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutEmail_jobsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_logs?: Prisma.EmailLogUpdateManyWithoutEmail_jobNestedInput
 }
@@ -1638,7 +1638,7 @@ export type EmailJobUncheckedUpdateWithoutReservationsInput = {
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1660,7 +1660,7 @@ export type EmailJobCreateManyUserInput = {
   campaign_id?: string | null
   contact_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -1693,7 +1693,7 @@ export type EmailJobUpdateWithoutUserInput = {
   campaign?: Prisma.CampaignUpdateOneWithoutEmail_jobsNestedInput
   contact?: Prisma.ContactUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutEmail_jobsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutEmail_jobsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutEmail_jobsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_logs?: Prisma.EmailLogUpdateManyWithoutEmail_jobNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutEmail_jobNestedInput
@@ -1704,7 +1704,7 @@ export type EmailJobUncheckedUpdateWithoutUserInput = {
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1727,7 +1727,7 @@ export type EmailJobUncheckedUpdateManyWithoutUserInput = {
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1748,7 +1748,7 @@ export type EmailJobCreateManyEmail_accountInput = {
   user_id: string
   campaign_id?: string | null
   contact_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -1781,7 +1781,7 @@ export type EmailJobUpdateWithoutEmail_accountInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutEmail_jobsNestedInput
   campaign?: Prisma.CampaignUpdateOneWithoutEmail_jobsNestedInput
   contact?: Prisma.ContactUpdateOneRequiredWithoutEmail_jobsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutEmail_jobsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutEmail_jobsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_logs?: Prisma.EmailLogUpdateManyWithoutEmail_jobNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutEmail_jobNestedInput
@@ -1792,7 +1792,7 @@ export type EmailJobUncheckedUpdateWithoutEmail_accountInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1815,7 +1815,7 @@ export type EmailJobUncheckedUpdateManyWithoutEmail_accountInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1831,7 +1831,7 @@ export type EmailJobUncheckedUpdateManyWithoutEmail_accountInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type EmailJobCreateManyResumeInput = {
+export type EmailJobCreateManyAttachmentInput = {
   id?: string
   user_id: string
   campaign_id?: string | null
@@ -1852,7 +1852,7 @@ export type EmailJobCreateManyResumeInput = {
   updated_at?: Date | string
 }
 
-export type EmailJobUpdateWithoutResumeInput = {
+export type EmailJobUpdateWithoutAttachmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1875,7 +1875,7 @@ export type EmailJobUpdateWithoutResumeInput = {
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutEmail_jobNestedInput
 }
 
-export type EmailJobUncheckedUpdateWithoutResumeInput = {
+export type EmailJobUncheckedUpdateWithoutAttachmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1898,7 +1898,7 @@ export type EmailJobUncheckedUpdateWithoutResumeInput = {
   reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutEmail_jobNestedInput
 }
 
-export type EmailJobUncheckedUpdateManyWithoutResumeInput = {
+export type EmailJobUncheckedUpdateManyWithoutAttachmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1924,7 +1924,7 @@ export type EmailJobCreateManyContactInput = {
   user_id: string
   campaign_id?: string | null
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -1957,7 +1957,7 @@ export type EmailJobUpdateWithoutContactInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutEmail_jobsNestedInput
   campaign?: Prisma.CampaignUpdateOneWithoutEmail_jobsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutEmail_jobsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutEmail_jobsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutEmail_jobsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_logs?: Prisma.EmailLogUpdateManyWithoutEmail_jobNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutEmail_jobNestedInput
@@ -1968,7 +1968,7 @@ export type EmailJobUncheckedUpdateWithoutContactInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1991,7 +1991,7 @@ export type EmailJobUncheckedUpdateManyWithoutContactInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2013,7 +2013,7 @@ export type EmailJobCreateManyTemplateInput = {
   campaign_id?: string | null
   contact_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   to_email: string
   subject: string
   body: string
@@ -2046,7 +2046,7 @@ export type EmailJobUpdateWithoutTemplateInput = {
   campaign?: Prisma.CampaignUpdateOneWithoutEmail_jobsNestedInput
   contact?: Prisma.ContactUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutEmail_jobsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutEmail_jobsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_logs?: Prisma.EmailLogUpdateManyWithoutEmail_jobNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutEmail_jobNestedInput
 }
@@ -2057,7 +2057,7 @@ export type EmailJobUncheckedUpdateWithoutTemplateInput = {
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2080,7 +2080,7 @@ export type EmailJobUncheckedUpdateManyWithoutTemplateInput = {
   campaign_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2100,7 +2100,7 @@ export type EmailJobCreateManyCampaignInput = {
   user_id: string
   contact_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   to_email: string
   subject: string
@@ -2133,7 +2133,7 @@ export type EmailJobUpdateWithoutCampaignInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutEmail_jobsNestedInput
   contact?: Prisma.ContactUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutEmail_jobsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutEmail_jobsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutEmail_jobsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutEmail_jobsNestedInput
   email_logs?: Prisma.EmailLogUpdateManyWithoutEmail_jobNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutEmail_jobNestedInput
@@ -2144,7 +2144,7 @@ export type EmailJobUncheckedUpdateWithoutCampaignInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2167,7 +2167,7 @@ export type EmailJobUncheckedUpdateManyWithoutCampaignInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   contact_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   to_email?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2229,7 +2229,7 @@ export type EmailJobSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   campaign_id?: boolean
   contact_id?: boolean
   email_account_id?: boolean
-  resume_id?: boolean
+  attachment_id?: boolean
   template_id?: boolean
   to_email?: boolean
   subject?: boolean
@@ -2247,7 +2247,7 @@ export type EmailJobSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   campaign?: boolean | Prisma.EmailJob$campaignArgs<ExtArgs>
   contact?: boolean | Prisma.ContactDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   email_logs?: boolean | Prisma.EmailJob$email_logsArgs<ExtArgs>
   reservations?: boolean | Prisma.EmailJob$reservationsArgs<ExtArgs>
@@ -2260,7 +2260,7 @@ export type EmailJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   campaign_id?: boolean
   contact_id?: boolean
   email_account_id?: boolean
-  resume_id?: boolean
+  attachment_id?: boolean
   template_id?: boolean
   to_email?: boolean
   subject?: boolean
@@ -2278,7 +2278,7 @@ export type EmailJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   campaign?: boolean | Prisma.EmailJob$campaignArgs<ExtArgs>
   contact?: boolean | Prisma.ContactDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["emailJob"]>
 
@@ -2288,7 +2288,7 @@ export type EmailJobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   campaign_id?: boolean
   contact_id?: boolean
   email_account_id?: boolean
-  resume_id?: boolean
+  attachment_id?: boolean
   template_id?: boolean
   to_email?: boolean
   subject?: boolean
@@ -2306,7 +2306,7 @@ export type EmailJobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   campaign?: boolean | Prisma.EmailJob$campaignArgs<ExtArgs>
   contact?: boolean | Prisma.ContactDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["emailJob"]>
 
@@ -2316,7 +2316,7 @@ export type EmailJobSelectScalar = {
   campaign_id?: boolean
   contact_id?: boolean
   email_account_id?: boolean
-  resume_id?: boolean
+  attachment_id?: boolean
   template_id?: boolean
   to_email?: boolean
   subject?: boolean
@@ -2332,13 +2332,13 @@ export type EmailJobSelectScalar = {
   updated_at?: boolean
 }
 
-export type EmailJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "campaign_id" | "contact_id" | "email_account_id" | "resume_id" | "template_id" | "to_email" | "subject" | "body" | "scheduled_at" | "status" | "attempt_count" | "processing_started_at" | "next_attempt_at" | "sent_at" | "error_message" | "created_at" | "updated_at", ExtArgs["result"]["emailJob"]>
+export type EmailJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "campaign_id" | "contact_id" | "email_account_id" | "attachment_id" | "template_id" | "to_email" | "subject" | "body" | "scheduled_at" | "status" | "attempt_count" | "processing_started_at" | "next_attempt_at" | "sent_at" | "error_message" | "created_at" | "updated_at", ExtArgs["result"]["emailJob"]>
 export type EmailJobInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   campaign?: boolean | Prisma.EmailJob$campaignArgs<ExtArgs>
   contact?: boolean | Prisma.ContactDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   email_logs?: boolean | Prisma.EmailJob$email_logsArgs<ExtArgs>
   reservations?: boolean | Prisma.EmailJob$reservationsArgs<ExtArgs>
@@ -2349,7 +2349,7 @@ export type EmailJobIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   campaign?: boolean | Prisma.EmailJob$campaignArgs<ExtArgs>
   contact?: boolean | Prisma.ContactDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
 }
 export type EmailJobIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2357,7 +2357,7 @@ export type EmailJobIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   campaign?: boolean | Prisma.EmailJob$campaignArgs<ExtArgs>
   contact?: boolean | Prisma.ContactDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
 }
 
@@ -2368,7 +2368,7 @@ export type $EmailJobPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     campaign: Prisma.$CampaignPayload<ExtArgs> | null
     contact: Prisma.$ContactPayload<ExtArgs>
     email_account: Prisma.$EmailAccountPayload<ExtArgs>
-    resume: Prisma.$ResumePayload<ExtArgs>
+    attachment: Prisma.$AttachmentPayload<ExtArgs>
     template: Prisma.$TemplatePayload<ExtArgs>
     email_logs: Prisma.$EmailLogPayload<ExtArgs>[]
     reservations: Prisma.$EmailSendReservationPayload<ExtArgs>[]
@@ -2379,7 +2379,7 @@ export type $EmailJobPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     campaign_id: string | null
     contact_id: string
     email_account_id: string
-    resume_id: string
+    attachment_id: string
     template_id: string
     to_email: string
     subject: string
@@ -2791,7 +2791,7 @@ export interface Prisma__EmailJobClient<T, Null = never, ExtArgs extends runtime
   campaign<T extends Prisma.EmailJob$campaignArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EmailJob$campaignArgs<ExtArgs>>): Prisma.Prisma__CampaignClient<runtime.Types.Result.GetResult<Prisma.$CampaignPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   contact<T extends Prisma.ContactDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ContactDefaultArgs<ExtArgs>>): Prisma.Prisma__ContactClient<runtime.Types.Result.GetResult<Prisma.$ContactPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   email_account<T extends Prisma.EmailAccountDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EmailAccountDefaultArgs<ExtArgs>>): Prisma.Prisma__EmailAccountClient<runtime.Types.Result.GetResult<Prisma.$EmailAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  resume<T extends Prisma.ResumeDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ResumeDefaultArgs<ExtArgs>>): Prisma.Prisma__ResumeClient<runtime.Types.Result.GetResult<Prisma.$ResumePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  attachment<T extends Prisma.AttachmentDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AttachmentDefaultArgs<ExtArgs>>): Prisma.Prisma__AttachmentClient<runtime.Types.Result.GetResult<Prisma.$AttachmentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   template<T extends Prisma.TemplateDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateDefaultArgs<ExtArgs>>): Prisma.Prisma__TemplateClient<runtime.Types.Result.GetResult<Prisma.$TemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   email_logs<T extends Prisma.EmailJob$email_logsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EmailJob$email_logsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reservations<T extends Prisma.EmailJob$reservationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EmailJob$reservationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailSendReservationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2829,7 +2829,7 @@ export interface EmailJobFieldRefs {
   readonly campaign_id: Prisma.FieldRef<"EmailJob", 'String'>
   readonly contact_id: Prisma.FieldRef<"EmailJob", 'String'>
   readonly email_account_id: Prisma.FieldRef<"EmailJob", 'String'>
-  readonly resume_id: Prisma.FieldRef<"EmailJob", 'String'>
+  readonly attachment_id: Prisma.FieldRef<"EmailJob", 'String'>
   readonly template_id: Prisma.FieldRef<"EmailJob", 'String'>
   readonly to_email: Prisma.FieldRef<"EmailJob", 'String'>
   readonly subject: Prisma.FieldRef<"EmailJob", 'String'>

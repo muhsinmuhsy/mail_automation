@@ -15,7 +15,7 @@ vi.mock('@/lib/storage/storage.factory', () => ({
 }));
 
 describe('worker/consumer', () => {
-  it('should send email with attachment when resume exists', async () => {
+  it('should send email with attachment when attachment exists', async () => {
     const { sendEmail } = await import('@/lib/email/service');
     const mockedSendEmail = vi.mocked(sendEmail);
     mockedSendEmail.mockResolvedValue({ success: true });
@@ -26,7 +26,7 @@ describe('worker/consumer', () => {
 
     const prisma = createMockPrisma() as any;
 
-    prisma.emailJob.findUnique.mockResolvedValue({ id: 'job-1', status: 'QUEUED', user_id: 'user-1', campaign_id: null, to_email: 'test@example.com', template_id: 'template-1', email_account_id: 'account-1', resume_id: 'resume-1', attempt_count: 0 });
+    prisma.emailJob.findUnique.mockResolvedValue({ id: 'job-1', status: 'QUEUED', user_id: 'user-1', campaign_id: null, to_email: 'test@example.com', template_id: 'template-1', email_account_id: 'account-1', attachment_id: 'attachment-1', attempt_count: 0 });
     prisma.emailJob.updateMany.mockResolvedValue({ count: 1 });
     prisma.user.findUnique.mockResolvedValue({ id: 'user-1', is_active: true });
     prisma.campaign.findUnique.mockResolvedValue(null);
@@ -39,7 +39,7 @@ describe('worker/consumer', () => {
     prisma.emailSendReservation.create.mockResolvedValue({});
     prisma.emailAccount.findUnique.mockResolvedValue({ id: 'account-1', is_active: true, email: 'from@example.com', provider: 'gmail', encrypted_secret: 'secret' });
     prisma.template.findUnique.mockResolvedValue({ id: 'template-1', subject: 'Hello', body: 'Body' });
-    prisma.resume.findUnique.mockResolvedValue({ id: 'resume-1', filename: 'resume.pdf', storage_key: 'key', user_id: 'user-1', deleted_at: null });
+    prisma.attachment.findUnique.mockResolvedValue({ id: 'attachment-1', filename: 'attachment.pdf', storage_key: 'key', user_id: 'user-1', deleted_at: null });
     prisma.$transaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<void>) => {
       const tx = {
         systemSetting: { findUnique: vi.fn().mockResolvedValue({ email_sending_enabled: true, global_daily_email_limit: 500 }) },
@@ -64,7 +64,7 @@ describe('worker/consumer', () => {
     expect(mockedSendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         attachment: expect.objectContaining({
-          filename: 'resume.pdf',
+          filename: 'attachment.pdf',
           contentType: 'application/pdf',
         }),
       })
@@ -90,7 +90,7 @@ describe('worker/consumer', () => {
 
 
     const prisma = createMockPrisma() as any;
-    prisma.emailJob.findUnique.mockResolvedValue({ id: 'job-1', status: 'QUEUED', user_id: 'user-1', campaign_id: null, to_email: 'test@example.com', template_id: 'template-1', email_account_id: 'account-1', resume_id: 'resume-1', attempt_count: 0 });
+    prisma.emailJob.findUnique.mockResolvedValue({ id: 'job-1', status: 'QUEUED', user_id: 'user-1', campaign_id: null, to_email: 'test@example.com', template_id: 'template-1', email_account_id: 'account-1', attachment_id: 'attachment-1', attempt_count: 0 });
     prisma.emailJob.updateMany.mockResolvedValue({ count: 1 });
     prisma.user.findUnique.mockResolvedValue({ id: 'user-1', is_active: true });
     prisma.campaign.findUnique.mockResolvedValue(null);
@@ -103,7 +103,7 @@ describe('worker/consumer', () => {
     prisma.emailSendReservation.create.mockResolvedValue({});
     prisma.emailAccount.findUnique.mockResolvedValue({ id: 'account-1', is_active: true, email: 'from@example.com', provider: 'gmail', encrypted_secret: 'secret' });
     prisma.template.findUnique.mockResolvedValue({ id: 'template-1', subject: 'Hello', body: 'Body' });
-    prisma.resume.findUnique.mockResolvedValue({ id: 'resume-1', filename: 'resume.pdf', storage_key: 'key', user_id: 'user-1', deleted_at: null });
+    prisma.attachment.findUnique.mockResolvedValue({ id: 'attachment-1', filename: 'attachment.pdf', storage_key: 'key', user_id: 'user-1', deleted_at: null });
     prisma.$transaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<void>) => {
       const tx = {
         systemSetting: { findUnique: vi.fn().mockResolvedValue({ email_sending_enabled: true, global_daily_email_limit: 500 }) },
@@ -149,7 +149,7 @@ describe('worker/consumer', () => {
 
 
     const prisma = createMockPrisma() as any;
-    prisma.emailJob.findUnique.mockResolvedValue({ id: 'job-1', status: 'QUEUED', user_id: 'user-1', campaign_id: null, to_email: 'test@example.com', template_id: 'template-1', email_account_id: 'account-1', resume_id: 'resume-1', attempt_count: 0 });
+    prisma.emailJob.findUnique.mockResolvedValue({ id: 'job-1', status: 'QUEUED', user_id: 'user-1', campaign_id: null, to_email: 'test@example.com', template_id: 'template-1', email_account_id: 'account-1', attachment_id: 'attachment-1', attempt_count: 0 });
     prisma.emailJob.updateMany.mockResolvedValue({ count: 1 });
     prisma.user.findUnique.mockResolvedValue({ id: 'user-1', is_active: true });
     prisma.campaign.findUnique.mockResolvedValue(null);
@@ -162,7 +162,7 @@ describe('worker/consumer', () => {
     prisma.emailSendReservation.create.mockResolvedValue({});
     prisma.emailAccount.findUnique.mockResolvedValue({ id: 'account-1', is_active: true, email: 'from@example.com', provider: 'gmail', encrypted_secret: 'secret' });
     prisma.template.findUnique.mockResolvedValue({ id: 'template-1', subject: 'Hello', body: 'Body' });
-    prisma.resume.findUnique.mockResolvedValue({ id: 'resume-1', filename: 'resume.pdf', storage_key: 'key', user_id: 'user-1', deleted_at: null });
+    prisma.attachment.findUnique.mockResolvedValue({ id: 'attachment-1', filename: 'attachment.pdf', storage_key: 'key', user_id: 'user-1', deleted_at: null });
     // Simulate a crash after provider acceptance: the SENT status write fails,
     // but the later DELIVERY_UNKNOWN write must succeed.
     prisma.emailJob.update = vi.fn().mockImplementation(async (args: { data?: { status?: string } }) => {

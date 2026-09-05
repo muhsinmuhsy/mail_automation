@@ -127,20 +127,20 @@ export async function processQueueJob(
       return;
     }
 
-    const resume = await prisma.resume.findUnique({
-      where: { id: job.resume_id, user_id: job.user_id, deleted_at: null },
+    const attachment = await prisma.attachment.findUnique({
+      where: { id: job.attachment_id, user_id: job.user_id, deleted_at: null },
     });
 
-    if (!resume) {
-      throw new Error('Resume is unavailable for this email job.');
+    if (!attachment) {
+      throw new Error('Attachment is unavailable for this email job.');
     }
     const storage = createStorageService(env);
-    const stream = await storage.download(resume.storage_key);
+    const stream = await storage.download(attachment.storage_key);
     const content = new Uint8Array(await new Response(stream).arrayBuffer());
-    const attachment = {
-      filename: resume.filename,
+    const attachmentEmail = {
+      filename: attachment.filename,
       content,
-      contentType: contentTypeForFilename(resume.filename),
+      contentType: contentTypeForFilename(attachment.filename),
     };
 
     let accepted = false;
@@ -158,7 +158,7 @@ export async function processQueueJob(
         to: job.to_email,
         subject: job.subject,
         body: job.body,
-        attachment,
+        attachment: attachmentEmail,
         credentials: {
           email: emailAccount.email,
           secret: decryptedSecret,

@@ -28,7 +28,7 @@ describe('integration/worker (consumer, no real DB)', () => {
     prisma.emailJob.findUnique.mockResolvedValue({
       id: 'job-1', status: 'QUEUED', user_id: 'user-1', campaign_id: null,
       to_email: 'test@example.com', template_id: 'template-1', email_account_id: 'account-1',
-      resume_id: 'resume-1', attempt_count: 0,
+      attachment_id: 'attachment-1', attempt_count: 0,
     });
     prisma.emailJob.updateMany.mockResolvedValue({ count: 1 });
     prisma.user.findUnique.mockResolvedValue({ id: 'user-1', is_active: true });
@@ -44,8 +44,8 @@ describe('integration/worker (consumer, no real DB)', () => {
       id: 'account-1', is_active: true, email: 'from@example.com', provider: 'gmail', encrypted_secret: 'secret',
     });
     prisma.template.findUnique.mockResolvedValue({ id: 'template-1', subject: 'Hello', body: 'Body' });
-    prisma.resume.findUnique.mockResolvedValue({
-      id: 'resume-1', filename: 'resume.pdf', storage_key: 'key', user_id: 'user-1', deleted_at: null,
+    prisma.attachment.findUnique.mockResolvedValue({
+      id: 'attachment-1', filename: 'attachment.pdf', storage_key: 'key', user_id: 'user-1', deleted_at: null,
     });
     prisma.$transaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<void>) => {
       const tx = {
@@ -71,7 +71,7 @@ describe('integration/worker (consumer, no real DB)', () => {
 
     expect(mockedSendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        attachment: expect.objectContaining({ filename: 'resume.pdf', contentType: 'application/pdf' }),
+        attachment: expect.objectContaining({ filename: 'attachment.pdf', contentType: 'application/pdf' }),
       }),
     );
     expect(prisma.emailJob.update).toHaveBeenCalledWith(

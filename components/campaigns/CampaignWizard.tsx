@@ -17,7 +17,7 @@ export interface CampaignSelectOption {
 export interface CampaignSubmitData {
   name: string;
   emailAccountId: string;
-  resumeId: string;
+  attachmentId: string;
   templateId: string;
   contactIds: string[];
   startAt: string;
@@ -28,7 +28,7 @@ export interface CampaignSubmitData {
 
 interface CampaignWizardProps {
   emailAccounts?: CampaignSelectOption[];
-  resumes?: CampaignSelectOption[];
+  attachments?: CampaignSelectOption[];
   templates?: CampaignSelectOption[];
   contacts?: CampaignSelectOption[];
   loading?: boolean;
@@ -52,7 +52,7 @@ function optionList(label: string, options: CampaignSelectOption[]) {
 
 export function CampaignWizard({
   emailAccounts = [],
-  resumes = [],
+  attachments = [],
   templates = [],
   contacts = [],
   loading = false,
@@ -61,7 +61,7 @@ export function CampaignWizard({
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [emailAccountId, setEmailAccountId] = useState('');
-  const [resumeId, setResumeId] = useState('');
+  const [attachmentId, setAttachmentId] = useState('');
   const [templateId, setTemplateId] = useState('');
   const [contactIds, setContactIds] = useState<string[]>([]);
   const [startAt, setStartAt] = useState(defaultLocalDateTime);
@@ -77,16 +77,16 @@ export function CampaignWizard({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const effectiveEmailAccountId = emailAccountId || emailAccounts[0]?.id || '';
-  const effectiveResumeId = resumeId || resumes[0]?.id || '';
+  const effectiveAttachmentId = attachmentId || attachments[0]?.id || '';
   const effectiveTemplateId = templateId || templates[0]?.id || '';
 
   const selected = useMemo(
     () => ({
       emailAccount: emailAccounts.find((item) => item.id === effectiveEmailAccountId),
-      resume: resumes.find((item) => item.id === effectiveResumeId),
+      attachment: attachments.find((item) => item.id === effectiveAttachmentId),
       template: templates.find((item) => item.id === effectiveTemplateId),
     }),
-    [effectiveEmailAccountId, effectiveResumeId, effectiveTemplateId, emailAccounts, resumes, templates]
+    [effectiveEmailAccountId, effectiveAttachmentId, effectiveTemplateId, emailAccounts, attachments, templates]
   );
 
   const validateStep = (targetStep = step) => {
@@ -96,7 +96,7 @@ export function CampaignWizard({
     }
     if (targetStep === 1) {
       if (!effectiveEmailAccountId) nextErrors.emailAccountId = 'Choose a sending account.';
-      if (!effectiveResumeId) nextErrors.resumeId = 'Choose a resume.';
+      if (!effectiveAttachmentId) nextErrors.attachmentId = 'Choose an attachment.';
       if (!effectiveTemplateId) nextErrors.templateId = 'Choose a template.';
     }
     if (targetStep === 2 && contactIds.length === 0) {
@@ -125,7 +125,7 @@ export function CampaignWizard({
   const canSubmit =
     name.trim() &&
     effectiveEmailAccountId &&
-    effectiveResumeId &&
+    effectiveAttachmentId &&
     effectiveTemplateId &&
     contactIds.length > 0 &&
     startAt &&
@@ -149,7 +149,7 @@ export function CampaignWizard({
     onSubmit({
       name: name.trim(),
       emailAccountId: effectiveEmailAccountId,
-      resumeId: effectiveResumeId,
+      attachmentId: effectiveAttachmentId,
       templateId: effectiveTemplateId,
       contactIds,
       startAt: localDateTimeToIso(startAt),
@@ -203,11 +203,11 @@ export function CampaignWizard({
               required
             />
             <Select
-              label="Resume"
-              value={effectiveResumeId}
-              onChange={(event) => setResumeId(event.target.value)}
-              options={optionList('Select resume', resumes)}
-              error={errors.resumeId}
+              label="Attachment"
+              value={effectiveAttachmentId}
+              onChange={(event) => setAttachmentId(event.target.value)}
+              options={optionList('Select attachment', attachments)}
+              error={errors.attachmentId}
               required
             />
             <Select
@@ -301,8 +301,8 @@ export function CampaignWizard({
                 <dd className="font-medium text-text-primary">{selected.emailAccount?.label ?? 'Not selected'}</dd>
               </div>
               <div>
-                <dt className="text-caption text-text-secondary">Resume</dt>
-                <dd className="font-medium text-text-primary">{selected.resume?.label ?? 'Not selected'}</dd>
+                <dt className="text-caption text-text-secondary">Attachment</dt>
+                <dd className="font-medium text-text-primary">{selected.attachment?.label ?? 'Not selected'}</dd>
               </div>
               <div>
                 <dt className="text-caption text-text-secondary">Template</dt>

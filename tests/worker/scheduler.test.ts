@@ -120,7 +120,7 @@ describe('lib/jobs/scheduler', () => {
           timezone: 'UTC',
           interval_minutes: 10,
           email_account_id: 'account-1',
-          resume_id: 'resume-1',
+          attachment_id: 'attachment-1',
           template_id: 'template-1',
         },
         ['contact-1']

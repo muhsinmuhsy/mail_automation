@@ -45,7 +45,7 @@ const baseJob = {
   subject: 'Subj',
   body: 'Body',
   email_account_id: 'account-1',
-  resume_id: 'resume-1',
+  attachment_id: 'attachment-1',
   attempt_count: 0,
 };
 
@@ -65,9 +65,9 @@ function buildPrisma(overrides: Record<string, any> = {}) {
     provider: 'gmail',
     encrypted_secret: 'secret',
   });
-  prisma.resume.findUnique.mockResolvedValue({
-    id: 'resume-1',
-    filename: 'resume.pdf',
+  prisma.attachment.findUnique.mockResolvedValue({
+    id: 'attachment-1',
+    filename: 'attachment.pdf',
     storage_key: 'key',
     user_id: 'user-1',
     deleted_at: null,
@@ -219,9 +219,9 @@ describe('worker/consumer additional coverage', () => {
     expect(releaseReservation).toHaveBeenCalled();
   });
 
-  it('outer catch: resume missing (attempt < MAX) -> RETRY_WAIT + release', async () => {
+  it('outer catch: attachment missing (attempt < MAX) -> RETRY_WAIT + release', async () => {
     const prisma = buildPrisma();
-    prisma.resume.findUnique.mockResolvedValue(null);
+    prisma.attachment.findUnique.mockResolvedValue(null);
     await processQueueJob(prisma, createMockEnv(), 'job-1');
     expect(releaseReservation).toHaveBeenCalled();
     expect(getUpdate(prisma, 'RETRY_WAIT')).toMatchObject({
@@ -230,9 +230,9 @@ describe('worker/consumer additional coverage', () => {
     });
   });
 
-  it('outer catch: resume missing (attempt >= MAX) -> FAILED + release', async () => {
+  it('outer catch: attachment missing (attempt >= MAX) -> FAILED + release', async () => {
     const prisma = buildPrisma({ job: { attempt_count: MAX_ATTEMPTS - 1 } });
-    prisma.resume.findUnique.mockResolvedValue(null);
+    prisma.attachment.findUnique.mockResolvedValue(null);
     await processQueueJob(prisma, createMockEnv(), 'job-1');
     expect(releaseReservation).toHaveBeenCalled();
     expect(getUpdate(prisma, 'FAILED')).toMatchObject({
@@ -318,7 +318,7 @@ describe('worker/consumer additional coverage', () => {
 
   describe('contentTypeForFilename', () => {
     const cases: Array<[string, string]> = [
-      ['resume.pdf', 'application/pdf'],
+      ['attachment.pdf', 'application/pdf'],
       ['doc.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
       ['doc.doc', 'application/msword'],
       ['note.txt', 'text/plain'],
@@ -328,8 +328,8 @@ describe('worker/consumer additional coverage', () => {
     for (const [filename, contentType] of cases) {
       it(`maps ${filename} -> ${contentType}`, async () => {
         const prisma = buildPrisma();
-        prisma.resume.findUnique.mockResolvedValue({
-          id: 'resume-1',
+        prisma.attachment.findUnique.mockResolvedValue({
+          id: 'attachment-1',
           filename,
           storage_key: 'key',
           user_id: 'user-1',

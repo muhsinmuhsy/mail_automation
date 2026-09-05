@@ -8,7 +8,7 @@ const options = {
     { id: 'account-1', label: 'sender@example.com (gmail)' },
     { id: 'account-2', label: 'backup@example.com (gmail)' },
   ],
-  resumes: [{ id: 'resume-1', label: 'Resume.pdf (default)' }],
+  attachments: [{ id: 'attachment-1', label: 'Attachment.pdf (default)' }],
   templates: [{ id: 'template-1', label: 'Follow-up', description: 'Hello {{name}}' }],
   contacts: [
     { id: 'contact-1', label: 'Ada Lovelace', description: 'ada@example.com - Analytical Engines' },
@@ -24,7 +24,7 @@ async function completeWizard(onSubmit = vi.fn()) {
   await user.click(screen.getByRole('button', { name: 'Continue' }));
 
   expect(screen.getByLabelText('Sending account')).toHaveValue('account-1');
-  expect(screen.getByLabelText('Resume')).toHaveValue('resume-1');
+  expect(screen.getByLabelText('Attachment')).toHaveValue('attachment-1');
   expect(screen.getByLabelText('Template')).toHaveValue('template-1');
   await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -67,7 +67,7 @@ describe('CampaignWizard', () => {
     expect(screen.getByLabelText('Campaign name')).toBeInTheDocument();
   });
 
-  it('shows real account, resume, and template options instead of empty selects', async () => {
+  it('shows real account, attachment, and template options instead of empty selects', async () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
@@ -75,7 +75,7 @@ describe('CampaignWizard', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(screen.getByRole('option', { name: 'sender@example.com (gmail)' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Resume.pdf (default)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Attachment.pdf (default)' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Follow-up' })).toBeInTheDocument();
   });
 
@@ -104,7 +104,7 @@ describe('CampaignWizard', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       name: 'Hiring outreach',
       emailAccountId: 'account-1',
-      resumeId: 'resume-1',
+      attachmentId: 'attachment-1',
       templateId: 'template-1',
       contactIds: ['contact-1', 'contact-2'],
       startAt: expect.stringMatching(/^2026-09-03T/),

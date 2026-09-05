@@ -20,7 +20,7 @@ describe('lib/campaigns/scheduler', () => {
       interval_minutes: 10,
       daily_limit: 20,
       email_account_id: 'account-1',
-      resume_id: 'resume-1',
+      attachment_id: 'attachment-1',
       template_id: 'template-1',
     };
 
@@ -33,7 +33,7 @@ describe('lib/campaigns/scheduler', () => {
           campaign_id: 'campaign-1',
           contact_id: 'contact-1',
           email_account_id: 'account-1',
-          resume_id: 'resume-1',
+          attachment_id: 'attachment-1',
           template_id: 'template-1',
           to_email: 'test@example.com',
           subject: 'Subject',
@@ -68,7 +68,7 @@ describe('lib/campaigns/scheduler', () => {
       interval_minutes: 10,
       daily_limit: 20,
       email_account_id: 'account-1',
-      resume_id: 'resume-1',
+      attachment_id: 'attachment-1',
       template_id: 'template-1',
     };
 
@@ -100,7 +100,7 @@ describe('lib/campaigns/scheduler', () => {
       interval_minutes: 10,
       daily_limit: 20,
       email_account_id: 'account-1',
-      resume_id: 'resume-1',
+      attachment_id: 'attachment-1',
       template_id: 'template-1',
     };
 

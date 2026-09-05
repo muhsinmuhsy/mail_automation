@@ -52,12 +52,12 @@ const _POST = defineRoute(async (req, ctx) => {
     );
   }
 
-  const [emailAccount, resume, template] = await Promise.all([
+  const [emailAccount, attachment, template] = await Promise.all([
     getPrisma().emailAccount.findFirst({
       where: { id: parsed.data.email_account_id, user_id: ctx.user.id },
     }),
-    getPrisma().resume.findFirst({
-      where: { id: parsed.data.resume_id, user_id: ctx.user.id, deleted_at: null },
+    getPrisma().attachment.findFirst({
+      where: { id: parsed.data.attachment_id, user_id: ctx.user.id, deleted_at: null },
     }),
     getPrisma().template.findFirst({
       where: { id: parsed.data.template_id, user_id: ctx.user.id },
@@ -70,8 +70,8 @@ const _POST = defineRoute(async (req, ctx) => {
       ctx.requestId
     );
   }
-  if (!resume) {
-    return respondError(new ForbiddenError('Resume not found or does not belong to you.'), ctx.requestId);
+  if (!attachment) {
+    return respondError(new ForbiddenError('Attachment not found or does not belong to you.'), ctx.requestId);
   }
   if (!template) {
     return respondError(new ForbiddenError('Template not found or does not belong to you.'), ctx.requestId);
@@ -93,7 +93,7 @@ const _POST = defineRoute(async (req, ctx) => {
       user_id: ctx.user.id,
       name: parsed.data.name,
       email_account_id: parsed.data.email_account_id,
-      resume_id: parsed.data.resume_id,
+      attachment_id: parsed.data.attachment_id,
       template_id: parsed.data.template_id,
       start_at: parsed.data.start_at,
       timezone: parsed.data.timezone,
@@ -114,7 +114,7 @@ const _POST = defineRoute(async (req, ctx) => {
       interval_minutes: parsed.data.interval_minutes,
       daily_limit: parsed.data.daily_limit,
       email_account_id: parsed.data.email_account_id,
-      resume_id: parsed.data.resume_id,
+      attachment_id: parsed.data.attachment_id,
       template_id: parsed.data.template_id,
     },
     parsed.data.contact_ids

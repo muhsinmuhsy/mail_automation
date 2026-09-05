@@ -12,45 +12,45 @@ const _DELETE = defineRoute(async (_req, ctx) => {
     return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
   }
 
-  const resume = await getPrisma().resume.findUnique({
+  const attachment = await getPrisma().attachment.findUnique({
     where: { id: parsed.data.id },
   });
 
-  if (!resume) {
-    return respondError(new NotFoundError('Resume not found.'), ctx.requestId);
+  if (!attachment) {
+    return respondError(new NotFoundError('Attachment not found.'), ctx.requestId);
   }
 
   const pendingJobCount = await getPrisma().emailJob.count({
     where: {
-      resume_id: parsed.data.id,
+      attachment_id: parsed.data.id,
       status: { in: ['SCHEDULED', 'QUEUED', 'PROCESSING', 'RETRY_WAIT'] },
     },
   });
 
   if (pendingJobCount > 0) {
-    await getPrisma().resume.update({
-      where: { id: resume.id },
+    await getPrisma().attachment.update({
+      where: { id: attachment.id },
       data: { deleted_at: new Date(), is_default: false },
     });
-    return respondOk(null, ctx.requestId, 'Resume removed and retained for pending emails.');
+    return respondOk(null, ctx.requestId, 'Attachment removed and retained for pending emails.');
   }
 
-  await createStorageService(process.env).delete(resume.storage_key);
-  await getPrisma().resume.delete({ where: { id: resume.id } });
+  await createStorageService(process.env).delete(attachment.storage_key);
+  await getPrisma().attachment.delete({ where: { id: attachment.id } });
 
-  return respondOk(null, ctx.requestId, 'Resume deleted.');
+  return respondOk(null, ctx.requestId, 'Attachment deleted.');
 }, {
   auth: {
     ownership: async (params) => {
-      const r = await getPrisma().resume.findUnique({
+      const r = await getPrisma().attachment.findUnique({
         where: { id: params.id },
         select: { user_id: true, deleted_at: true },
       });
-      if (!r || r.deleted_at) throw new NotFoundError('Resume not found.');
+      if (!r || r.deleted_at) throw new NotFoundError('Attachment not found.');
       return r.user_id;
     },
   },
-  rateLimitKey: 'resume-delete',
+  rateLimitKey: 'attachment-delete',
 });
 
 

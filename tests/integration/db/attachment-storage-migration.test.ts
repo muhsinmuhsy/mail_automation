@@ -3,14 +3,14 @@ import { randomUUID } from 'node:crypto';
 import { Pool } from '@neondatabase/serverless';
 import { describe, expect, it } from 'vitest';
 
-const connectionString = process.env.RESUME_MIGRATION_TEST_DATABASE_URL;
+const connectionString = process.env.ATTACHMENT_MIGRATION_TEST_DATABASE_URL;
 const migration = readFileSync(
   'prisma/migrations/20260905_resume_storage_key/migration.sql', 'utf8',
 );
 
 // Opt in with a PostgreSQL test database. Every case runs in an isolated
 // schema and rolls back, including when an assertion fails.
-describe.skipIf(!connectionString)('resume storage migration (real PostgreSQL)', () => {
+describe.skipIf(!connectionString)('attachment storage migration (real PostgreSQL)', () => {
   it.each(['r2_key', 'storage_key'])('preserves data and permits uploads from %s', async (column) => {
     const pool = new Pool({ connectionString });
     const client = await pool.connect();

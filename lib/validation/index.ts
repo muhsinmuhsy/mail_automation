@@ -37,7 +37,7 @@ export const emailAccountSchema = z.object({
 export const campaignSchema = z.object({
   name: z.string().trim().min(1, 'Name is required.').max(255, 'Name is too long.'),
   email_account_id: z.string().uuid('Invalid email account.'),
-  resume_id: z.string().uuid('Invalid resume.'),
+  attachment_id: z.string().uuid('Invalid attachment.'),
   template_id: z.string().uuid('Invalid template.'),
   contact_ids: z.array(z.string().uuid()).min(1, 'Select at least one contact.').max(5000),
   start_at: z.string().min(1, 'Start time is required.'),
@@ -46,7 +46,7 @@ export const campaignSchema = z.object({
   daily_limit: z.number().int().min(1).max(100000).optional(),
 });
 
-export const resumeUploadSchema = z.object({
+export const attachmentUploadSchema = z.object({
   filename: z.string().trim().min(1).max(255, 'Filename is too long.'),
   size_bytes: z.number().int().min(1).max(50 * 1024 * 1024, 'File exceeds 50MB.').optional(),
   content_type: z.string().max(255).optional(),

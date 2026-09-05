@@ -59,9 +59,9 @@ import * as emailAccountReactivate from '@/app/api/email-accounts/[id]/reactivat
 import * as emailAccountTest from '@/app/api/email-accounts/[id]/test/route';
 import * as emails from '@/app/api/emails/route';
 import * as emailById from '@/app/api/emails/[id]/route';
-import * as resumes from '@/app/api/resumes/route';
-import * as resumeById from '@/app/api/resumes/[id]/route';
-import * as resumeDefault from '@/app/api/resumes/[id]/default/route';
+import * as attachments from '@/app/api/attachments/route';
+import * as attachmentById from '@/app/api/attachments/[id]/route';
+import * as attachmentDefault from '@/app/api/attachments/[id]/default/route';
 import * as templates from '@/app/api/templates/route';
 import * as templateById from '@/app/api/templates/[id]/route';
 
@@ -202,7 +202,7 @@ describe('app/api route handlers (unit coverage)', () => {
 
   it('campaigns POST creates a campaign and schedules jobs', async () => {
     prismaMock.emailAccount.findFirst.mockResolvedValue({ id: UUID });
-    prismaMock.resume.findFirst.mockResolvedValue({ id: UUID });
+    prismaMock.attachment.findFirst.mockResolvedValue({ id: UUID });
     prismaMock.template.findFirst.mockResolvedValue({ id: UUID });
     prismaMock.contact.count.mockResolvedValue(2);
     prismaMock.campaign.create.mockResolvedValue({ id: 'c1', name: 'n', status: 'DRAFT' });
@@ -212,7 +212,7 @@ describe('app/api route handlers (unit coverage)', () => {
     const body = {
       name: 'Launch',
       email_account_id: UUID,
-      resume_id: UUID,
+      attachment_id: UUID,
       template_id: UUID,
       contact_ids: [UUID, '00000000-0000-0000-0000-000000000002'],
       start_at: '2030-01-01T00:00:00Z',
@@ -383,40 +383,40 @@ describe('app/api route handlers (unit coverage)', () => {
     await ok((await (emailById as any).GET(makeReq(), CTX({ id: UUID }))));
   });
 
-  it('resumes GET lists resumes', async () => {
-    prismaMock.resume.findMany.mockResolvedValue([]);
-    prismaMock.resume.count.mockResolvedValue(0);
-    await ok((await (resumes as any).GET(makeReq(), CTX())));
+  it('attachments GET lists attachments', async () => {
+    prismaMock.attachment.findMany.mockResolvedValue([]);
+    prismaMock.attachment.count.mockResolvedValue(0);
+    await ok((await (attachments as any).GET(makeReq(), CTX())));
   });
 
-  it('resumes POST uploads a valid pdf', async () => {
+  it('attachments POST uploads a valid pdf', async () => {
     const bytes = new TextEncoder().encode('%PDF-valid');
-    const file = new File([bytes], 'resume.pdf', { type: 'application/pdf' });
+    const file = new File([bytes], 'attachment.pdf', { type: 'application/pdf' });
     const fd = new FormData();
     fd.append('file', file);
-    prismaMock.resume.create.mockResolvedValue({ id: 'r1' });
-    const res = await (resumes as any).POST(makeReq({ formData: fd }), CTX());
+    prismaMock.attachment.create.mockResolvedValue({ id: 'a1' });
+    const res = await (attachments as any).POST(makeReq({ formData: fd }), CTX());
     await ok(res);
   });
 
-  it('resumes/[id] DELETE removes when no pending jobs', async () => {
-    prismaMock.resume.findUnique.mockResolvedValue({ id: UUID });
+  it('attachments/[id] DELETE removes when no pending jobs', async () => {
+    prismaMock.attachment.findUnique.mockResolvedValue({ id: UUID });
     prismaMock.emailJob.count.mockResolvedValue(0);
-    prismaMock.resume.delete.mockResolvedValue({});
-    await ok((await (resumeById as any).DELETE(makeReq(), CTX({ id: UUID }))));
+    prismaMock.attachment.delete.mockResolvedValue({});
+    await ok((await (attachmentById as any).DELETE(makeReq(), CTX({ id: UUID }))));
   });
 
-  it('resumes/[id] DELETE retains when pending jobs exist', async () => {
-    prismaMock.resume.findUnique.mockResolvedValue({ id: UUID });
+  it('attachments/[id] DELETE retains when pending jobs exist', async () => {
+    prismaMock.attachment.findUnique.mockResolvedValue({ id: UUID });
     prismaMock.emailJob.count.mockResolvedValue(3);
-    prismaMock.resume.update.mockResolvedValue({});
-    await ok((await (resumeById as any).DELETE(makeReq(), CTX({ id: UUID }))));
+    prismaMock.attachment.update.mockResolvedValue({});
+    await ok((await (attachmentById as any).DELETE(makeReq(), CTX({ id: UUID }))));
   });
 
-  it('resumes/[id]/default sets the default resume', async () => {
-    prismaMock.resume.findUnique.mockResolvedValue({ id: UUID });
+  it('attachments/[id]/default sets the default attachment', async () => {
+    prismaMock.attachment.findUnique.mockResolvedValue({ id: UUID });
     prismaMock.$transaction.mockResolvedValue([]);
-    await ok((await (resumeDefault as any).POST(makeReq(), CTX({ id: UUID }))));
+    await ok((await (attachmentDefault as any).POST(makeReq(), CTX({ id: UUID }))));
   });
 
   it('templates GET lists templates', async () => {

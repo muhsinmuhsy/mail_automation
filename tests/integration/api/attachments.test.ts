@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
 import { ForbiddenError } from '@/lib/errors';
-import { GET as listResumes, POST as uploadResume } from '@/app/api/resumes/route';
-import { DELETE as deleteResume } from '@/app/api/resumes/[id]/route';
-import { POST as setDefaultResume } from '@/app/api/resumes/[id]/default/route';
+import { GET as listAttachments, POST as uploadAttachment } from '@/app/api/attachments/route';
+import { DELETE as deleteAttachment } from '@/app/api/attachments/[id]/route';
+import { POST as setDefaultAttachment } from '@/app/api/attachments/[id]/default/route';
 
 interface ApiBody {
   success: boolean;
@@ -13,7 +13,7 @@ interface ApiBody {
   error?: { type: string; message: string };
 }
 
-const RESUME_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const ATTACHMENT_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 
 const { mockRequireVerifiedSession, mockCheckApiRateLimit, storageUpload, storageDelete } =
   vi.hoisted(() => ({
@@ -24,7 +24,7 @@ const { mockRequireVerifiedSession, mockCheckApiRateLimit, storageUpload, storag
   }));
 
 const mockPrisma = {
-  resume: {
+  attachment: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
     findUnique: vi.fn(),
@@ -44,14 +44,10 @@ const mockPrisma = {
   $transaction: vi.fn(),
   $disconnect: vi.fn(),
 };
-// The route resolves ownership and loads the resume via `resume.findUnique`,
-// but this suite was written against `resume.findFirst`; alias them so both resolve identically.
-mockPrisma.resume.findUnique = mockPrisma.resume.findFirst;
+mockPrisma.attachment.findUnique = mockPrisma.attachment.findFirst;
 
 vi.mock('@/lib/auth/neon-auth', () => ({
   requireVerifiedSession: mockRequireVerifiedSession,
-  // Unverified users have no secondary (raw) session to fall back to in tests,
-  // so ownership/admin guards must reject them with a 403.
   getSession: vi.fn().mockImplementation(() => {
     throw new ForbiddenError('Email verification required.');
   }),
@@ -109,7 +105,7 @@ function rateLimited(): void {
   );
 }
 
-function pdfFile(name = 'resume.pdf', extraBytes = 32): File {
+function pdfFile(name = 'attachment.pdf', extraBytes = 32): File {
   const header = new TextEncoder().encode('%PDF-1.7\n');
   const bytes = new Uint8Array(header.length + extraBytes);
   bytes.set(header, 0);
@@ -121,7 +117,7 @@ function uploadRequest(parts: Array<[string, FormDataEntryValue]>): NextRequest 
   for (const [key, value] of parts) {
     formData.append(key, value as string | Blob);
   }
-  return new NextRequest('http://localhost/api/resumes', {
+  return new NextRequest('http://localhost/api/attachments', {
     method: 'POST',
     body: formData as unknown as BodyInit,
   });
@@ -133,42 +129,42 @@ beforeEach(() => {
   storageUpload.mockResolvedValue({ key: 'k', size: 1, contentType: 'application/pdf' });
   storageDelete.mockResolvedValue(undefined);
 
-  mockPrisma.resume.findMany.mockResolvedValue([
-    { id: RESUME_ID, filename: 'resume.pdf', is_default: true, created_at: new Date('2030-01-01') },
+  mockPrisma.attachment.findMany.mockResolvedValue([
+    { id: ATTACHMENT_ID, filename: 'attachment.pdf', is_default: true, created_at: new Date('2030-01-01') },
   ]);
-  mockPrisma.resume.count.mockResolvedValue(1);
-  mockPrisma.resume.findFirst.mockResolvedValue({
-    id: RESUME_ID,
+  mockPrisma.attachment.count.mockResolvedValue(1);
+  mockPrisma.attachment.findFirst.mockResolvedValue({
+    id: ATTACHMENT_ID,
     user_id: 'user-1',
-    filename: 'resume.pdf',
-    storage_key: `resumes/user-1/${RESUME_ID}.pdf`,
+    filename: 'attachment.pdf',
+    storage_key: `attachments/user-1/${ATTACHMENT_ID}.pdf`,
     is_default: false,
     deleted_at: null,
   });
-  mockPrisma.resume.create.mockResolvedValue({
-    id: RESUME_ID,
-    filename: 'resume.pdf',
+  mockPrisma.attachment.create.mockResolvedValue({
+    id: ATTACHMENT_ID,
+    filename: 'attachment.pdf',
     size_bytes: 41,
     is_default: false,
     created_at: new Date('2030-01-01'),
   });
-  mockPrisma.resume.update.mockResolvedValue({ id: RESUME_ID });
-  mockPrisma.resume.updateMany.mockResolvedValue({ count: 1 });
-  mockPrisma.resume.delete.mockResolvedValue({ id: RESUME_ID });
+  mockPrisma.attachment.update.mockResolvedValue({ id: ATTACHMENT_ID });
+  mockPrisma.attachment.updateMany.mockResolvedValue({ count: 1 });
+  mockPrisma.attachment.delete.mockResolvedValue({ id: ATTACHMENT_ID });
   mockPrisma.emailJob.count.mockResolvedValue(0);
   mockPrisma.$transaction.mockResolvedValue([]);
 });
 
-describe('GET /api/resumes', () => {
-  it('lists non-deleted resumes for the current user', async () => {
-    const response = await listResumes(new NextRequest('http://localhost/api/resumes'));
+describe('GET /api/attachments', () => {
+  it('lists non-deleted attachments for the current user', async () => {
+    const response = await listAttachments(new NextRequest('http://localhost/api/attachments'));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data).toHaveLength(1);
     expect(body.pagination).toEqual({ total: 1, page: 1, pageSize: 20, totalPages: 1 });
-    expect(mockPrisma.resume.findMany).toHaveBeenCalledWith(
+    expect(mockPrisma.attachment.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { user_id: 'user-1', deleted_at: null },
         skip: 0,
@@ -178,17 +174,17 @@ describe('GET /api/resumes', () => {
   });
 
   it('searches by filename and paginates', async () => {
-    mockPrisma.resume.count.mockResolvedValue(7);
+    mockPrisma.attachment.count.mockResolvedValue(7);
 
-    const response = await listResumes(
-      new NextRequest('http://localhost/api/resumes?search=cv&page=2&limit=3')
+    const response = await listAttachments(
+      new NextRequest('http://localhost/api/attachments?search=cv&page=2&limit=3')
     );
     const body = (await response.json()) as ApiBody;
 
     expect(body.pagination).toEqual({ total: 7, page: 2, pageSize: 3, totalPages: 3 });
-    const where = mockPrisma.resume.findMany.mock.calls[0][0].where;
+    const where = mockPrisma.attachment.findMany.mock.calls[0][0].where;
     expect(where.filename).toEqual({ contains: 'cv', mode: 'insensitive' });
-    expect(mockPrisma.resume.findMany).toHaveBeenCalledWith(
+    expect(mockPrisma.attachment.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 3, take: 3 })
     );
   });
@@ -196,18 +192,18 @@ describe('GET /api/resumes', () => {
   it('returns 401 when not authenticated', async () => {
     unauthenticated();
 
-    const response = await listResumes(new NextRequest('http://localhost/api/resumes'));
+    const response = await listAttachments(new NextRequest('http://localhost/api/attachments'));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(401);
     expect(body.error?.type).toBe('AUTHENTICATION_ERROR');
-    expect(mockPrisma.resume.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.attachment.findMany).not.toHaveBeenCalled();
   });
 
   it('returns 403 for an unverified user', async () => {
     unverified();
 
-    const response = await listResumes(new NextRequest('http://localhost/api/resumes'));
+    const response = await listAttachments(new NextRequest('http://localhost/api/attachments'));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(403);
@@ -215,9 +211,9 @@ describe('GET /api/resumes', () => {
   });
 
   it('returns 500 when listing fails', async () => {
-    mockPrisma.resume.findMany.mockRejectedValue(new Error('db down'));
+    mockPrisma.attachment.findMany.mockRejectedValue(new Error('db down'));
 
-    const response = await listResumes(new NextRequest('http://localhost/api/resumes'));
+    const response = await listAttachments(new NextRequest('http://localhost/api/attachments'));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(500);
@@ -225,27 +221,27 @@ describe('GET /api/resumes', () => {
   });
 });
 
-describe('POST /api/resumes', () => {
-  it('uploads a PDF, stores it and creates the resume row', async () => {
-    const response = await uploadResume(uploadRequest([['file', pdfFile()]]));
+describe('POST /api/attachments', () => {
+  it('uploads a PDF, stores it and creates the attachment row', async () => {
+    const response = await uploadAttachment(uploadRequest([['file', pdfFile()]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(201);
     expect(body.success).toBe(true);
-    expect(body.message).toBe('Resume uploaded successfully.');
+    expect(body.message).toBe('Attachment uploaded successfully.');
 
     expect(storageUpload).toHaveBeenCalledTimes(1);
     const uploadArg = storageUpload.mock.calls[0][0];
-    expect(uploadArg.key).toMatch(/^resumes\/user-1\/[0-9a-f-]{36}\.pdf$/);
+    expect(uploadArg.key).toMatch(/^attachments\/user-1\/[0-9a-f-]{36}\.pdf$/);
     expect(uploadArg.contentType).toBe('application/pdf');
     expect(uploadArg.contentLength).toBe(41);
-    expect(uploadArg.metadata).toEqual({ userId: 'user-1', originalFilename: 'resume.pdf' });
+    expect(uploadArg.metadata).toEqual({ userId: 'user-1', originalFilename: 'attachment.pdf' });
 
-    expect(mockPrisma.resume.create).toHaveBeenCalledWith(
+    expect(mockPrisma.attachment.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           user_id: 'user-1',
-          filename: 'resume.pdf',
+          filename: 'attachment.pdf',
           storage_key: uploadArg.key,
           size_bytes: 41,
         }),
@@ -255,7 +251,7 @@ describe('POST /api/resumes', () => {
   });
 
   it('returns 400 when no file part is present', async () => {
-    const response = await uploadResume(uploadRequest([]));
+    const response = await uploadAttachment(uploadRequest([]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
@@ -265,7 +261,7 @@ describe('POST /api/resumes', () => {
   });
 
   it('returns 400 when the file field is not a file', async () => {
-    const response = await uploadResume(uploadRequest([['file', 'just-a-string']]));
+    const response = await uploadAttachment(uploadRequest([['file', 'just-a-string']]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
@@ -273,101 +269,101 @@ describe('POST /api/resumes', () => {
   });
 
   it('returns 400 for an empty file', async () => {
-    const empty = new File([], 'resume.pdf', { type: 'application/pdf' });
+    const empty = new File([], 'attachment.pdf', { type: 'application/pdf' });
 
-    const response = await uploadResume(uploadRequest([['file', empty]]));
+    const response = await uploadAttachment(uploadRequest([['file', empty]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Resume must be a PDF no larger than 5 MB.');
+    expect(body.error?.message).toBe('Attachment must be a PDF no larger than 5 MB.');
   });
 
   it('returns 400 for a file larger than 5 MB', async () => {
     const oversized = new File(
       [new Uint8Array(5 * 1024 * 1024 + 1) as unknown as BlobPart],
-      'resume.pdf',
+      'attachment.pdf',
       { type: 'application/pdf' }
     );
 
-    const response = await uploadResume(uploadRequest([['file', oversized]]));
+    const response = await uploadAttachment(uploadRequest([['file', oversized]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Resume must be a PDF no larger than 5 MB.');
+    expect(body.error?.message).toBe('Attachment must be a PDF no larger than 5 MB.');
     expect(storageUpload).not.toHaveBeenCalled();
   });
 
   it('returns 400 when the extension is not .pdf', async () => {
     const wrongName = new File(
       [new TextEncoder().encode('%PDF-1.7\n') as unknown as BlobPart],
-      'resume.txt',
+      'attachment.txt',
       { type: 'application/pdf' }
     );
 
-    const response = await uploadResume(uploadRequest([['file', wrongName]]));
+    const response = await uploadAttachment(uploadRequest([['file', wrongName]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Resume must be a valid PDF file.');
+    expect(body.error?.message).toBe('Attachment must be a valid PDF file.');
   });
 
   it('returns 400 when the mime type is not application/pdf', async () => {
     const wrongType = new File(
       [new TextEncoder().encode('%PDF-1.7\n') as unknown as BlobPart],
-      'resume.pdf',
+      'attachment.pdf',
       { type: 'text/plain' }
     );
 
-    const response = await uploadResume(uploadRequest([['file', wrongType]]));
+    const response = await uploadAttachment(uploadRequest([['file', wrongType]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Resume must be a valid PDF file.');
+    expect(body.error?.message).toBe('Attachment must be a valid PDF file.');
   });
 
   it('returns 400 when the magic bytes are not a PDF header', async () => {
     const notPdf = new File(
       [new TextEncoder().encode('NOT-A-PDF-AT-ALL') as unknown as BlobPart],
-      'resume.pdf',
+      'attachment.pdf',
       { type: 'application/pdf' }
     );
 
-    const response = await uploadResume(uploadRequest([['file', notPdf]]));
+    const response = await uploadAttachment(uploadRequest([['file', notPdf]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Resume must be a valid PDF file.');
+    expect(body.error?.message).toBe('Attachment must be a valid PDF file.');
   });
 
   it('returns 400 when the file is too short to contain a PDF header', async () => {
     const tiny = new File(
       [new TextEncoder().encode('%PD') as unknown as BlobPart],
-      'resume.pdf',
+      'attachment.pdf',
       { type: 'application/pdf' }
     );
 
-    const response = await uploadResume(uploadRequest([['file', tiny]]));
+    const response = await uploadAttachment(uploadRequest([['file', tiny]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Resume must be a valid PDF file.');
+    expect(body.error?.message).toBe('Attachment must be a valid PDF file.');
   });
 
   it('returns 400 when the metadata fails schema validation', async () => {
     const longName = `${'a'.repeat(300)}.pdf`;
 
-    const response = await uploadResume(uploadRequest([['file', pdfFile(longName)]]));
+    const response = await uploadAttachment(uploadRequest([['file', pdfFile(longName)]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Resume metadata is invalid.');
+    expect(body.error?.message).toBe('Attachment metadata is invalid.');
     expect(storageUpload).not.toHaveBeenCalled();
   });
 
   it('removes the stored object when the database insert fails', async () => {
-    mockPrisma.resume.create.mockRejectedValue(new Error('insert failed'));
+    mockPrisma.attachment.create.mockRejectedValue(new Error('insert failed'));
 
-    const response = await uploadResume(uploadRequest([['file', pdfFile()]]));
+    const response = await uploadAttachment(uploadRequest([['file', pdfFile()]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(500);
@@ -376,10 +372,10 @@ describe('POST /api/resumes', () => {
   });
 
   it('swallows storage cleanup failures and still reports the original error', async () => {
-    mockPrisma.resume.create.mockRejectedValue(new Error('insert failed'));
+    mockPrisma.attachment.create.mockRejectedValue(new Error('insert failed'));
     storageDelete.mockRejectedValue(new Error('cleanup failed'));
 
-    const response = await uploadResume(uploadRequest([['file', pdfFile()]]));
+    const response = await uploadAttachment(uploadRequest([['file', pdfFile()]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(500);
@@ -389,7 +385,7 @@ describe('POST /api/resumes', () => {
   it('returns the rate-limit response when limited', async () => {
     rateLimited();
 
-    const response = await uploadResume(uploadRequest([['file', pdfFile()]]));
+    const response = await uploadAttachment(uploadRequest([['file', pdfFile()]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(429);
@@ -400,7 +396,7 @@ describe('POST /api/resumes', () => {
   it('returns 403 for an unverified user', async () => {
     unverified();
 
-    const response = await uploadResume(uploadRequest([['file', pdfFile()]]));
+    const response = await uploadAttachment(uploadRequest([['file', pdfFile()]]));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(403);
@@ -409,82 +405,82 @@ describe('POST /api/resumes', () => {
   });
 });
 
-describe('DELETE /api/resumes/[id]', () => {
-  const url = `http://localhost/api/resumes/${RESUME_ID}`;
+describe('DELETE /api/attachments/[id]', () => {
+  const url = `http://localhost/api/attachments/${ATTACHMENT_ID}`;
 
-  it('hard-deletes the resume when no pending jobs reference it', async () => {
-    const response = await deleteResume(new NextRequest(url, { method: 'DELETE' }), {
-      params: Promise.resolve({ id: RESUME_ID }),
+  it('hard-deletes the attachment when no pending jobs reference it', async () => {
+    const response = await deleteAttachment(new NextRequest(url, { method: 'DELETE' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(200);
-    expect(body.message).toBe('Resume deleted.');
-    expect(storageDelete).toHaveBeenCalledWith(`resumes/user-1/${RESUME_ID}.pdf`);
-    expect(mockPrisma.resume.delete).toHaveBeenCalledWith({ where: { id: RESUME_ID } });
-    expect(mockPrisma.resume.update).not.toHaveBeenCalled();
+    expect(body.message).toBe('Attachment deleted.');
+    expect(storageDelete).toHaveBeenCalledWith(`attachments/user-1/${ATTACHMENT_ID}.pdf`);
+    expect(mockPrisma.attachment.delete).toHaveBeenCalledWith({ where: { id: ATTACHMENT_ID } });
+    expect(mockPrisma.attachment.update).not.toHaveBeenCalled();
   });
 
-  it('soft-deletes the resume when pending jobs still need it', async () => {
+  it('soft-deletes the attachment when pending jobs still need it', async () => {
     mockPrisma.emailJob.count.mockResolvedValue(3);
 
-    const response = await deleteResume(new NextRequest(url, { method: 'DELETE' }), {
-      params: Promise.resolve({ id: RESUME_ID }),
+    const response = await deleteAttachment(new NextRequest(url, { method: 'DELETE' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(200);
-    expect(body.message).toBe('Resume removed and retained for pending emails.');
-    expect(mockPrisma.resume.update).toHaveBeenCalledWith(
+    expect(body.message).toBe('Attachment removed and retained for pending emails.');
+    expect(mockPrisma.attachment.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: RESUME_ID },
+        where: { id: ATTACHMENT_ID },
         data: expect.objectContaining({ is_default: false, deleted_at: expect.any(Date) }),
       })
     );
-    expect(mockPrisma.resume.delete).not.toHaveBeenCalled();
+    expect(mockPrisma.attachment.delete).not.toHaveBeenCalled();
     expect(storageDelete).not.toHaveBeenCalled();
   });
 
-  it('returns 404 when the resume is not owned by the user', async () => {
-    mockPrisma.resume.findFirst.mockResolvedValue(null);
+  it('returns 404 when the attachment is not owned by the user', async () => {
+    mockPrisma.attachment.findFirst.mockResolvedValue(null);
 
-    const response = await deleteResume(new NextRequest(url, { method: 'DELETE' }), {
-      params: Promise.resolve({ id: RESUME_ID }),
+    const response = await deleteAttachment(new NextRequest(url, { method: 'DELETE' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(404);
     expect(body.error?.type).toBe('NOT_FOUND');
-    expect(body.error?.message).toBe('Resume not found.');
+    expect(body.error?.message).toBe('Attachment not found.');
   });
 
   it('returns 400 for a non-uuid id', async () => {
-    const response = await deleteResume(new NextRequest(url, { method: 'DELETE' }), {
+    const response = await deleteAttachment(new NextRequest(url, { method: 'DELETE' }), {
       params: Promise.resolve({ id: 'bad-id' }),
     });
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
     expect(body.error?.type).toBe('VALIDATION_ERROR');
-    expect(mockPrisma.resume.delete).not.toHaveBeenCalled();
+    expect(mockPrisma.attachment.delete).not.toHaveBeenCalled();
   });
 
   it('returns the rate-limit response when limited', async () => {
     rateLimited();
 
-    const response = await deleteResume(new NextRequest(url, { method: 'DELETE' }), {
-      params: Promise.resolve({ id: RESUME_ID }),
+    const response = await deleteAttachment(new NextRequest(url, { method: 'DELETE' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
 
     expect(response.status).toBe(429);
-    expect(mockPrisma.resume.delete).not.toHaveBeenCalled();
+    expect(mockPrisma.attachment.delete).not.toHaveBeenCalled();
   });
 
   it('returns 403 for an unverified user', async () => {
     unverified();
 
-    const response = await deleteResume(new NextRequest(url, { method: 'DELETE' }), {
-      params: Promise.resolve({ id: RESUME_ID }),
+    const response = await deleteAttachment(new NextRequest(url, { method: 'DELETE' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as ApiBody;
 
@@ -495,48 +491,48 @@ describe('DELETE /api/resumes/[id]', () => {
   it('returns 500 when storage deletion fails', async () => {
     storageDelete.mockRejectedValue(new Error('storage offline'));
 
-    const response = await deleteResume(new NextRequest(url, { method: 'DELETE' }), {
-      params: Promise.resolve({ id: RESUME_ID }),
+    const response = await deleteAttachment(new NextRequest(url, { method: 'DELETE' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(500);
     expect(body.error?.type).toBe('INTERNAL_ERROR');
-    expect(mockPrisma.resume.delete).not.toHaveBeenCalled();
+    expect(mockPrisma.attachment.delete).not.toHaveBeenCalled();
   });
 });
 
-describe('POST /api/resumes/[id]/default', () => {
-  const url = `http://localhost/api/resumes/${RESUME_ID}/default`;
+describe('POST /api/attachments/[id]/default', () => {
+  const url = `http://localhost/api/attachments/${ATTACHMENT_ID}/default`;
 
-  it('clears other defaults and marks the resume as default', async () => {
-    const response = await setDefaultResume(new NextRequest(url, { method: 'POST' }), {
-      params: Promise.resolve({ id: RESUME_ID }),
+  it('clears other defaults and marks the attachment as default', async () => {
+    const response = await setDefaultAttachment(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(body.message).toBe('Default resume set.');
-    expect(mockPrisma.resume.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: RESUME_ID } })
+    expect(body.message).toBe('Default attachment set.');
+    expect(mockPrisma.attachment.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: ATTACHMENT_ID } })
     );
-    expect(mockPrisma.resume.updateMany).toHaveBeenCalledWith({
+    expect(mockPrisma.attachment.updateMany).toHaveBeenCalledWith({
       where: { user_id: 'user-1', deleted_at: null },
       data: { is_default: false },
     });
-    expect(mockPrisma.resume.update).toHaveBeenCalledWith({
-      where: { id: RESUME_ID },
+    expect(mockPrisma.attachment.update).toHaveBeenCalledWith({
+      where: { id: ATTACHMENT_ID },
       data: { is_default: true },
     });
     expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
   });
 
-  it('returns 404 when the resume does not exist for the user', async () => {
-    mockPrisma.resume.findFirst.mockResolvedValue(null);
+  it('returns 404 when the attachment does not exist for the user', async () => {
+    mockPrisma.attachment.findFirst.mockResolvedValue(null);
 
-    const response = await setDefaultResume(new NextRequest(url, { method: 'POST' }), {
-      params: Promise.resolve({ id: RESUME_ID }),
+    const response = await setDefaultAttachment(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as ApiBody;
 
@@ -546,7 +542,7 @@ describe('POST /api/resumes/[id]/default', () => {
   });
 
   it('returns 400 for a non-uuid id', async () => {
-    const response = await setDefaultResume(new NextRequest(url, { method: 'POST' }), {
+    const response = await setDefaultAttachment(new NextRequest(url, { method: 'POST' }), {
       params: Promise.resolve({ id: 'nope' }),
     });
     const body = (await response.json()) as ApiBody;
@@ -558,8 +554,8 @@ describe('POST /api/resumes/[id]/default', () => {
   it('returns the rate-limit response when limited', async () => {
     rateLimited();
 
-    const response = await setDefaultResume(new NextRequest(url, { method: 'POST' }), {
-      params: Promise.resolve({ id: RESUME_ID }),
+    const response = await setDefaultAttachment(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
 
     expect(response.status).toBe(429);
@@ -569,8 +565,8 @@ describe('POST /api/resumes/[id]/default', () => {
   it('returns 401 when not authenticated', async () => {
     unauthenticated();
 
-    const response = await setDefaultResume(new NextRequest(url, { method: 'POST' }), {
-      params: Promise.resolve({ id: RESUME_ID }),
+    const response = await setDefaultAttachment(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as ApiBody;
 
@@ -581,8 +577,8 @@ describe('POST /api/resumes/[id]/default', () => {
   it('returns 500 when the transaction fails', async () => {
     mockPrisma.$transaction.mockRejectedValue(new Error('tx failed'));
 
-    const response = await setDefaultResume(new NextRequest(url, { method: 'POST' }), {
-      params: Promise.resolve({ id: RESUME_ID }),
+    const response = await setDefaultAttachment(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as ApiBody;
 

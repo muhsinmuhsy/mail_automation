@@ -5,7 +5,7 @@ import { CampaignForm } from '@/components/campaigns/CampaignForm';
 
 const options = {
   emailAccounts: [{ id: 'account-1', label: 'sender@example.com (gmail)' }],
-  resumes: [{ id: 'resume-1', label: 'Resume.pdf' }],
+  attachments: [{ id: 'attachment-1', label: 'Attachment.pdf' }],
   templates: [{ id: 'template-1', label: 'Follow-up' }],
   contacts: [{ id: 'contact-1', label: 'Ada Lovelace', description: 'ada@example.com' }],
 };
@@ -36,7 +36,7 @@ describe('CampaignForm', () => {
       expect.objectContaining({
         name: 'Wrapped campaign',
         emailAccountId: 'account-1',
-        resumeId: 'resume-1',
+        attachmentId: 'attachment-1',
         templateId: 'template-1',
         contactIds: ['contact-1'],
       })

@@ -40,7 +40,7 @@ export type CampaignMinAggregateOutputType = {
   id: string | null
   user_id: string | null
   email_account_id: string | null
-  resume_id: string | null
+  attachment_id: string | null
   template_id: string | null
   name: string | null
   start_at: Date | null
@@ -56,7 +56,7 @@ export type CampaignMaxAggregateOutputType = {
   id: string | null
   user_id: string | null
   email_account_id: string | null
-  resume_id: string | null
+  attachment_id: string | null
   template_id: string | null
   name: string | null
   start_at: Date | null
@@ -72,7 +72,7 @@ export type CampaignCountAggregateOutputType = {
   id: number
   user_id: number
   email_account_id: number
-  resume_id: number
+  attachment_id: number
   template_id: number
   name: number
   start_at: number
@@ -100,7 +100,7 @@ export type CampaignMinAggregateInputType = {
   id?: true
   user_id?: true
   email_account_id?: true
-  resume_id?: true
+  attachment_id?: true
   template_id?: true
   name?: true
   start_at?: true
@@ -116,7 +116,7 @@ export type CampaignMaxAggregateInputType = {
   id?: true
   user_id?: true
   email_account_id?: true
-  resume_id?: true
+  attachment_id?: true
   template_id?: true
   name?: true
   start_at?: true
@@ -132,7 +132,7 @@ export type CampaignCountAggregateInputType = {
   id?: true
   user_id?: true
   email_account_id?: true
-  resume_id?: true
+  attachment_id?: true
   template_id?: true
   name?: true
   start_at?: true
@@ -235,7 +235,7 @@ export type CampaignGroupByOutputType = {
   id: string
   user_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   name: string
   start_at: Date
@@ -274,7 +274,7 @@ export type CampaignWhereInput = {
   id?: Prisma.UuidFilter<"Campaign"> | string
   user_id?: Prisma.UuidFilter<"Campaign"> | string
   email_account_id?: Prisma.UuidFilter<"Campaign"> | string
-  resume_id?: Prisma.UuidFilter<"Campaign"> | string
+  attachment_id?: Prisma.UuidFilter<"Campaign"> | string
   template_id?: Prisma.UuidFilter<"Campaign"> | string
   name?: Prisma.StringFilter<"Campaign"> | string
   start_at?: Prisma.DateTimeFilter<"Campaign"> | Date | string
@@ -286,7 +286,7 @@ export type CampaignWhereInput = {
   updated_at?: Prisma.DateTimeFilter<"Campaign"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   email_account?: Prisma.XOR<Prisma.EmailAccountScalarRelationFilter, Prisma.EmailAccountWhereInput>
-  resume?: Prisma.XOR<Prisma.ResumeScalarRelationFilter, Prisma.ResumeWhereInput>
+  attachment?: Prisma.XOR<Prisma.AttachmentScalarRelationFilter, Prisma.AttachmentWhereInput>
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
   email_jobs?: Prisma.EmailJobListRelationFilter
   usage_daily?: Prisma.CampaignUsageDailyListRelationFilter
@@ -297,7 +297,7 @@ export type CampaignOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   email_account_id?: Prisma.SortOrder
-  resume_id?: Prisma.SortOrder
+  attachment_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   start_at?: Prisma.SortOrder
@@ -309,7 +309,7 @@ export type CampaignOrderByWithRelationInput = {
   updated_at?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   email_account?: Prisma.EmailAccountOrderByWithRelationInput
-  resume?: Prisma.ResumeOrderByWithRelationInput
+  attachment?: Prisma.AttachmentOrderByWithRelationInput
   template?: Prisma.TemplateOrderByWithRelationInput
   email_jobs?: Prisma.EmailJobOrderByRelationAggregateInput
   usage_daily?: Prisma.CampaignUsageDailyOrderByRelationAggregateInput
@@ -323,7 +323,7 @@ export type CampaignWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CampaignWhereInput | Prisma.CampaignWhereInput[]
   user_id?: Prisma.UuidFilter<"Campaign"> | string
   email_account_id?: Prisma.UuidFilter<"Campaign"> | string
-  resume_id?: Prisma.UuidFilter<"Campaign"> | string
+  attachment_id?: Prisma.UuidFilter<"Campaign"> | string
   template_id?: Prisma.UuidFilter<"Campaign"> | string
   name?: Prisma.StringFilter<"Campaign"> | string
   start_at?: Prisma.DateTimeFilter<"Campaign"> | Date | string
@@ -335,7 +335,7 @@ export type CampaignWhereUniqueInput = Prisma.AtLeast<{
   updated_at?: Prisma.DateTimeFilter<"Campaign"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   email_account?: Prisma.XOR<Prisma.EmailAccountScalarRelationFilter, Prisma.EmailAccountWhereInput>
-  resume?: Prisma.XOR<Prisma.ResumeScalarRelationFilter, Prisma.ResumeWhereInput>
+  attachment?: Prisma.XOR<Prisma.AttachmentScalarRelationFilter, Prisma.AttachmentWhereInput>
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
   email_jobs?: Prisma.EmailJobListRelationFilter
   usage_daily?: Prisma.CampaignUsageDailyListRelationFilter
@@ -346,7 +346,7 @@ export type CampaignOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   email_account_id?: Prisma.SortOrder
-  resume_id?: Prisma.SortOrder
+  attachment_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   start_at?: Prisma.SortOrder
@@ -370,7 +370,7 @@ export type CampaignScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"Campaign"> | string
   user_id?: Prisma.UuidWithAggregatesFilter<"Campaign"> | string
   email_account_id?: Prisma.UuidWithAggregatesFilter<"Campaign"> | string
-  resume_id?: Prisma.UuidWithAggregatesFilter<"Campaign"> | string
+  attachment_id?: Prisma.UuidWithAggregatesFilter<"Campaign"> | string
   template_id?: Prisma.UuidWithAggregatesFilter<"Campaign"> | string
   name?: Prisma.StringWithAggregatesFilter<"Campaign"> | string
   start_at?: Prisma.DateTimeWithAggregatesFilter<"Campaign"> | Date | string
@@ -394,7 +394,7 @@ export type CampaignCreateInput = {
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCampaignsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutCampaignsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutCampaignsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutCampaignsInput
   template: Prisma.TemplateCreateNestedOneWithoutCampaignsInput
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutCampaignInput
   usage_daily?: Prisma.CampaignUsageDailyCreateNestedManyWithoutCampaignInput
@@ -405,7 +405,7 @@ export type CampaignUncheckedCreateInput = {
   id?: string
   user_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   name: string
   start_at: Date | string
@@ -432,7 +432,7 @@ export type CampaignUpdateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCampaignsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutCampaignsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutCampaignsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutCampaignsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCampaignsNestedInput
   email_jobs?: Prisma.EmailJobUpdateManyWithoutCampaignNestedInput
   usage_daily?: Prisma.CampaignUsageDailyUpdateManyWithoutCampaignNestedInput
@@ -443,7 +443,7 @@ export type CampaignUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -462,7 +462,7 @@ export type CampaignCreateManyInput = {
   id?: string
   user_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   name: string
   start_at: Date | string
@@ -490,7 +490,7 @@ export type CampaignUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -516,7 +516,7 @@ export type CampaignCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   email_account_id?: Prisma.SortOrder
-  resume_id?: Prisma.SortOrder
+  attachment_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   start_at?: Prisma.SortOrder
@@ -537,7 +537,7 @@ export type CampaignMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   email_account_id?: Prisma.SortOrder
-  resume_id?: Prisma.SortOrder
+  attachment_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   start_at?: Prisma.SortOrder
@@ -553,7 +553,7 @@ export type CampaignMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   email_account_id?: Prisma.SortOrder
-  resume_id?: Prisma.SortOrder
+  attachment_id?: Prisma.SortOrder
   template_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   start_at?: Prisma.SortOrder
@@ -664,45 +664,45 @@ export type CampaignUncheckedUpdateManyWithoutEmail_accountNestedInput = {
   deleteMany?: Prisma.CampaignScalarWhereInput | Prisma.CampaignScalarWhereInput[]
 }
 
-export type CampaignCreateNestedManyWithoutResumeInput = {
-  create?: Prisma.XOR<Prisma.CampaignCreateWithoutResumeInput, Prisma.CampaignUncheckedCreateWithoutResumeInput> | Prisma.CampaignCreateWithoutResumeInput[] | Prisma.CampaignUncheckedCreateWithoutResumeInput[]
-  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutResumeInput | Prisma.CampaignCreateOrConnectWithoutResumeInput[]
-  createMany?: Prisma.CampaignCreateManyResumeInputEnvelope
+export type CampaignCreateNestedManyWithoutAttachmentInput = {
+  create?: Prisma.XOR<Prisma.CampaignCreateWithoutAttachmentInput, Prisma.CampaignUncheckedCreateWithoutAttachmentInput> | Prisma.CampaignCreateWithoutAttachmentInput[] | Prisma.CampaignUncheckedCreateWithoutAttachmentInput[]
+  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutAttachmentInput | Prisma.CampaignCreateOrConnectWithoutAttachmentInput[]
+  createMany?: Prisma.CampaignCreateManyAttachmentInputEnvelope
   connect?: Prisma.CampaignWhereUniqueInput | Prisma.CampaignWhereUniqueInput[]
 }
 
-export type CampaignUncheckedCreateNestedManyWithoutResumeInput = {
-  create?: Prisma.XOR<Prisma.CampaignCreateWithoutResumeInput, Prisma.CampaignUncheckedCreateWithoutResumeInput> | Prisma.CampaignCreateWithoutResumeInput[] | Prisma.CampaignUncheckedCreateWithoutResumeInput[]
-  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutResumeInput | Prisma.CampaignCreateOrConnectWithoutResumeInput[]
-  createMany?: Prisma.CampaignCreateManyResumeInputEnvelope
+export type CampaignUncheckedCreateNestedManyWithoutAttachmentInput = {
+  create?: Prisma.XOR<Prisma.CampaignCreateWithoutAttachmentInput, Prisma.CampaignUncheckedCreateWithoutAttachmentInput> | Prisma.CampaignCreateWithoutAttachmentInput[] | Prisma.CampaignUncheckedCreateWithoutAttachmentInput[]
+  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutAttachmentInput | Prisma.CampaignCreateOrConnectWithoutAttachmentInput[]
+  createMany?: Prisma.CampaignCreateManyAttachmentInputEnvelope
   connect?: Prisma.CampaignWhereUniqueInput | Prisma.CampaignWhereUniqueInput[]
 }
 
-export type CampaignUpdateManyWithoutResumeNestedInput = {
-  create?: Prisma.XOR<Prisma.CampaignCreateWithoutResumeInput, Prisma.CampaignUncheckedCreateWithoutResumeInput> | Prisma.CampaignCreateWithoutResumeInput[] | Prisma.CampaignUncheckedCreateWithoutResumeInput[]
-  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutResumeInput | Prisma.CampaignCreateOrConnectWithoutResumeInput[]
-  upsert?: Prisma.CampaignUpsertWithWhereUniqueWithoutResumeInput | Prisma.CampaignUpsertWithWhereUniqueWithoutResumeInput[]
-  createMany?: Prisma.CampaignCreateManyResumeInputEnvelope
+export type CampaignUpdateManyWithoutAttachmentNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignCreateWithoutAttachmentInput, Prisma.CampaignUncheckedCreateWithoutAttachmentInput> | Prisma.CampaignCreateWithoutAttachmentInput[] | Prisma.CampaignUncheckedCreateWithoutAttachmentInput[]
+  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutAttachmentInput | Prisma.CampaignCreateOrConnectWithoutAttachmentInput[]
+  upsert?: Prisma.CampaignUpsertWithWhereUniqueWithoutAttachmentInput | Prisma.CampaignUpsertWithWhereUniqueWithoutAttachmentInput[]
+  createMany?: Prisma.CampaignCreateManyAttachmentInputEnvelope
   set?: Prisma.CampaignWhereUniqueInput | Prisma.CampaignWhereUniqueInput[]
   disconnect?: Prisma.CampaignWhereUniqueInput | Prisma.CampaignWhereUniqueInput[]
   delete?: Prisma.CampaignWhereUniqueInput | Prisma.CampaignWhereUniqueInput[]
   connect?: Prisma.CampaignWhereUniqueInput | Prisma.CampaignWhereUniqueInput[]
-  update?: Prisma.CampaignUpdateWithWhereUniqueWithoutResumeInput | Prisma.CampaignUpdateWithWhereUniqueWithoutResumeInput[]
-  updateMany?: Prisma.CampaignUpdateManyWithWhereWithoutResumeInput | Prisma.CampaignUpdateManyWithWhereWithoutResumeInput[]
+  update?: Prisma.CampaignUpdateWithWhereUniqueWithoutAttachmentInput | Prisma.CampaignUpdateWithWhereUniqueWithoutAttachmentInput[]
+  updateMany?: Prisma.CampaignUpdateManyWithWhereWithoutAttachmentInput | Prisma.CampaignUpdateManyWithWhereWithoutAttachmentInput[]
   deleteMany?: Prisma.CampaignScalarWhereInput | Prisma.CampaignScalarWhereInput[]
 }
 
-export type CampaignUncheckedUpdateManyWithoutResumeNestedInput = {
-  create?: Prisma.XOR<Prisma.CampaignCreateWithoutResumeInput, Prisma.CampaignUncheckedCreateWithoutResumeInput> | Prisma.CampaignCreateWithoutResumeInput[] | Prisma.CampaignUncheckedCreateWithoutResumeInput[]
-  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutResumeInput | Prisma.CampaignCreateOrConnectWithoutResumeInput[]
-  upsert?: Prisma.CampaignUpsertWithWhereUniqueWithoutResumeInput | Prisma.CampaignUpsertWithWhereUniqueWithoutResumeInput[]
-  createMany?: Prisma.CampaignCreateManyResumeInputEnvelope
+export type CampaignUncheckedUpdateManyWithoutAttachmentNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignCreateWithoutAttachmentInput, Prisma.CampaignUncheckedCreateWithoutAttachmentInput> | Prisma.CampaignCreateWithoutAttachmentInput[] | Prisma.CampaignUncheckedCreateWithoutAttachmentInput[]
+  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutAttachmentInput | Prisma.CampaignCreateOrConnectWithoutAttachmentInput[]
+  upsert?: Prisma.CampaignUpsertWithWhereUniqueWithoutAttachmentInput | Prisma.CampaignUpsertWithWhereUniqueWithoutAttachmentInput[]
+  createMany?: Prisma.CampaignCreateManyAttachmentInputEnvelope
   set?: Prisma.CampaignWhereUniqueInput | Prisma.CampaignWhereUniqueInput[]
   disconnect?: Prisma.CampaignWhereUniqueInput | Prisma.CampaignWhereUniqueInput[]
   delete?: Prisma.CampaignWhereUniqueInput | Prisma.CampaignWhereUniqueInput[]
   connect?: Prisma.CampaignWhereUniqueInput | Prisma.CampaignWhereUniqueInput[]
-  update?: Prisma.CampaignUpdateWithWhereUniqueWithoutResumeInput | Prisma.CampaignUpdateWithWhereUniqueWithoutResumeInput[]
-  updateMany?: Prisma.CampaignUpdateManyWithWhereWithoutResumeInput | Prisma.CampaignUpdateManyWithWhereWithoutResumeInput[]
+  update?: Prisma.CampaignUpdateWithWhereUniqueWithoutAttachmentInput | Prisma.CampaignUpdateWithWhereUniqueWithoutAttachmentInput[]
+  updateMany?: Prisma.CampaignUpdateManyWithWhereWithoutAttachmentInput | Prisma.CampaignUpdateManyWithWhereWithoutAttachmentInput[]
   deleteMany?: Prisma.CampaignScalarWhereInput | Prisma.CampaignScalarWhereInput[]
 }
 
@@ -817,7 +817,7 @@ export type CampaignCreateWithoutUserInput = {
   created_at?: Date | string
   updated_at?: Date | string
   email_account: Prisma.EmailAccountCreateNestedOneWithoutCampaignsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutCampaignsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutCampaignsInput
   template: Prisma.TemplateCreateNestedOneWithoutCampaignsInput
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutCampaignInput
   usage_daily?: Prisma.CampaignUsageDailyCreateNestedManyWithoutCampaignInput
@@ -827,7 +827,7 @@ export type CampaignCreateWithoutUserInput = {
 export type CampaignUncheckedCreateWithoutUserInput = {
   id?: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   name: string
   start_at: Date | string
@@ -875,7 +875,7 @@ export type CampaignScalarWhereInput = {
   id?: Prisma.UuidFilter<"Campaign"> | string
   user_id?: Prisma.UuidFilter<"Campaign"> | string
   email_account_id?: Prisma.UuidFilter<"Campaign"> | string
-  resume_id?: Prisma.UuidFilter<"Campaign"> | string
+  attachment_id?: Prisma.UuidFilter<"Campaign"> | string
   template_id?: Prisma.UuidFilter<"Campaign"> | string
   name?: Prisma.StringFilter<"Campaign"> | string
   start_at?: Prisma.DateTimeFilter<"Campaign"> | Date | string
@@ -898,7 +898,7 @@ export type CampaignCreateWithoutEmail_accountInput = {
   created_at?: Date | string
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCampaignsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutCampaignsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutCampaignsInput
   template: Prisma.TemplateCreateNestedOneWithoutCampaignsInput
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutCampaignInput
   usage_daily?: Prisma.CampaignUsageDailyCreateNestedManyWithoutCampaignInput
@@ -908,7 +908,7 @@ export type CampaignCreateWithoutEmail_accountInput = {
 export type CampaignUncheckedCreateWithoutEmail_accountInput = {
   id?: string
   user_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   name: string
   start_at: Date | string
@@ -949,7 +949,7 @@ export type CampaignUpdateManyWithWhereWithoutEmail_accountInput = {
   data: Prisma.XOR<Prisma.CampaignUpdateManyMutationInput, Prisma.CampaignUncheckedUpdateManyWithoutEmail_accountInput>
 }
 
-export type CampaignCreateWithoutResumeInput = {
+export type CampaignCreateWithoutAttachmentInput = {
   id?: string
   name: string
   start_at: Date | string
@@ -967,7 +967,7 @@ export type CampaignCreateWithoutResumeInput = {
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutCampaignInput
 }
 
-export type CampaignUncheckedCreateWithoutResumeInput = {
+export type CampaignUncheckedCreateWithoutAttachmentInput = {
   id?: string
   user_id: string
   email_account_id: string
@@ -985,30 +985,30 @@ export type CampaignUncheckedCreateWithoutResumeInput = {
   reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutCampaignInput
 }
 
-export type CampaignCreateOrConnectWithoutResumeInput = {
+export type CampaignCreateOrConnectWithoutAttachmentInput = {
   where: Prisma.CampaignWhereUniqueInput
-  create: Prisma.XOR<Prisma.CampaignCreateWithoutResumeInput, Prisma.CampaignUncheckedCreateWithoutResumeInput>
+  create: Prisma.XOR<Prisma.CampaignCreateWithoutAttachmentInput, Prisma.CampaignUncheckedCreateWithoutAttachmentInput>
 }
 
-export type CampaignCreateManyResumeInputEnvelope = {
-  data: Prisma.CampaignCreateManyResumeInput | Prisma.CampaignCreateManyResumeInput[]
+export type CampaignCreateManyAttachmentInputEnvelope = {
+  data: Prisma.CampaignCreateManyAttachmentInput | Prisma.CampaignCreateManyAttachmentInput[]
   skipDuplicates?: boolean
 }
 
-export type CampaignUpsertWithWhereUniqueWithoutResumeInput = {
+export type CampaignUpsertWithWhereUniqueWithoutAttachmentInput = {
   where: Prisma.CampaignWhereUniqueInput
-  update: Prisma.XOR<Prisma.CampaignUpdateWithoutResumeInput, Prisma.CampaignUncheckedUpdateWithoutResumeInput>
-  create: Prisma.XOR<Prisma.CampaignCreateWithoutResumeInput, Prisma.CampaignUncheckedCreateWithoutResumeInput>
+  update: Prisma.XOR<Prisma.CampaignUpdateWithoutAttachmentInput, Prisma.CampaignUncheckedUpdateWithoutAttachmentInput>
+  create: Prisma.XOR<Prisma.CampaignCreateWithoutAttachmentInput, Prisma.CampaignUncheckedCreateWithoutAttachmentInput>
 }
 
-export type CampaignUpdateWithWhereUniqueWithoutResumeInput = {
+export type CampaignUpdateWithWhereUniqueWithoutAttachmentInput = {
   where: Prisma.CampaignWhereUniqueInput
-  data: Prisma.XOR<Prisma.CampaignUpdateWithoutResumeInput, Prisma.CampaignUncheckedUpdateWithoutResumeInput>
+  data: Prisma.XOR<Prisma.CampaignUpdateWithoutAttachmentInput, Prisma.CampaignUncheckedUpdateWithoutAttachmentInput>
 }
 
-export type CampaignUpdateManyWithWhereWithoutResumeInput = {
+export type CampaignUpdateManyWithWhereWithoutAttachmentInput = {
   where: Prisma.CampaignScalarWhereInput
-  data: Prisma.XOR<Prisma.CampaignUpdateManyMutationInput, Prisma.CampaignUncheckedUpdateManyWithoutResumeInput>
+  data: Prisma.XOR<Prisma.CampaignUpdateManyMutationInput, Prisma.CampaignUncheckedUpdateManyWithoutAttachmentInput>
 }
 
 export type CampaignCreateWithoutTemplateInput = {
@@ -1023,7 +1023,7 @@ export type CampaignCreateWithoutTemplateInput = {
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCampaignsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutCampaignsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutCampaignsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutCampaignsInput
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutCampaignInput
   usage_daily?: Prisma.CampaignUsageDailyCreateNestedManyWithoutCampaignInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutCampaignInput
@@ -1033,7 +1033,7 @@ export type CampaignUncheckedCreateWithoutTemplateInput = {
   id?: string
   user_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   name: string
   start_at: Date | string
   timezone?: string
@@ -1085,7 +1085,7 @@ export type CampaignCreateWithoutEmail_jobsInput = {
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCampaignsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutCampaignsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutCampaignsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutCampaignsInput
   template: Prisma.TemplateCreateNestedOneWithoutCampaignsInput
   usage_daily?: Prisma.CampaignUsageDailyCreateNestedManyWithoutCampaignInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutCampaignInput
@@ -1095,7 +1095,7 @@ export type CampaignUncheckedCreateWithoutEmail_jobsInput = {
   id?: string
   user_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   name: string
   start_at: Date | string
@@ -1137,7 +1137,7 @@ export type CampaignUpdateWithoutEmail_jobsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCampaignsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutCampaignsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutCampaignsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutCampaignsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCampaignsNestedInput
   usage_daily?: Prisma.CampaignUsageDailyUpdateManyWithoutCampaignNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutCampaignNestedInput
@@ -1147,7 +1147,7 @@ export type CampaignUncheckedUpdateWithoutEmail_jobsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1173,7 +1173,7 @@ export type CampaignCreateWithoutUsage_dailyInput = {
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCampaignsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutCampaignsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutCampaignsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutCampaignsInput
   template: Prisma.TemplateCreateNestedOneWithoutCampaignsInput
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutCampaignInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutCampaignInput
@@ -1183,7 +1183,7 @@ export type CampaignUncheckedCreateWithoutUsage_dailyInput = {
   id?: string
   user_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   name: string
   start_at: Date | string
@@ -1225,7 +1225,7 @@ export type CampaignUpdateWithoutUsage_dailyInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCampaignsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutCampaignsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutCampaignsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutCampaignsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCampaignsNestedInput
   email_jobs?: Prisma.EmailJobUpdateManyWithoutCampaignNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutCampaignNestedInput
@@ -1235,7 +1235,7 @@ export type CampaignUncheckedUpdateWithoutUsage_dailyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1261,7 +1261,7 @@ export type CampaignCreateWithoutReservationsInput = {
   updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCampaignsInput
   email_account: Prisma.EmailAccountCreateNestedOneWithoutCampaignsInput
-  resume: Prisma.ResumeCreateNestedOneWithoutCampaignsInput
+  attachment: Prisma.AttachmentCreateNestedOneWithoutCampaignsInput
   template: Prisma.TemplateCreateNestedOneWithoutCampaignsInput
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutCampaignInput
   usage_daily?: Prisma.CampaignUsageDailyCreateNestedManyWithoutCampaignInput
@@ -1271,7 +1271,7 @@ export type CampaignUncheckedCreateWithoutReservationsInput = {
   id?: string
   user_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   name: string
   start_at: Date | string
@@ -1313,7 +1313,7 @@ export type CampaignUpdateWithoutReservationsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCampaignsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutCampaignsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutCampaignsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutCampaignsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCampaignsNestedInput
   email_jobs?: Prisma.EmailJobUpdateManyWithoutCampaignNestedInput
   usage_daily?: Prisma.CampaignUsageDailyUpdateManyWithoutCampaignNestedInput
@@ -1323,7 +1323,7 @@ export type CampaignUncheckedUpdateWithoutReservationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1340,7 +1340,7 @@ export type CampaignUncheckedUpdateWithoutReservationsInput = {
 export type CampaignCreateManyUserInput = {
   id?: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   name: string
   start_at: Date | string
@@ -1363,7 +1363,7 @@ export type CampaignUpdateWithoutUserInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutCampaignsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutCampaignsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutCampaignsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCampaignsNestedInput
   email_jobs?: Prisma.EmailJobUpdateManyWithoutCampaignNestedInput
   usage_daily?: Prisma.CampaignUsageDailyUpdateManyWithoutCampaignNestedInput
@@ -1373,7 +1373,7 @@ export type CampaignUpdateWithoutUserInput = {
 export type CampaignUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1391,7 +1391,7 @@ export type CampaignUncheckedUpdateWithoutUserInput = {
 export type CampaignUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1406,7 +1406,7 @@ export type CampaignUncheckedUpdateManyWithoutUserInput = {
 export type CampaignCreateManyEmail_accountInput = {
   id?: string
   user_id: string
-  resume_id: string
+  attachment_id: string
   template_id: string
   name: string
   start_at: Date | string
@@ -1429,7 +1429,7 @@ export type CampaignUpdateWithoutEmail_accountInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCampaignsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutCampaignsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutCampaignsNestedInput
   template?: Prisma.TemplateUpdateOneRequiredWithoutCampaignsNestedInput
   email_jobs?: Prisma.EmailJobUpdateManyWithoutCampaignNestedInput
   usage_daily?: Prisma.CampaignUsageDailyUpdateManyWithoutCampaignNestedInput
@@ -1439,7 +1439,7 @@ export type CampaignUpdateWithoutEmail_accountInput = {
 export type CampaignUncheckedUpdateWithoutEmail_accountInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1457,7 +1457,7 @@ export type CampaignUncheckedUpdateWithoutEmail_accountInput = {
 export type CampaignUncheckedUpdateManyWithoutEmail_accountInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   template_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1469,7 +1469,7 @@ export type CampaignUncheckedUpdateManyWithoutEmail_accountInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type CampaignCreateManyResumeInput = {
+export type CampaignCreateManyAttachmentInput = {
   id?: string
   user_id: string
   email_account_id: string
@@ -1484,7 +1484,7 @@ export type CampaignCreateManyResumeInput = {
   updated_at?: Date | string
 }
 
-export type CampaignUpdateWithoutResumeInput = {
+export type CampaignUpdateWithoutAttachmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1502,7 +1502,7 @@ export type CampaignUpdateWithoutResumeInput = {
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutCampaignNestedInput
 }
 
-export type CampaignUncheckedUpdateWithoutResumeInput = {
+export type CampaignUncheckedUpdateWithoutAttachmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1520,7 +1520,7 @@ export type CampaignUncheckedUpdateWithoutResumeInput = {
   reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
-export type CampaignUncheckedUpdateManyWithoutResumeInput = {
+export type CampaignUncheckedUpdateManyWithoutAttachmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1539,7 +1539,7 @@ export type CampaignCreateManyTemplateInput = {
   id?: string
   user_id: string
   email_account_id: string
-  resume_id: string
+  attachment_id: string
   name: string
   start_at: Date | string
   timezone?: string
@@ -1562,7 +1562,7 @@ export type CampaignUpdateWithoutTemplateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCampaignsNestedInput
   email_account?: Prisma.EmailAccountUpdateOneRequiredWithoutCampaignsNestedInput
-  resume?: Prisma.ResumeUpdateOneRequiredWithoutCampaignsNestedInput
+  attachment?: Prisma.AttachmentUpdateOneRequiredWithoutCampaignsNestedInput
   email_jobs?: Prisma.EmailJobUpdateManyWithoutCampaignNestedInput
   usage_daily?: Prisma.CampaignUsageDailyUpdateManyWithoutCampaignNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutCampaignNestedInput
@@ -1572,7 +1572,7 @@ export type CampaignUncheckedUpdateWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1590,7 +1590,7 @@ export type CampaignUncheckedUpdateManyWithoutTemplateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   email_account_id?: Prisma.StringFieldUpdateOperationsInput | string
-  resume_id?: Prisma.StringFieldUpdateOperationsInput | string
+  attachment_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   start_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1654,7 +1654,7 @@ export type CampaignSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   id?: boolean
   user_id?: boolean
   email_account_id?: boolean
-  resume_id?: boolean
+  attachment_id?: boolean
   template_id?: boolean
   name?: boolean
   start_at?: boolean
@@ -1666,7 +1666,7 @@ export type CampaignSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   email_jobs?: boolean | Prisma.Campaign$email_jobsArgs<ExtArgs>
   usage_daily?: boolean | Prisma.Campaign$usage_dailyArgs<ExtArgs>
@@ -1678,7 +1678,7 @@ export type CampaignSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   id?: boolean
   user_id?: boolean
   email_account_id?: boolean
-  resume_id?: boolean
+  attachment_id?: boolean
   template_id?: boolean
   name?: boolean
   start_at?: boolean
@@ -1690,7 +1690,7 @@ export type CampaignSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["campaign"]>
 
@@ -1698,7 +1698,7 @@ export type CampaignSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   id?: boolean
   user_id?: boolean
   email_account_id?: boolean
-  resume_id?: boolean
+  attachment_id?: boolean
   template_id?: boolean
   name?: boolean
   start_at?: boolean
@@ -1710,7 +1710,7 @@ export type CampaignSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["campaign"]>
 
@@ -1718,7 +1718,7 @@ export type CampaignSelectScalar = {
   id?: boolean
   user_id?: boolean
   email_account_id?: boolean
-  resume_id?: boolean
+  attachment_id?: boolean
   template_id?: boolean
   name?: boolean
   start_at?: boolean
@@ -1730,11 +1730,11 @@ export type CampaignSelectScalar = {
   updated_at?: boolean
 }
 
-export type CampaignOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "email_account_id" | "resume_id" | "template_id" | "name" | "start_at" | "timezone" | "interval_minutes" | "daily_limit" | "status" | "created_at" | "updated_at", ExtArgs["result"]["campaign"]>
+export type CampaignOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "email_account_id" | "attachment_id" | "template_id" | "name" | "start_at" | "timezone" | "interval_minutes" | "daily_limit" | "status" | "created_at" | "updated_at", ExtArgs["result"]["campaign"]>
 export type CampaignInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
   email_jobs?: boolean | Prisma.Campaign$email_jobsArgs<ExtArgs>
   usage_daily?: boolean | Prisma.Campaign$usage_dailyArgs<ExtArgs>
@@ -1744,13 +1744,13 @@ export type CampaignInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
 export type CampaignIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
 }
 export type CampaignIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   email_account?: boolean | Prisma.EmailAccountDefaultArgs<ExtArgs>
-  resume?: boolean | Prisma.ResumeDefaultArgs<ExtArgs>
+  attachment?: boolean | Prisma.AttachmentDefaultArgs<ExtArgs>
   template?: boolean | Prisma.TemplateDefaultArgs<ExtArgs>
 }
 
@@ -1759,7 +1759,7 @@ export type $CampaignPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
     email_account: Prisma.$EmailAccountPayload<ExtArgs>
-    resume: Prisma.$ResumePayload<ExtArgs>
+    attachment: Prisma.$AttachmentPayload<ExtArgs>
     template: Prisma.$TemplatePayload<ExtArgs>
     email_jobs: Prisma.$EmailJobPayload<ExtArgs>[]
     usage_daily: Prisma.$CampaignUsageDailyPayload<ExtArgs>[]
@@ -1769,7 +1769,7 @@ export type $CampaignPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     id: string
     user_id: string
     email_account_id: string
-    resume_id: string
+    attachment_id: string
     template_id: string
     name: string
     start_at: Date
@@ -2175,7 +2175,7 @@ export interface Prisma__CampaignClient<T, Null = never, ExtArgs extends runtime
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   email_account<T extends Prisma.EmailAccountDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EmailAccountDefaultArgs<ExtArgs>>): Prisma.Prisma__EmailAccountClient<runtime.Types.Result.GetResult<Prisma.$EmailAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  resume<T extends Prisma.ResumeDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ResumeDefaultArgs<ExtArgs>>): Prisma.Prisma__ResumeClient<runtime.Types.Result.GetResult<Prisma.$ResumePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  attachment<T extends Prisma.AttachmentDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AttachmentDefaultArgs<ExtArgs>>): Prisma.Prisma__AttachmentClient<runtime.Types.Result.GetResult<Prisma.$AttachmentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   template<T extends Prisma.TemplateDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TemplateDefaultArgs<ExtArgs>>): Prisma.Prisma__TemplateClient<runtime.Types.Result.GetResult<Prisma.$TemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   email_jobs<T extends Prisma.Campaign$email_jobsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Campaign$email_jobsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailJobPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   usage_daily<T extends Prisma.Campaign$usage_dailyArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Campaign$usage_dailyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignUsageDailyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2212,7 +2212,7 @@ export interface CampaignFieldRefs {
   readonly id: Prisma.FieldRef<"Campaign", 'String'>
   readonly user_id: Prisma.FieldRef<"Campaign", 'String'>
   readonly email_account_id: Prisma.FieldRef<"Campaign", 'String'>
-  readonly resume_id: Prisma.FieldRef<"Campaign", 'String'>
+  readonly attachment_id: Prisma.FieldRef<"Campaign", 'String'>
   readonly template_id: Prisma.FieldRef<"Campaign", 'String'>
   readonly name: Prisma.FieldRef<"Campaign", 'String'>
   readonly start_at: Prisma.FieldRef<"Campaign", 'DateTime'>

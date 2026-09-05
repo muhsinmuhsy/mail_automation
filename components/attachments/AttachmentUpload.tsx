@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { FileUpload } from '@/components/ui/FileUpload';
 
-export function ResumeUpload({ onUpload }: { onUpload: (file: File) => Promise<void> }) {
+export function AttachmentUpload({ onUpload }: { onUpload: (file: File) => Promise<void> }) {
   const [file, setFile] = useState<File | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export function ResumeUpload({ onUpload }: { onUpload: (file: File) => Promise<v
           setFile(null);
           setInputKey((previous) => previous + 1);
         } catch (cause) {
-          setError(cause instanceof Error ? cause.message : 'Unable to upload resume.');
+          setError(cause instanceof Error ? cause.message : 'Unable to upload attachment.');
         } finally {
           setPending(false);
         }

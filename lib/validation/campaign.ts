@@ -4,7 +4,7 @@ import { nonEmptyString, uuid } from './common';
 export const createCampaignSchema = z.object({
   name: nonEmptyString.max(255),
   email_account_id: uuid,
-  resume_id: uuid,
+  attachment_id: uuid,
   template_id: uuid,
   contact_ids: z.array(uuid).min(1),
   start_at: z.coerce.date(),

@@ -3,11 +3,11 @@ import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk, respondList } from '@/lib/api/respond';
 import { parseListQuery } from '@/lib/api/list';
-import { createResumeSchema } from '@/lib/validation/resume';
+import { createAttachmentSchema } from '@/lib/validation/attachment';
 import { createStorageService } from '@/lib/storage/storage.factory';
 import { ValidationError } from '@/lib/errors';
 
-const MAX_RESUME_BYTES = 5 * 1024 * 1024;
+const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 
 function isPdf(file: File, bytes: Uint8Array): boolean {
   return (
@@ -27,18 +27,18 @@ const _GET = defineRoute(async (req, ctx) => {
     ...(search ? { filename: { contains: search, mode: 'insensitive' as const } } : {}),
   };
 
-  const [resumes, total] = await Promise.all([
-    getPrisma().resume.findMany({
+  const [attachments, total] = await Promise.all([
+    getPrisma().attachment.findMany({
       where,
       select: { id: true, filename: true, is_default: true, created_at: true },
       orderBy: { created_at: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
     }),
-    getPrisma().resume.count({ where }),
+    getPrisma().attachment.count({ where }),
   ]);
 
-  return respondList(resumes, total, page, limit, ctx.requestId);
+  return respondList(attachments, total, page, limit, ctx.requestId);
 }, { auth: 'user' });
 
 const _POST = defineRoute(async (req, ctx) => {
@@ -48,18 +48,18 @@ const _POST = defineRoute(async (req, ctx) => {
     return respondError(new ValidationError('Please select a file.'), ctx.requestId);
   }
   const file = candidate;
-  if (file.size === 0 || file.size > MAX_RESUME_BYTES) {
-    return respondError(new ValidationError('Resume must be a PDF no larger than 5 MB.'), ctx.requestId);
+  if (file.size === 0 || file.size > MAX_ATTACHMENT_BYTES) {
+    return respondError(new ValidationError('Attachment must be a PDF no larger than 5 MB.'), ctx.requestId);
   }
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (!isPdf(file, bytes)) {
-    return respondError(new ValidationError('Resume must be a valid PDF file.'), ctx.requestId);
+    return respondError(new ValidationError('Attachment must be a valid PDF file.'), ctx.requestId);
   }
-  const parsed = createResumeSchema.safeParse({ filename: file.name, mimeType: file.type, sizeBytes: file.size });
+  const parsed = createAttachmentSchema.safeParse({ filename: file.name, mimeType: file.type, sizeBytes: file.size });
   if (!parsed.success) {
-    return respondError(new ValidationError('Resume metadata is invalid.'), ctx.requestId);
+    return respondError(new ValidationError('Attachment metadata is invalid.'), ctx.requestId);
   }
-  const storageKey = `resumes/${ctx.user.id}/${crypto.randomUUID()}.pdf`;
+  const storageKey = `attachments/${ctx.user.id}/${crypto.randomUUID()}.pdf`;
   const storage = createStorageService(process.env);
   await storage.upload({
     key: storageKey,
@@ -68,9 +68,9 @@ const _POST = defineRoute(async (req, ctx) => {
     contentLength: bytes.byteLength,
     metadata: { userId: ctx.user.id, originalFilename: file.name },
   });
-  let resume;
+  let attachment;
   try {
-    resume = await getPrisma().resume.create({
+    attachment = await getPrisma().attachment.create({
       data: {
         user_id: ctx.user.id,
         filename: parsed.data.filename,
@@ -84,8 +84,8 @@ const _POST = defineRoute(async (req, ctx) => {
     throw error;
   }
 
-  return respondOk(resume, ctx.requestId, 'Resume uploaded successfully.', 201);
-}, { auth: 'user', rateLimitKey: 'resume-upload' });
+  return respondOk(attachment, ctx.requestId, 'Attachment uploaded successfully.', 201);
+}, { auth: 'user', rateLimitKey: 'attachment-upload' });
 
 
 export async function GET(req: NextRequest, ctx: { params: RouteParams } = { params: {} as RouteParams }) {

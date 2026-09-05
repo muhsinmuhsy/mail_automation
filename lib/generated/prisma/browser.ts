@@ -28,10 +28,10 @@ export type User = Prisma.UserModel
  */
 export type EmailAccount = Prisma.EmailAccountModel
 /**
- * Model Resume
+ * Model Attachment
  * 
  */
-export type Resume = Prisma.ResumeModel
+export type Attachment = Prisma.AttachmentModel
 /**
  * Model Contact
  * 

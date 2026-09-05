@@ -51,7 +51,7 @@ export async function generateCampaignJobs(
     interval_minutes: number;
     daily_limit?: number | null;
     email_account_id: string;
-    resume_id: string;
+    attachment_id: string;
     template_id: string;
   },
   contactIds: string[]
@@ -86,7 +86,7 @@ export async function generateCampaignJobs(
       campaign_id: campaign.id,
       contact_id: contact.id,
       email_account_id: campaign.email_account_id,
-      resume_id: campaign.resume_id,
+      attachment_id: campaign.attachment_id,
       template_id: campaign.template_id,
       to_email: contact.email,
       subject: replaceTemplateVariables(template.subject, contact),

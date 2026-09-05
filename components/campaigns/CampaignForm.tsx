@@ -8,7 +8,7 @@ import {
 
 interface CampaignFormProps {
   emailAccounts?: CampaignSelectOption[];
-  resumes?: CampaignSelectOption[];
+  attachments?: CampaignSelectOption[];
   templates?: CampaignSelectOption[];
   contacts?: CampaignSelectOption[];
   loading?: boolean;
@@ -17,7 +17,7 @@ interface CampaignFormProps {
 
 export function CampaignForm({
   emailAccounts,
-  resumes,
+  attachments,
   templates,
   contacts,
   loading,
@@ -26,7 +26,7 @@ export function CampaignForm({
   return (
     <CampaignWizard
       emailAccounts={emailAccounts}
-      resumes={resumes}
+      attachments={attachments}
       templates={templates}
       contacts={contacts}
       loading={loading}

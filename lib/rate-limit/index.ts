@@ -24,8 +24,8 @@ export const RATE_LIMITS: Record<string, RateLimitRule> = {
   'campaigns:pause': { limit: 20, windowSec: 60 },
   'campaigns:cancel': { limit: 20, windowSec: 60 },
 
-  'resumes:upload': { limit: 20, windowSec: 60 },
-  'resumes:delete': { limit: 20, windowSec: 60 },
+  'attachments:upload': { limit: 20, windowSec: 60 },
+  'attachments:delete': { limit: 20, windowSec: 60 },
 
   'email-accounts:create': { limit: 10, windowSec: 60 },
   'email-accounts:delete': { limit: 10, windowSec: 60 },

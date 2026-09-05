@@ -72,7 +72,7 @@ describe('integration/worker (scheduler, no real DB)', () => {
         timezone: 'UTC',
         interval_minutes: 10,
         email_account_id: 'account-1',
-        resume_id: 'resume-1',
+        attachment_id: 'attachment-1',
         template_id: 'template-1',
       },
       ['contact-1', 'contact-2'],
@@ -107,7 +107,7 @@ describe('integration/worker (scheduler, no real DB)', () => {
       timezone: 'UTC',
       interval_minutes: 10,
       email_account_id: 'account-1',
-      resume_id: 'resume-1',
+      attachment_id: 'attachment-1',
       template_id: 'template-1',
     }, ['x']);
     expect(prisma.emailJob.createMany).not.toHaveBeenCalled();
@@ -126,7 +126,7 @@ describe('integration/worker (scheduler, no real DB)', () => {
         timezone: 'UTC',
         interval_minutes: 10,
         email_account_id: 'account-1',
-        resume_id: 'resume-1',
+        attachment_id: 'attachment-1',
         template_id: 'missing',
       }, ['c1']),
     ).rejects.toThrow(/Template missing not found/);

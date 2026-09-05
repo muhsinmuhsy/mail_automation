@@ -62,7 +62,7 @@ interface EmailAccountRow {
   is_active: boolean;
 }
 
-interface ResumeRow {
+interface AttachmentRow {
   id: string;
   filename: string;
   is_default: boolean;
@@ -84,7 +84,7 @@ interface ContactRow {
 
 interface CampaignOptions {
   emailAccounts: CampaignSelectOption[];
-  resumes: CampaignSelectOption[];
+  attachments: CampaignSelectOption[];
   templates: CampaignSelectOption[];
   contacts: CampaignSelectOption[];
 }
@@ -113,7 +113,7 @@ export default function CampaignsPage() {
   const [showWizard, setShowWizard] = useState(false);
   const [options, setOptions] = useState<CampaignOptions>({
     emailAccounts: [],
-    resumes: [],
+    attachments: [],
     templates: [],
     contacts: [],
   });
@@ -181,14 +181,14 @@ export default function CampaignsPage() {
     setOptionsLoading(true);
     setOptionsError(null);
     try {
-      const [accounts, resumes, templates, contacts] = await Promise.all([
+      const [accounts, attachments, templates, contacts] = await Promise.all([
         requestJson<EmailAccountRow[]>('/api/email-accounts?limit=100'),
-        requestJson<ResumeRow[]>('/api/resumes?limit=100'),
+        requestJson<AttachmentRow[]>('/api/attachments?limit=100'),
         requestJson<TemplateRow[]>('/api/templates?limit=100'),
         requestJson<ContactRow[]>('/api/contacts?limit=500'),
       ]);
 
-      const responses = [accounts, resumes, templates, contacts];
+      const responses = [accounts, attachments, templates, contacts];
       if (responses.some((response) => response.status === 401)) {
         router.replace('/login');
         return;
@@ -208,10 +208,10 @@ export default function CampaignsPage() {
                 label: `${account.email} (${account.provider})`,
               }))
           : [],
-        resumes: resumes.body.success
-          ? resumes.body.data.map((resume) => ({
-              id: resume.id,
-              label: resume.is_default ? `${resume.filename} (default)` : resume.filename,
+        attachments: attachments.body.success
+          ? attachments.body.data.map((attachment) => ({
+              id: attachment.id,
+              label: attachment.is_default ? `${attachment.filename} (default)` : attachment.filename,
             }))
           : [],
         templates: templates.body.success
@@ -266,7 +266,7 @@ export default function CampaignsPage() {
       body: JSON.stringify({
         name: data.name,
         email_account_id: data.emailAccountId,
-        resume_id: data.resumeId,
+        attachment_id: data.attachmentId,
         template_id: data.templateId,
         contact_ids: data.contactIds,
         start_at: data.startAt,
@@ -317,8 +317,8 @@ export default function CampaignsPage() {
               email account
             </Link>
             , a{' '}
-            <Link href="/resumes" className="text-information hover:underline">
-              resume
+            <Link href="/attachments" className="text-information hover:underline">
+              attachment
             </Link>
             , a{' '}
             <Link href="/templates" className="text-information hover:underline">
@@ -333,7 +333,7 @@ export default function CampaignsPage() {
           {optionsError && <p role="alert" className="mb-4 text-sm text-error">{optionsError}</p>}
           <CampaignWizard
             emailAccounts={options.emailAccounts}
-            resumes={options.resumes}
+            attachments={options.attachments}
             templates={options.templates}
             contacts={options.contacts}
             loading={optionsLoading}

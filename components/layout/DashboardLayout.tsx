@@ -10,7 +10,7 @@ const mobileNavItems = [
   { href: '/campaigns', label: 'Campaigns' },
   { href: '/emails', label: 'Emails' },
   { href: '/contacts', label: 'Contacts' },
-  { href: '/resumes', label: 'Resumes' },
+  { href: '/attachments', label: 'Attachments' },
   { href: '/templates', label: 'Templates' },
   { href: '/email-accounts', label: 'Accounts' },
 ];

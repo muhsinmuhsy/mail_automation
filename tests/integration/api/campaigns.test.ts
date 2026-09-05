@@ -16,7 +16,7 @@ interface ApiBody {
 
 const CAMPAIGN_ID = '11111111-1111-4111-8111-111111111111';
 const EMAIL_ACCOUNT_ID = '22222222-2222-4222-8222-222222222222';
-const RESUME_ID = '33333333-3333-4333-8333-333333333333';
+const ATTACHMENT_ID = '33333333-3333-4333-8333-333333333333';
 const TEMPLATE_ID = '44444444-4444-4444-8444-444444444444';
 const CONTACT_ID_A = '55555555-5555-4555-8555-555555555555';
 const CONTACT_ID_B = '66666666-6666-4666-8666-666666666666';
@@ -48,7 +48,7 @@ const mockPrisma = {
   emailAccount: {
     findFirst: vi.fn(),
   },
-  resume: {
+  attachment: {
     findFirst: vi.fn(),
   },
   template: {
@@ -59,8 +59,6 @@ const mockPrisma = {
   },
   $disconnect: vi.fn(),
 };
-// The route resolves ownership and loads the campaign via `campaign.findUnique`,
-// but this suite was written against `campaign.findFirst`; alias them so both resolve identically.
 mockPrisma.campaign.findUnique = mockPrisma.campaign.findFirst;
 
 vi.mock('@/lib/auth/neon-auth', () => ({
@@ -127,7 +125,7 @@ function validCreateBody(overrides: Record<string, unknown> = {}): Record<string
   return {
     name: 'Spring outreach',
     email_account_id: EMAIL_ACCOUNT_ID,
-    resume_id: RESUME_ID,
+    attachment_id: ATTACHMENT_ID,
     template_id: TEMPLATE_ID,
     contact_ids: [CONTACT_ID_A],
     start_at: '2030-01-01T09:00:00.000Z',
@@ -170,7 +168,7 @@ beforeEach(() => {
   mockPrisma.campaign.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.emailJob.updateMany.mockResolvedValue({ count: 3 });
   mockPrisma.emailAccount.findFirst.mockResolvedValue({ id: EMAIL_ACCOUNT_ID, user_id: 'user-1' });
-  mockPrisma.resume.findFirst.mockResolvedValue({ id: RESUME_ID, user_id: 'user-1' });
+  mockPrisma.attachment.findFirst.mockResolvedValue({ id: ATTACHMENT_ID, user_id: 'user-1' });
   mockPrisma.template.findFirst.mockResolvedValue({ id: TEMPLATE_ID, user_id: 'user-1' });
   mockPrisma.contact.count.mockResolvedValue(1);
 });
@@ -278,7 +276,7 @@ describe('POST /api/campaigns', () => {
           user_id: 'user-1',
           name: 'Spring outreach',
           email_account_id: EMAIL_ACCOUNT_ID,
-          resume_id: RESUME_ID,
+          attachment_id: ATTACHMENT_ID,
           template_id: TEMPLATE_ID,
           timezone: 'UTC',
           interval_minutes: 5,
@@ -339,14 +337,14 @@ describe('POST /api/campaigns', () => {
     expect(body.error?.message).toBe('Email account not found or does not belong to you.');
   });
 
-  it('returns 403 when the resume does not belong to the user', async () => {
-    mockPrisma.resume.findFirst.mockResolvedValue(null);
+  it('returns 403 when the attachment does not belong to the user', async () => {
+    mockPrisma.attachment.findFirst.mockResolvedValue(null);
 
     const response = await createCampaign(jsonRequest(validCreateBody()));
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(403);
-    expect(body.error?.message).toBe('Resume not found or does not belong to you.');
+    expect(body.error?.message).toBe('Attachment not found or does not belong to you.');
   });
 
   it('returns 403 when the template does not belong to the user', async () => {

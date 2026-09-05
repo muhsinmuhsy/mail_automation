@@ -53,7 +53,7 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   User: 'User',
   EmailAccount: 'EmailAccount',
-  Resume: 'Resume',
+  Attachment: 'Attachment',
   Contact: 'Contact',
   Template: 'Template',
   Campaign: 'Campaign',
@@ -112,7 +112,7 @@ export const EmailAccountScalarFieldEnum = {
 export type EmailAccountScalarFieldEnum = (typeof EmailAccountScalarFieldEnum)[keyof typeof EmailAccountScalarFieldEnum]
 
 
-export const ResumeScalarFieldEnum = {
+export const AttachmentScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
   filename: 'filename',
@@ -123,7 +123,7 @@ export const ResumeScalarFieldEnum = {
   created_at: 'created_at'
 } as const
 
-export type ResumeScalarFieldEnum = (typeof ResumeScalarFieldEnum)[keyof typeof ResumeScalarFieldEnum]
+export type AttachmentScalarFieldEnum = (typeof AttachmentScalarFieldEnum)[keyof typeof AttachmentScalarFieldEnum]
 
 
 export const ContactScalarFieldEnum = {
@@ -158,7 +158,7 @@ export const CampaignScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
   email_account_id: 'email_account_id',
-  resume_id: 'resume_id',
+  attachment_id: 'attachment_id',
   template_id: 'template_id',
   name: 'name',
   start_at: 'start_at',
@@ -179,7 +179,7 @@ export const EmailJobScalarFieldEnum = {
   campaign_id: 'campaign_id',
   contact_id: 'contact_id',
   email_account_id: 'email_account_id',
-  resume_id: 'resume_id',
+  attachment_id: 'attachment_id',
   template_id: 'template_id',
   to_email: 'to_email',
   subject: 'subject',

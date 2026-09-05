@@ -11,34 +11,34 @@ const _POST = defineRoute(async (_req, ctx) => {
     return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
   }
 
-  const resume = await getPrisma().resume.findUnique({
+  const attachment = await getPrisma().attachment.findUnique({
     where: { id: parsed.data.id },
   });
-  if (!resume || resume.deleted_at) {
-    return respondError(new NotFoundError('Resume not found.'), ctx.requestId);
+  if (!attachment || attachment.deleted_at) {
+    return respondError(new NotFoundError('Attachment not found.'), ctx.requestId);
   }
 
   await getPrisma().$transaction([
-    getPrisma().resume.updateMany({
-      where: { user_id: resume.user_id, deleted_at: null },
+    getPrisma().attachment.updateMany({
+      where: { user_id: attachment.user_id, deleted_at: null },
       data: { is_default: false },
     }),
-    getPrisma().resume.update({ where: { id: resume.id }, data: { is_default: true } }),
+    getPrisma().attachment.update({ where: { id: attachment.id }, data: { is_default: true } }),
   ]);
 
-  return respondOk(null, ctx.requestId, 'Default resume set.');
+  return respondOk(null, ctx.requestId, 'Default attachment set.');
 }, {
   auth: {
     ownership: async (params) => {
-      const r = await getPrisma().resume.findUnique({
+      const r = await getPrisma().attachment.findUnique({
         where: { id: params.id },
         select: { user_id: true, deleted_at: true },
       });
-      if (!r || r.deleted_at) throw new NotFoundError('Resume not found.');
+      if (!r || r.deleted_at) throw new NotFoundError('Attachment not found.');
       return r.user_id;
     },
   },
-  rateLimitKey: 'resume-default',
+  rateLimitKey: 'attachment-default',
 });
 
 

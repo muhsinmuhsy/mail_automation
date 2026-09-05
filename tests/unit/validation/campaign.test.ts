@@ -7,7 +7,7 @@ describe('lib/validation/campaign', () => {
       createCampaignSchema.parse({
         name: 'My Campaign',
         email_account_id: '550e8400-e29b-41d4-a716-446655440000',
-        resume_id: '550e8400-e29b-41d4-a716-446655440001',
+        attachment_id: '550e8400-e29b-41d4-a716-446655440001',
         template_id: '550e8400-e29b-41d4-a716-446655440002',
         contact_ids: ['550e8400-e29b-41d4-a716-446655440003'],
         start_at: new Date('2024-01-15T09:00:00Z'),
@@ -22,7 +22,7 @@ describe('lib/validation/campaign', () => {
     const result = createCampaignSchema.parse({
       name: 'My Campaign',
       email_account_id: '550e8400-e29b-41d4-a716-446655440000',
-      resume_id: '550e8400-e29b-41d4-a716-446655440001',
+      attachment_id: '550e8400-e29b-41d4-a716-446655440001',
       template_id: '550e8400-e29b-41d4-a716-446655440002',
       contact_ids: ['550e8400-e29b-41d4-a716-446655440003'],
       start_at: new Date('2024-01-15T09:00:00Z'),
@@ -35,7 +35,7 @@ describe('lib/validation/campaign', () => {
     const result = createCampaignSchema.parse({
       name: 'My Campaign',
       email_account_id: '550e8400-e29b-41d4-a716-446655440000',
-      resume_id: '550e8400-e29b-41d4-a716-446655440001',
+      attachment_id: '550e8400-e29b-41d4-a716-446655440001',
       template_id: '550e8400-e29b-41d4-a716-446655440002',
       contact_ids: ['550e8400-e29b-41d4-a716-446655440003'],
       start_at: new Date('2024-01-15T09:00:00Z'),
@@ -48,7 +48,7 @@ describe('lib/validation/campaign', () => {
       createCampaignSchema.parse({
         name: 'My Campaign',
         email_account_id: '550e8400-e29b-41d4-a716-446655440000',
-        resume_id: '550e8400-e29b-41d4-a716-446655440001',
+        attachment_id: '550e8400-e29b-41d4-a716-446655440001',
         template_id: '550e8400-e29b-41d4-a716-446655440002',
         contact_ids: [],
         start_at: new Date('2024-01-15T09:00:00Z'),
@@ -61,7 +61,7 @@ describe('lib/validation/campaign', () => {
       createCampaignSchema.parse({
         name: 'My Campaign',
         email_account_id: 'invalid',
-        resume_id: '550e8400-e29b-41d4-a716-446655440001',
+        attachment_id: '550e8400-e29b-41d4-a716-446655440001',
         template_id: '550e8400-e29b-41d4-a716-446655440002',
         contact_ids: ['550e8400-e29b-41d4-a716-446655440003'],
         start_at: new Date('2024-01-15T09:00:00Z'),
@@ -74,7 +74,7 @@ describe('lib/validation/campaign', () => {
       createCampaignSchema.parse({
         name: 'My Campaign',
         email_account_id: '550e8400-e29b-41d4-a716-446655440000',
-        resume_id: '550e8400-e29b-41d4-a716-446655440001',
+        attachment_id: '550e8400-e29b-41d4-a716-446655440001',
         template_id: '550e8400-e29b-41d4-a716-446655440002',
         contact_ids: ['550e8400-e29b-41d4-a716-446655440003'],
         start_at: new Date('2024-01-15T09:00:00Z'),
@@ -88,7 +88,7 @@ describe('lib/validation/campaign', () => {
       createCampaignSchema.parse({
         name: 'My Campaign',
         email_account_id: '550e8400-e29b-41d4-a716-446655440000',
-        resume_id: '550e8400-e29b-41d4-a716-446655440001',
+        attachment_id: '550e8400-e29b-41d4-a716-446655440001',
         template_id: '550e8400-e29b-41d4-a716-446655440002',
         contact_ids: ['550e8400-e29b-41d4-a716-446655440003'],
         start_at: new Date('2024-01-15T09:00:00Z'),
@@ -102,7 +102,7 @@ describe('lib/validation/campaign', () => {
       createCampaignSchema.parse({
         name: 'My Campaign',
         email_account_id: '550e8400-e29b-41d4-a716-446655440000',
-        resume_id: '550e8400-e29b-41d4-a716-446655440001',
+        attachment_id: '550e8400-e29b-41d4-a716-446655440001',
         template_id: '550e8400-e29b-41d4-a716-446655440002',
         contact_ids: ['550e8400-e29b-41d4-a716-446655440003'],
         start_at: new Date('2024-01-15T09:00:00Z'),

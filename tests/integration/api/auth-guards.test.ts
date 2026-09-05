@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { ForbiddenError } from '@/lib/errors';
-import { DELETE } from '@/app/api/resumes/[id]/route';
+import { DELETE } from '@/app/api/attachments/[id]/route';
 
 interface AuthErrorResponse {
   error: { type: string; message: string };
@@ -15,8 +15,10 @@ interface ApiFailureResponse {
   };
 }
 
-const mockPrismaResume = {
-  resume: {
+const ATTACHMENT_ID = '07314147-25ec-4cf2-ae63-388e40add7b8';
+
+const mockPrismaAttachment = {
+  attachment: {
     findFirst: vi.fn(),
     findUnique: vi.fn(),
     update: vi.fn(),
@@ -31,9 +33,7 @@ const mockPrismaResume = {
   },
   $disconnect: vi.fn(),
 };
-// The route resolves ownership and loads the resume via `resume.findUnique`,
-// but this suite was written against `resume.findFirst`; alias them so both resolve identically.
-mockPrismaResume.resume.findUnique = mockPrismaResume.resume.findFirst;
+mockPrismaAttachment.attachment.findUnique = mockPrismaAttachment.attachment.findFirst;
 
 const { mockRequireVerifiedSession } = vi.hoisted(() => ({
   mockRequireVerifiedSession: vi.fn(),
@@ -44,7 +44,7 @@ vi.mock('@/lib/rate-limit/api', () => ({
 }));
 
 vi.mock('@/lib/db', () => ({
-  getPrisma: vi.fn(() => mockPrismaResume),
+  getPrisma: vi.fn(() => mockPrismaAttachment),
 }));
 
 const storageDelete = vi.fn().mockResolvedValue(undefined);
@@ -56,16 +56,16 @@ vi.mock('@/lib/auth/neon-auth', () => ({
   requireVerifiedSession: mockRequireVerifiedSession,
 }));
 
-describe('api/resumes/[id] DELETE auth guards', () => {
+describe('api/attachments/[id] DELETE auth guards', () => {
   beforeEach(() => {
-    mockPrismaResume.resume.findFirst.mockClear();
-    mockPrismaResume.emailJob.count.mockClear();
-    mockPrismaResume.resume.update.mockClear();
-    mockPrismaResume.resume.delete.mockClear();
+    mockPrismaAttachment.attachment.findFirst.mockClear();
+    mockPrismaAttachment.emailJob.count.mockClear();
+    mockPrismaAttachment.attachment.update.mockClear();
+    mockPrismaAttachment.attachment.delete.mockClear();
     storageDelete.mockClear();
     mockRequireVerifiedSession.mockReset();
-    mockPrismaResume.resume.findFirst.mockResolvedValue({
-      id: '07314147-25ec-4cf2-ae63-388e40add7b8',
+    mockPrismaAttachment.attachment.findFirst.mockResolvedValue({
+      id: ATTACHMENT_ID,
       user_id: 'user-1',
       deleted_at: null,
     });
@@ -76,9 +76,9 @@ describe('api/resumes/[id] DELETE auth guards', () => {
       error: { type: 'AUTHENTICATION_ERROR', message: 'Please log in to continue.' },
     });
 
-    const request = new NextRequest('http://localhost/api/resumes/07314147-25ec-4cf2-ae63-388e40add7b8');
+    const request = new NextRequest(`http://localhost/api/attachments/${ATTACHMENT_ID}`);
     const response = await DELETE(request, {
-      params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }),
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as AuthErrorResponse;
 
@@ -91,9 +91,9 @@ describe('api/resumes/[id] DELETE auth guards', () => {
       new ForbiddenError('Please verify your email address to continue.')
     );
 
-    const request = new NextRequest('http://localhost/api/resumes/07314147-25ec-4cf2-ae63-388e40add7b8');
+    const request = new NextRequest(`http://localhost/api/attachments/${ATTACHMENT_ID}`);
     const response = await DELETE(request, {
-      params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }),
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as AuthErrorResponse;
 
@@ -101,44 +101,44 @@ describe('api/resumes/[id] DELETE auth guards', () => {
     expect(body.error.type).toBe('AUTHORIZATION_ERROR');
   });
 
-  it('returns 404 when resume belongs to another user', async () => {
+  it('returns 404 when attachment belongs to another user', async () => {
     mockRequireVerifiedSession.mockResolvedValue({ session: { user: { id: 'user-1' } } });
-    mockPrismaResume.resume.findFirst.mockResolvedValue(null);
+    mockPrismaAttachment.attachment.findFirst.mockResolvedValue(null);
 
-    const request = new NextRequest('http://localhost/api/resumes/07314147-25ec-4cf2-ae63-388e40add7b8');
+    const request = new NextRequest(`http://localhost/api/attachments/${ATTACHMENT_ID}`);
     const response = await DELETE(request, {
-      params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }),
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as ApiFailureResponse;
 
     expect(response.status).toBe(404);
     expect(body.error.type).toBe('NOT_FOUND');
-    expect(mockPrismaResume.resume.update).not.toHaveBeenCalled();
+    expect(mockPrismaAttachment.attachment.update).not.toHaveBeenCalled();
   });
 
-  it('deletes resume when owned by current user', async () => {
+  it('deletes attachment when owned by current user', async () => {
     mockRequireVerifiedSession.mockResolvedValue({ session: { user: { id: 'user-1' } } });
-    mockPrismaResume.resume.findFirst.mockResolvedValue({
-      id: '07314147-25ec-4cf2-ae63-388e40add7b8',
+    mockPrismaAttachment.attachment.findFirst.mockResolvedValue({
+      id: ATTACHMENT_ID,
       user_id: 'user-1',
       filename: 'test.pdf',
       storage_key: 'key',
       deleted_at: null,
     });
-    mockPrismaResume.emailJob.count.mockResolvedValue(0);
-    mockPrismaResume.resume.delete.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' });
+    mockPrismaAttachment.emailJob.count.mockResolvedValue(0);
+    mockPrismaAttachment.attachment.delete.mockResolvedValue({ id: ATTACHMENT_ID });
 
-    const request = new NextRequest('http://localhost/api/resumes/07314147-25ec-4cf2-ae63-388e40add7b8');
+    const request = new NextRequest(`http://localhost/api/attachments/${ATTACHMENT_ID}`);
     const response = await DELETE(request, {
-      params: Promise.resolve({ id: '07314147-25ec-4cf2-ae63-388e40add7b8' }),
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
     });
     const body = (await response.json()) as { success: boolean };
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(storageDelete).toHaveBeenCalledWith('key');
-    expect(mockPrismaResume.resume.delete).toHaveBeenCalledWith({
-      where: { id: '07314147-25ec-4cf2-ae63-388e40add7b8' },
+    expect(mockPrismaAttachment.attachment.delete).toHaveBeenCalledWith({
+      where: { id: ATTACHMENT_ID },
     });
   });
 });

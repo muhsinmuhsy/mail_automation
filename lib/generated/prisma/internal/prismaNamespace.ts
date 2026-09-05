@@ -399,7 +399,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   User: 'User',
   EmailAccount: 'EmailAccount',
-  Resume: 'Resume',
+  Attachment: 'Attachment',
   Contact: 'Contact',
   Template: 'Template',
   Campaign: 'Campaign',
@@ -425,7 +425,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "emailAccount" | "resume" | "contact" | "template" | "campaign" | "emailJob" | "emailLog" | "systemSetting" | "emailUsageDaily" | "campaignUsageDaily" | "emailSendReservation" | "systemUsageDaily"
+    modelProps: "user" | "emailAccount" | "attachment" | "contact" | "template" | "campaign" | "emailJob" | "emailLog" | "systemSetting" | "emailUsageDaily" | "campaignUsageDaily" | "emailSendReservation" | "systemUsageDaily"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -577,77 +577,77 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    Resume: {
-      payload: Prisma.$ResumePayload<ExtArgs>
-      fields: Prisma.ResumeFieldRefs
+    Attachment: {
+      payload: Prisma.$AttachmentPayload<ExtArgs>
+      fields: Prisma.AttachmentFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.ResumeFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResumePayload> | null
+          args: Prisma.AttachmentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AttachmentPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.ResumeFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResumePayload>
+          args: Prisma.AttachmentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AttachmentPayload>
         }
         findFirst: {
-          args: Prisma.ResumeFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResumePayload> | null
+          args: Prisma.AttachmentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AttachmentPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.ResumeFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResumePayload>
+          args: Prisma.AttachmentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AttachmentPayload>
         }
         findMany: {
-          args: Prisma.ResumeFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResumePayload>[]
+          args: Prisma.AttachmentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AttachmentPayload>[]
         }
         create: {
-          args: Prisma.ResumeCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResumePayload>
+          args: Prisma.AttachmentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AttachmentPayload>
         }
         createMany: {
-          args: Prisma.ResumeCreateManyArgs<ExtArgs>
+          args: Prisma.AttachmentCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.ResumeCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResumePayload>[]
+          args: Prisma.AttachmentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AttachmentPayload>[]
         }
         delete: {
-          args: Prisma.ResumeDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResumePayload>
+          args: Prisma.AttachmentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AttachmentPayload>
         }
         update: {
-          args: Prisma.ResumeUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResumePayload>
+          args: Prisma.AttachmentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AttachmentPayload>
         }
         deleteMany: {
-          args: Prisma.ResumeDeleteManyArgs<ExtArgs>
+          args: Prisma.AttachmentDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.ResumeUpdateManyArgs<ExtArgs>
+          args: Prisma.AttachmentUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.ResumeUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResumePayload>[]
+          args: Prisma.AttachmentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AttachmentPayload>[]
         }
         upsert: {
-          args: Prisma.ResumeUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResumePayload>
+          args: Prisma.AttachmentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AttachmentPayload>
         }
         aggregate: {
-          args: Prisma.ResumeAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateResume>
+          args: Prisma.AttachmentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAttachment>
         }
         groupBy: {
-          args: Prisma.ResumeGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ResumeGroupByOutputType>[]
+          args: Prisma.AttachmentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AttachmentGroupByOutputType>[]
         }
         count: {
-          args: Prisma.ResumeCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ResumeCountAggregateOutputType> | number
+          args: Prisma.AttachmentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AttachmentCountAggregateOutputType> | number
         }
       }
     }
@@ -1460,7 +1460,7 @@ export const EmailAccountScalarFieldEnum = {
 export type EmailAccountScalarFieldEnum = (typeof EmailAccountScalarFieldEnum)[keyof typeof EmailAccountScalarFieldEnum]
 
 
-export const ResumeScalarFieldEnum = {
+export const AttachmentScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
   filename: 'filename',
@@ -1471,7 +1471,7 @@ export const ResumeScalarFieldEnum = {
   created_at: 'created_at'
 } as const
 
-export type ResumeScalarFieldEnum = (typeof ResumeScalarFieldEnum)[keyof typeof ResumeScalarFieldEnum]
+export type AttachmentScalarFieldEnum = (typeof AttachmentScalarFieldEnum)[keyof typeof AttachmentScalarFieldEnum]
 
 
 export const ContactScalarFieldEnum = {
@@ -1506,7 +1506,7 @@ export const CampaignScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
   email_account_id: 'email_account_id',
-  resume_id: 'resume_id',
+  attachment_id: 'attachment_id',
   template_id: 'template_id',
   name: 'name',
   start_at: 'start_at',
@@ -1527,7 +1527,7 @@ export const EmailJobScalarFieldEnum = {
   campaign_id: 'campaign_id',
   contact_id: 'contact_id',
   email_account_id: 'email_account_id',
-  resume_id: 'resume_id',
+  attachment_id: 'attachment_id',
   template_id: 'template_id',
   to_email: 'to_email',
   subject: 'subject',
@@ -1942,7 +1942,7 @@ export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaC
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   emailAccount?: Prisma.EmailAccountOmit
-  resume?: Prisma.ResumeOmit
+  attachment?: Prisma.AttachmentOmit
   contact?: Prisma.ContactOmit
   template?: Prisma.TemplateOmit
   campaign?: Prisma.CampaignOmit
