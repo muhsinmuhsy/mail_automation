@@ -17,6 +17,24 @@ function deferred() {
 }
 
 describe('ResumeUpload', () => {
+  it('shows a rejected upload and retains the file for a successful retry', async () => {
+    const user = userEvent.setup();
+    const onUpload = vi.fn()
+      .mockRejectedValueOnce(new Error('Storage is temporarily unavailable.'))
+      .mockResolvedValueOnce(undefined);
+    const { container } = render(<ResumeUpload onUpload={onUpload} />);
+    const file = makeFile();
+    await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, file);
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Storage is temporarily unavailable.');
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Upload' })).toBeDisabled());
+    expect(onUpload).toHaveBeenNthCalledWith(2, file);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect((container.querySelector('input[type="file"]') as HTMLInputElement).files).toHaveLength(0);
+  });
+
   it('renders an Upload submit button', () => {
     render(<ResumeUpload onUpload={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Upload' })).toBeInTheDocument();

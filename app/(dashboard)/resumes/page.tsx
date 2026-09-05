@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useEffect, useState } from 'react';
 
 type Resume = { id: string; filename: string; size_bytes: number; is_default: boolean };
-type ApiResponse<T> = { data: T; message?: string };
+type ApiResponse<T> = { data: T; message?: string; error?: { message: string } };
 
 export default function ResumesPage() {
   const [resumes, setResumes] = useState<Resume[]>([]);
@@ -19,7 +19,7 @@ export default function ResumesPage() {
         const response = await fetch('/api/resumes');
         const payload = (await response.json()) as ApiResponse<Resume[]>;
         if (!active) return;
-        if (!response.ok) throw new Error(payload.message || 'Unable to load resumes.');
+        if (!response.ok) throw new Error(payload.error?.message || payload.message || 'Unable to load resumes.');
         setResumes(payload.data);
       } catch (cause) {
         if (!active) return;
@@ -47,7 +47,7 @@ export default function ResumesPage() {
             const formData = new FormData(); formData.append('file', file);
             const response = await fetch('/api/resumes', { method: 'POST', body: formData });
             const payload = await response.json() as ApiResponse<Resume>;
-            if (!response.ok) { const message = payload.message || 'Unable to upload resume.'; setError(message); throw new Error(message); }
+            if (!response.ok) throw new Error(payload.error?.message || payload.message || 'Unable to upload resume.');
             setResumes((previous) => [...previous, payload.data]);
           }} />
         </div>
