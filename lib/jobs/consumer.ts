@@ -7,7 +7,9 @@ import {
 import { sendEmail } from '../email/service';
 import { decryptSecret } from '../security/encryption';
 import { createStorageService } from '../storage/storage.factory';
-import type { GmailProviderOptions } from '../email/providers/gmail';
+import type { ProviderOptions } from '../email/providers/types';
+import { gmailAccessToken } from '../email/accounts/credential-service';
+import { ReconnectRequiredError } from '../email/providers/gmail/oauth';
 
 const MAX_ATTEMPTS = 3;
 
@@ -41,7 +43,7 @@ export async function processQueueJob(
   prisma: PrismaClient,
   env: Record<string, unknown>,
   jobId: string,
-  providerOptions?: GmailProviderOptions
+  providerOptions?: ProviderOptions
 ): Promise<void> {
   const job = await prisma.emailJob.findUnique({
     where: { id: jobId },
@@ -68,6 +70,7 @@ export async function processQueueJob(
   const attemptNumber = job.attempt_count + 1;
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
+  let deliveryMayHaveOccurred = false;
 
   try {
     const user = await prisma.user.findUnique({ where: { id: job.user_id } });
@@ -147,15 +150,18 @@ export async function processQueueJob(
 
     let accepted = false;
     try {
-      const decryptedSecret = emailAccount.encrypted_secret
+      let decryptedSecret = emailAccount.auth_method === 'oauth2'
+        ? await gmailAccessToken(prisma, emailAccount, env)
+        : emailAccount.encrypted_secret
         ? await decryptSecret(emailAccount.encrypted_secret, encryptionKey(env))
         : '';
 
       // `accepted` distinguishes a crash *after* the provider accepted the
       // message (→ DELIVERY_UNKNOWN, never auto-retry) from a thrown error
       // before acceptance (→ temporary failure, safe to retry).
-      const result = await sendEmail({
+      const sendParams = {
         ...(providerOptions ? { providerOptions } : {}),
+        ...(emailAccount.auth_method === 'oauth2' ? { providerOptions: { ...providerOptions, authMethod: 'oauth2' as const } } : {}),
         provider: emailAccount.provider,
         from: emailAccount.email,
         to: job.to_email,
@@ -166,10 +172,19 @@ export async function processQueueJob(
           email: emailAccount.email,
           secret: decryptedSecret,
         },
-      });
+      };
+      let result = await sendEmail(sendParams);
+      // A 401 is an explicit rejection, so one refresh and retry is safe.
+      if (result.reconnectRequired && emailAccount.auth_method === 'oauth2') {
+        const current = await prisma.emailAccount.findUnique({ where: { id: emailAccount.id } });
+        if (!current) throw new ReconnectRequiredError();
+        decryptedSecret = await gmailAccessToken(prisma, current, env, true);
+        result = await sendEmail({ ...sendParams, credentials: { email: emailAccount.email, secret: decryptedSecret } });
+      }
 
       if (result.success) {
         accepted = true;
+        deliveryMayHaveOccurred = true;
         await prisma.emailJob.update({
           where: { id: jobId },
           data: { status: 'SENT', sent_at: new Date() },
@@ -179,7 +194,7 @@ export async function processQueueJob(
           data: {
             email_job_id: jobId,
             status: 'SENT',
-            smtp_response: result.smtpResponse || null,
+            smtp_response: result.providerResponse || result.smtpResponse || result.messageId || null,
             error_message: null,
           },
         });
@@ -192,6 +207,20 @@ export async function processQueueJob(
         return;
       }
 
+      if (result.errorType === 'unknown') {
+        accepted = true;
+        deliveryMayHaveOccurred = true;
+        throw new Error('Provider acceptance is unknown.');
+      }
+      if (result.reconnectRequired) {
+        const current = await prisma.emailAccount.findUnique({ where: { id: emailAccount.id } });
+        if (current?.encrypted_secret && await decryptSecret(current.encrypted_secret, encryptionKey(env)) === decryptedSecret) {
+          await prisma.emailAccount.updateMany({
+            where: { id: emailAccount.id, updated_at: current.updated_at, encrypted_secret: current.encrypted_secret },
+            data: { is_active: false, connection_error: 'reconnect_required' },
+          });
+        }
+      }
       const isPermanent = result.errorType === 'permanent';
       const reachedMax = attemptNumber >= MAX_ATTEMPTS;
 
@@ -221,7 +250,7 @@ export async function processQueueJob(
       await prisma.emailLog.create({
         data: {
           email_job_id: jobId,
-          status: isPermanent ? 'SMTP_AUTH_FAILED' : 'SMTP_TEMPORARY_FAILURE',
+          status: emailAccount.auth_method === 'oauth2' ? (isPermanent ? 'PROVIDER_REJECTED' : 'PROVIDER_TEMPORARY_FAILURE') : (isPermanent ? 'SMTP_AUTH_FAILED' : 'SMTP_TEMPORARY_FAILURE'),
           smtp_response: result.error || null,
           error_message: result.error || 'Delivery attempt failed.',
         },
@@ -232,7 +261,12 @@ export async function processQueueJob(
         campaignId: job.campaign_id ?? undefined,
         emailJobId: jobId,
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof ReconnectRequiredError) {
+        await releaseReservation(prisma, { userId: job.user_id, campaignId: job.campaign_id ?? undefined, emailJobId: jobId });
+        await prisma.emailJob.update({ where: { id: jobId }, data: { status: 'FAILED', error_message: error.message } });
+        return;
+      }
       if (accepted) {
         // The provider accepted the message but bookkeeping crashed afterwards.
         // Treat as potentially-sent: mark DELIVERY_UNKNOWN and keep the
@@ -287,6 +321,9 @@ export async function processQueueJob(
       }
     }
   } catch {
+    // If recording an accepted/unknown result also fails, leave the reservation
+    // intact for stuck-job recovery. Never convert this to a retryable send.
+    if (deliveryMayHaveOccurred) throw new Error('Delivery outcome requires recovery.');
     // Failures before the provider call (for example B2 retrieval) are known
     // not to have delivered a message, so their reservation is safe to release.
     await releaseReservation(prisma, {

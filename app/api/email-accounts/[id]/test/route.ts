@@ -5,6 +5,9 @@ import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
 import { decryptSecret } from '@/lib/security/encryption';
 import { NotFoundError, ExternalServiceError, ValidationError } from '@/lib/errors';
+import { gmailAccessToken } from '@/lib/email/accounts/credential-service';
+import { GmailApiProvider } from '@/lib/email/providers/gmail/provider';
+import { ReconnectRequiredError } from '@/lib/email/providers/gmail/oauth';
 
 const _POST = defineRoute(async (req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
@@ -18,6 +21,16 @@ const _POST = defineRoute(async (req, ctx) => {
 
   if (!account) {
     return respondError(new NotFoundError('Email account not found.'), ctx.requestId);
+  }
+  if (account.auth_method === 'oauth2') {
+    if (account.user_id !== ctx.user.id) throw new ValidationError('Only the account owner can verify authorization.');
+    try {
+      const token = await gmailAccessToken(getPrisma(), account, process.env, true);
+      const result = await new GmailApiProvider().testConnection({ email: account.email, secret: token });
+      return respondOk({ connected: result.success, message: result.message }, ctx.requestId);
+    } catch (error) {
+      throw new ExternalServiceError(error instanceof ReconnectRequiredError ? error.message : 'Could not verify Google authorization. Please try again.');
+    }
   }
 
   if (!account.encrypted_secret) {

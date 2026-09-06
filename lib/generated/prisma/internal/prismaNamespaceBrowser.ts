@@ -53,6 +53,7 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   User: 'User',
   EmailAccount: 'EmailAccount',
+  EmailOAuthAttempt: 'EmailOAuthAttempt',
   Attachment: 'Attachment',
   Contact: 'Contact',
   Template: 'Template',
@@ -104,12 +105,27 @@ export const EmailAccountScalarFieldEnum = {
   encrypted_secret: 'encrypted_secret',
   encrypted_refresh_token: 'encrypted_refresh_token',
   access_token_expires_at: 'access_token_expires_at',
+  provider_account_id: 'provider_account_id',
+  granted_scopes: 'granted_scopes',
+  connection_error: 'connection_error',
   is_active: 'is_active',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
 
 export type EmailAccountScalarFieldEnum = (typeof EmailAccountScalarFieldEnum)[keyof typeof EmailAccountScalarFieldEnum]
+
+
+export const EmailOAuthAttemptScalarFieldEnum = {
+  state_hash: 'state_hash',
+  user_id: 'user_id',
+  provider: 'provider',
+  account_id: 'account_id',
+  encrypted_verifier: 'encrypted_verifier',
+  expires_at: 'expires_at'
+} as const
+
+export type EmailOAuthAttemptScalarFieldEnum = (typeof EmailOAuthAttemptScalarFieldEnum)[keyof typeof EmailOAuthAttemptScalarFieldEnum]
 
 
 export const AttachmentScalarFieldEnum = {

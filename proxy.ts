@@ -37,8 +37,13 @@ export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (isUnauthenticatedPath(pathname)) {
-    const key = `auth:${getRateLimitKey(request)}:${pathname}`;
-    const result = await authRateLimiter.check(key, 10, 600);
+    // Page loads and Next.js prefetches are not authentication attempts.
+    // Keep credential endpoints and server-action POSTs on the strict limiter.
+    const publicRead = ['GET', 'HEAD'].includes(request.method) && !pathname.startsWith('/api/auth');
+    const key = `${publicRead ? 'public-page' : 'auth'}:${getRateLimitKey(request)}:${pathname}`;
+    const result = publicRead
+      ? await apiRateLimiter.check(key, 120, 60)
+      : await authRateLimiter.check(key, 10, 600);
     if (!result.success) {
       return NextResponse.json(
         {

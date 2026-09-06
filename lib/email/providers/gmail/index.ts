@@ -92,6 +92,7 @@ export class GmailProvider implements EmailProvider {
       if (!ehlo.success) {
         return { success: false, message: `EHLO failed: ${ehlo.message}`, provider: 'gmail' };
       }
+      if (this.useStartTls) await client.startTls(config.email.split('@')[1] || 'localhost');
       const auth = await this.authLogin(client, config.email, config.secret);
       if (!auth.success) {
         await client.close().catch(() => {});

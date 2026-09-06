@@ -18,6 +18,7 @@ const _POST = defineRoute(async (_req, ctx) => {
   if (!account) {
     return respondError(new NotFoundError('Email account not found.'), ctx.requestId);
   }
+  if (account.auth_method === 'oauth2') throw new ValidationError('Reconnect through Google to reactivate this account.');
 
   await getPrisma().emailAccount.update({
     where: { id: parsed.data.id },

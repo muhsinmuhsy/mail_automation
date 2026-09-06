@@ -23,8 +23,20 @@ export interface SendEmailResult {
   success: boolean;
   messageId?: string;
   smtpResponse?: string;
+  providerResponse?: string;
+  reconnectRequired?: boolean;
   error?: string;
-  errorType?: 'temporary' | 'permanent';
+  errorType?: 'temporary' | 'permanent' | 'unknown';
+}
+
+export interface ProviderOptions {
+  authMethod?: 'oauth2' | 'app_password' | 'password';
+  fetcher?: typeof fetch;
+  socketFactory?: import('./smtp/transport').SocketFactory;
+  useStartTls?: boolean;
+  host?: string;
+  port?: number;
+  timeoutMs?: number;
 }
 
 export interface ProviderCapabilities {

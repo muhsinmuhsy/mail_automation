@@ -49,6 +49,11 @@ export type User = Prisma.UserModel
  */
 export type EmailAccount = Prisma.EmailAccountModel
 /**
+ * Model EmailOAuthAttempt
+ * 
+ */
+export type EmailOAuthAttempt = Prisma.EmailOAuthAttemptModel
+/**
  * Model Attachment
  * 
  */

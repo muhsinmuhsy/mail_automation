@@ -1,17 +1,6 @@
 'use client';
 
-interface Provider {
-  id: string;
-  name: string;
-  marker: string;
-}
-
-const providers: Provider[] = [
-  { id: 'gmail', name: 'Gmail', marker: 'G' },
-  { id: 'microsoft', name: 'Microsoft', marker: 'M' },
-  { id: 'yahoo', name: 'Yahoo', marker: 'Y' },
-  { id: 'custom_smtp', name: 'Custom SMTP', marker: 'SMTP' },
-];
+import { PROVIDERS as providers } from '@/lib/email/providers/registry';
 
 interface ProviderSelectorProps {
   selected: string;
@@ -28,6 +17,7 @@ export function ProviderSelector({ selected, onSelect }: ProviderSelectorProps) 
           <button
             type="button"
             key={provider.id}
+            disabled={!provider.enabled}
             onClick={() => onSelect(provider.id)}
             aria-pressed={isSelected}
             className={`flex items-center gap-3 rounded-[var(--radius-md)] border px-4 py-3 text-left text-sm font-medium transition-colors ${
@@ -42,7 +32,7 @@ export function ProviderSelector({ selected, onSelect }: ProviderSelectorProps) 
             >
               {provider.marker}
             </span>
-            <span>{provider.name}</span>
+            <span>{provider.name}{!provider.enabled && <span className="block text-xs text-text-secondary">Coming soon</span>}</span>
           </button>
         );
       })}

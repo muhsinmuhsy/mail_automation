@@ -23,6 +23,21 @@ function handlers(overrides: Partial<Record<string, ReturnType<typeof vi.fn>>> =
 }
 
 describe('EmailAccountCard', () => {
+  it('offers reconnect and disconnect for OAuth accounts without password editing', async () => {
+    const onReconnect = vi.fn(); const onDisconnect = vi.fn();
+    render(<EmailAccountCard account={{ ...activeAccount, auth_method: 'oauth2' }} {...handlers()} onReconnect={onReconnect} onDisconnect={onDisconnect} />);
+    expect(screen.getByText('Connected with Google')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    expect(onReconnect).toHaveBeenCalledOnce(); expect(onDisconnect).toHaveBeenCalledOnce();
+  });
+  it('requires Google reconnection after authorization expires', () => {
+    render(<EmailAccountCard account={{ ...inactiveAccount, auth_method: 'oauth2', connection_error: 'reconnect_required' }} {...handlers()} onReconnect={vi.fn()} />);
+    expect(screen.getByText(/Authorization expired/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reconnect' })).toBeEnabled();
+  });
   it('renders the account email and provider', () => {
     render(<EmailAccountCard account={activeAccount} {...handlers()} />);
     expect(screen.getByText('me@gmail.com')).toBeInTheDocument();

@@ -84,6 +84,9 @@ model EmailAccount {
   encrypted_secret       String?
   encrypted_refresh_token String?
   access_token_expires_at DateTime? @db.Timestamptz
+  provider_account_id    String?
+  granted_scopes         String[] @default([])
+  connection_error       String?
   is_active              Boolean   @default(true)
   created_at             DateTime  @default(now()) @db.Timestamptz
   updated_at             DateTime  @updatedAt @default(now()) @db.Timestamptz
@@ -93,6 +96,19 @@ model EmailAccount {
 
   @@unique([user_id, provider, email], map: "unique_email_accounts_user_provider_email")
   @@map("email_accounts")
+}
+
+// Short-lived, single-use authorization attempts. No OAuth secrets in URLs.
+model EmailOAuthAttempt {
+  state_hash         String @id
+  user_id            String @db.Uuid
+  provider           EmailProvider
+  account_id         String? @db.Uuid
+  encrypted_verifier String
+  expires_at         DateTime @db.Timestamptz
+
+  @@index([expires_at])
+  @@map("email_oauth_attempts")
 }
 
 model Attachment {

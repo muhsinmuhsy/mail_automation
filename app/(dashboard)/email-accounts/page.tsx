@@ -8,18 +8,22 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Toast } from '@/components/ui/Toast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ProviderSelector } from '@/components/email-accounts/ProviderSelector';
 
 interface EmailAccount {
   id: string;
   provider: string;
   email: string;
   is_active: boolean;
+  auth_method?: string;
+  connection_error?: string | null;
 }
 
 interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: { message: string };
+  message?: string;
 }
 
 export default function EmailAccountsPage() {
@@ -27,6 +31,8 @@ export default function EmailAccountsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [disconnectId, setDisconnectId] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deactivateId, setDeactivateId] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState(false);
@@ -59,7 +65,44 @@ export default function EmailAccountsPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAccounts();
+    const params = new URLSearchParams(window.location.search);
+    const connection = params.get('connection');
+    if (connection) {
+      const messages: Record<string, string> = {
+        connected: 'Gmail connected successfully.', cancelled: 'Google connection cancelled. No account was changed.',
+        account_mismatch: 'Choose the same Google account when reconnecting.', failed: 'Could not connect Gmail. Please try again and allow sending access.',
+      };
+      setToast({ message: messages[connection] ?? messages.failed, type: connection === 'connected' ? 'success' : 'error' });
+      window.history.replaceState({}, '', '/email-accounts');
+    }
   }, [fetchAccounts]);
+
+  const connectGoogle = async (accountId?: string) => {
+    const response = await fetch('/api/email-accounts/connect/gmail', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountId }),
+    });
+    const result = await response.json() as ApiResponse<{ url: string }>;
+    if (!response.ok || !result.data?.url) throw new Error(result.error?.message || 'Could not start Google connection.');
+    window.location.assign(result.data.url);
+  };
+
+  const reconnect = async (accountId: string) => {
+    try { await connectGoogle(accountId); }
+    catch (error) { setToast({ message: error instanceof Error ? error.message : 'Connection failed.', type: 'error' }); }
+  };
+
+  const disconnect = async () => {
+    if (!disconnectId) return;
+    setDisconnecting(true);
+    try {
+      const response = await fetch(`/api/email-accounts/${disconnectId}/disconnect`, { method: 'POST' });
+      const result = await response.json() as ApiResponse<{ revoked: boolean }>;
+      if (!result.success) throw new Error(result.error?.message || 'Could not disconnect account.');
+      setToast({ message: result.message || 'Account disconnected.', type: result.data?.revoked ? 'success' : 'error' });
+      await fetchAccounts();
+    } catch (error) { setToast({ message: error instanceof Error ? error.message : 'Could not disconnect account.', type: 'error' }); }
+    finally { setDisconnecting(false); setDisconnectId(null); }
+  };
 
   const handleConnect = async (email: string, secret: string) => {
     const res = await fetch('/api/email-accounts', {
@@ -73,18 +116,21 @@ export default function EmailAccountsPage() {
       setToast({ message: 'Email account connected successfully.', type: 'success' });
       fetchAccounts();
     } else {
-      setToast({ message: data.error?.message || 'Failed to connect account.', type: 'error' });
+      throw new Error(data.error?.message || 'Failed to connect account.');
     }
   };
 
   const handleTest = async (id: string) => {
+    try {
     const res = await fetch(`/api/email-accounts/${id}/test`, { method: 'POST' });
     const data = (await res.json()) as ApiResponse<{ connected: boolean; message: string }>;
     if (data.success) {
-      setToast({ message: data.data?.message || 'Connection test completed.', type: 'success' });
+      setToast({ message: data.data?.message || 'Connection test completed.', type: data.data?.connected ? 'success' : 'error' });
     } else {
       setToast({ message: data.error?.message || 'Connection test failed.', type: 'error' });
     }
+    await fetchAccounts();
+    } catch { setToast({ message: 'Could not verify the connection. Please try again.', type: 'error' }); }
   };
 
   const openDeactivateConfirm = (id: string) => {
@@ -168,12 +214,13 @@ export default function EmailAccountsPage() {
 
       <div className="flex flex-col gap-4">
         <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
-          <h2 className="text-lg font-semibold text-text-primary">Connect Gmail account</h2>
+          <h2 className="text-lg font-semibold text-text-primary">Connect your email</h2>
           <p className="text-sm text-text-secondary mt-1">
-            Use a Gmail App Password to send emails through your account.
+            Connect Gmail securely with Google. More providers are coming soon.
           </p>
           <div className="mt-4">
-            <Button onClick={() => setDialogOpen(true)}>Connect Gmail</Button>
+            <ProviderSelector selected="gmail" onSelect={() => setDialogOpen(true)} />
+            <Button className="mt-4" onClick={() => setDialogOpen(true)}>Connect Gmail</Button>
           </div>
         </div>
 
@@ -201,6 +248,8 @@ export default function EmailAccountsPage() {
                   onDeactivate={() => openDeactivateConfirm(account.id)}
                   onReactivate={() => openReactivateConfirm(account.id)}
                   onEdit={() => openEdit(account)}
+                  onReconnect={() => void reconnect(account.id)}
+                  onDisconnect={() => setDisconnectId(account.id)}
                 />
               ))}
             </div>
@@ -209,11 +258,17 @@ export default function EmailAccountsPage() {
       </div>
 
       <ProviderConnectionDialog
+        key={dialogOpen ? 'open' : 'closed'}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         provider="Gmail"
         onConnect={handleConnect}
+        onOAuthConnect={() => connectGoogle()}
       />
+
+      <ConfirmDialog open={!!disconnectId} onOpenChange={open => { if (!open) setDisconnectId(null); }} title="Disconnect Gmail"
+        description="Remove stored authorization and stop future sends from this account. An email already being sent may still complete."
+        confirmLabel="Disconnect" cancelLabel="Cancel" variant="destructive" loading={disconnecting} onConfirm={disconnect} />
 
       <ConfirmDialog
         open={confirmOpen}

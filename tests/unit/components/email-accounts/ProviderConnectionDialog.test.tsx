@@ -1,197 +1,55 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProviderConnectionDialog } from '@/components/email-accounts/ProviderConnectionDialog';
 
 function setup(props: Partial<React.ComponentProps<typeof ProviderConnectionDialog>> = {}) {
-  const onOpenChange = vi.fn();
-  const onConnect = vi.fn();
-  const view = render(
-    <ProviderConnectionDialog
-      open
-      onOpenChange={onOpenChange}
-      provider="Gmail"
-      onConnect={onConnect}
-      {...props}
-    />
-  );
-  return { ...view, onOpenChange, onConnect };
+  const onConnect = vi.fn(); const onOAuthConnect = vi.fn(); const onOpenChange = vi.fn();
+  return { ...render(<ProviderConnectionDialog open provider="Gmail" onConnect={onConnect} onOAuthConnect={onOAuthConnect} onOpenChange={onOpenChange} {...props} />), onConnect, onOAuthConnect, onOpenChange };
 }
-
-async function fillCredentials(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByLabelText('Email'), 'me@gmail.com');
-  await user.type(screen.getByLabelText('App Password'), 'app-password');
-}
-
-describe('ProviderConnectionDialog', () => {
+describe('Google-first connection dialog', () => {
   it('renders nothing when closed', () => {
-    const { container } = setup({ open: false });
-    expect(container).toBeEmptyDOMElement();
+    expect(setup({ open: false }).container).toBeEmptyDOMElement();
   });
-
-  it('renders a provider-specific title', () => {
-    setup();
-    expect(screen.getByRole('heading', { name: 'Connect Gmail' })).toBeInTheDocument();
+  it('offers Google authorization without asking for credentials', async () => {
+    const { onOAuthConnect, onConnect } = setup();
+    expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('App Password')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
+    expect(onOAuthConnect).toHaveBeenCalledOnce(); expect(onConnect).not.toHaveBeenCalled();
   });
-
-  it('renders the title for another provider', () => {
-    setup({ provider: 'Custom SMTP' });
-    expect(screen.getByRole('heading', { name: 'Connect Custom SMTP' })).toBeInTheDocument();
+  it('shows actionable connection errors', async () => {
+    setup({ onOAuthConnect: vi.fn().mockRejectedValue(new Error('Google connection is unavailable.')) });
+    await userEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Google connection is unavailable.');
   });
-
-  it('renders the instructional copy', () => {
-    setup();
-    expect(
-      screen.getByText('Enter your Gmail address and App Password to send emails.')
-    ).toBeInTheDocument();
-  });
-
-  it('renders required email and password inputs with autocomplete hints', () => {
-    setup();
-    const email = screen.getByLabelText('Email');
-    const secret = screen.getByLabelText('App Password');
-    expect(email).toHaveAttribute('type', 'email');
-    expect(email).toBeRequired();
-    expect(email).toHaveAttribute('autocomplete', 'email');
-    expect(secret).toHaveAttribute('type', 'password');
-    expect(secret).toBeRequired();
-    expect(secret).toHaveAttribute('autocomplete', 'current-password');
-  });
-
-  it('shows no error message initially', () => {
-    setup();
-    expect(screen.queryByText('Failed to connect account. Please try again.')).not.toBeInTheDocument();
-  });
-
-  it('updates both fields as the user types', async () => {
-    const user = userEvent.setup();
-    setup();
-    await fillCredentials(user);
-    expect(screen.getByLabelText('Email')).toHaveValue('me@gmail.com');
-    expect(screen.getByLabelText('App Password')).toHaveValue('app-password');
-  });
-
-  it('calls onConnect with the credentials on submit', async () => {
-    const user = userEvent.setup();
-    const { onConnect } = setup();
-    onConnect.mockResolvedValue(undefined);
-    await fillCredentials(user);
-    await user.click(screen.getByRole('button', { name: 'Connect' }));
-    expect(onConnect).toHaveBeenCalledTimes(1);
+  it('supports the explicitly selected SMTP fallback', async () => {
+    const user = userEvent.setup(); const { onConnect, onOAuthConnect } = setup();
+    await user.click(screen.getByRole('button', { name: /Advanced/ }));
+    await user.type(screen.getByLabelText('Email'), 'me@gmail.com');
+    await user.type(screen.getByLabelText('App Password'), 'app-password');
+    await user.click(screen.getByRole('button', { name: 'Connect with App Password' }));
     expect(onConnect).toHaveBeenCalledWith('me@gmail.com', 'app-password');
+    expect(onOAuthConnect).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByLabelText('App Password')).toHaveValue(''));
   });
-
-  it('clears both fields after a successful connection', async () => {
-    const user = userEvent.setup();
-    const { onConnect } = setup();
-    onConnect.mockResolvedValue(undefined);
-    await fillCredentials(user);
-    await user.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() => expect(screen.getByLabelText('Email')).toHaveValue(''));
-    expect(screen.getByLabelText('App Password')).toHaveValue('');
-  });
-
-  it('shows a loading spinner on the Connect button while pending', async () => {
-    const user = userEvent.setup();
-    let resolveConnect!: () => void;
-    const onConnect = vi.fn(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveConnect = resolve;
-        })
-    );
-    setup({ onConnect });
-    await fillCredentials(user);
-    await user.click(screen.getByRole('button', { name: 'Connect' }));
-    const connect = screen.getByRole('button', { name: 'Connect' });
-    expect(connect).toBeDisabled();
-    expect(connect.querySelector('span.animate-spin')).toBeInTheDocument();
-    await act(async () => {
-      resolveConnect();
-    });
-    expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled();
-  });
-
-  it('shows an error message when onConnect rejects', async () => {
-    const user = userEvent.setup();
-    const onConnect = vi.fn().mockRejectedValue(new Error('smtp refused'));
-    setup({ onConnect });
-    await fillCredentials(user);
-    await user.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() =>
-      expect(screen.getByText('Failed to connect account. Please try again.')).toBeInTheDocument()
-    );
-    expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled();
-  });
-
-  it('keeps the entered credentials when the connection fails', async () => {
-    const user = userEvent.setup();
-    const onConnect = vi.fn().mockRejectedValue(new Error('nope'));
-    setup({ onConnect });
-    await fillCredentials(user);
-    await user.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() =>
-      expect(screen.getByText('Failed to connect account. Please try again.')).toBeInTheDocument()
-    );
+  it('retains fallback input on failure', async () => {
+    const user = userEvent.setup(); setup({ onConnect: vi.fn().mockRejectedValue(new Error('Connection failed.')) });
+    await user.click(screen.getByRole('button', { name: /Advanced/ }));
+    await user.type(screen.getByLabelText('Email'), 'me@gmail.com');
+    await user.type(screen.getByLabelText('App Password'), 'app-password');
+    await user.click(screen.getByRole('button', { name: 'Connect with App Password' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Connection failed.');
     expect(screen.getByLabelText('Email')).toHaveValue('me@gmail.com');
-    expect(screen.getByLabelText('App Password')).toHaveValue('app-password');
   });
-
-  it('clears a previous error on the next submit attempt', async () => {
-    const user = userEvent.setup();
-    const onConnect = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('first fails'))
-      .mockResolvedValueOnce(undefined);
-    setup({ onConnect });
-    await fillCredentials(user);
-    await user.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() =>
-      expect(screen.getByText('Failed to connect account. Please try again.')).toBeInTheDocument()
-    );
-    await user.click(screen.getByRole('button', { name: 'Connect' }));
-    await waitFor(() =>
-      expect(
-        screen.queryByText('Failed to connect account. Please try again.')
-      ).not.toBeInTheDocument()
-    );
-    expect(onConnect).toHaveBeenCalledTimes(2);
+  it('does not expose connection controls for unavailable providers', () => {
+    setup({ provider: 'Microsoft' });
+    expect(screen.getByText('This provider is coming soon.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Continue with Google' })).not.toBeInTheDocument();
   });
-
-  it('closes the dialog when Cancel is clicked without connecting', async () => {
-    const user = userEvent.setup();
-    const { onOpenChange, onConnect } = setup();
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(onConnect).not.toHaveBeenCalled();
-  });
-
-  it('closes the dialog when the overlay is clicked', async () => {
-    const user = userEvent.setup();
+  it('closes on cancel', async () => {
     const { onOpenChange } = setup();
-    const overlay = document.querySelector('.fixed.inset-0.bg-neutral-900\\/50') as HTMLElement;
-    await user.click(overlay);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
-  });
-
-  it('does not submit while the browser validation fails', async () => {
-    const user = userEvent.setup();
-    const { onConnect } = setup();
-    await user.click(screen.getByRole('button', { name: 'Connect' }));
-    expect(onConnect).not.toHaveBeenCalled();
-  });
-
-  it('prevents the default form submission', () => {
-    const { container, onConnect } = setup();
-    onConnect.mockResolvedValue(undefined);
-    expect(fireEvent.submit(container.querySelector('form') as HTMLFormElement)).toBe(false);
-    expect(onConnect).toHaveBeenCalledWith('', '');
-  });
-
-  it('renders Cancel as a non-submitting secondary button', () => {
-    setup();
-    const cancel = screen.getByRole('button', { name: 'Cancel' });
-    expect(cancel).toHaveAttribute('type', 'button');
-    expect(cancel).toHaveClass('bg-surface');
   });
 });

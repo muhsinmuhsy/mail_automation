@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.oauth-*.log
 
 # next.js
 /.next/

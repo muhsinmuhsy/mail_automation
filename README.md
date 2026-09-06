@@ -1,5 +1,7 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+Gmail sending uses **Google OAuth + Gmail API**. Follow [Gmail setup and deployment](docs/GMAIL_OAUTH.md) for Google Cloud configuration, environment variables, database migration, production checks, and the optional SMTP fallback. Other email providers are shown as coming soon.
+
 ## Getting Started
 
 First, run the development server:
@@ -50,7 +52,7 @@ must use the same `DATABASE_URL`, `SMTP_ENCRYPTION_KEY`, and B2 configuration.
 - `npx wrangler tail mail-automation`: inspect Worker execution logs.
 
 Deployment loads the project environment using the same `.env` conventions as Next.js.
-Only the seven required runtime secrets are uploaded. The Cloudflare API token is
+Only the required runtime secrets, including the Google OAuth client ID and secret, are uploaded. The Cloudflare API token is
 used by the deployment CLI and is never uploaded as a runtime secret. The configured
 `email-queue` must exist in the Cloudflare account. Create it once with
 `npx wrangler queues create email-queue` if necessary.

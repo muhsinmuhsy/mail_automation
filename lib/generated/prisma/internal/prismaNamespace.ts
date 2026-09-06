@@ -399,6 +399,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   User: 'User',
   EmailAccount: 'EmailAccount',
+  EmailOAuthAttempt: 'EmailOAuthAttempt',
   Attachment: 'Attachment',
   Contact: 'Contact',
   Template: 'Template',
@@ -425,7 +426,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "emailAccount" | "attachment" | "contact" | "template" | "campaign" | "emailJob" | "emailLog" | "systemSetting" | "emailUsageDaily" | "campaignUsageDaily" | "emailSendReservation" | "systemUsageDaily"
+    modelProps: "user" | "emailAccount" | "emailOAuthAttempt" | "attachment" | "contact" | "template" | "campaign" | "emailJob" | "emailLog" | "systemSetting" | "emailUsageDaily" | "campaignUsageDaily" | "emailSendReservation" | "systemUsageDaily"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -574,6 +575,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.EmailAccountCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.EmailAccountCountAggregateOutputType> | number
+        }
+      }
+    }
+    EmailOAuthAttempt: {
+      payload: Prisma.$EmailOAuthAttemptPayload<ExtArgs>
+      fields: Prisma.EmailOAuthAttemptFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EmailOAuthAttemptFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailOAuthAttemptPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EmailOAuthAttemptFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailOAuthAttemptPayload>
+        }
+        findFirst: {
+          args: Prisma.EmailOAuthAttemptFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailOAuthAttemptPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EmailOAuthAttemptFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailOAuthAttemptPayload>
+        }
+        findMany: {
+          args: Prisma.EmailOAuthAttemptFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailOAuthAttemptPayload>[]
+        }
+        create: {
+          args: Prisma.EmailOAuthAttemptCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailOAuthAttemptPayload>
+        }
+        createMany: {
+          args: Prisma.EmailOAuthAttemptCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EmailOAuthAttemptCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailOAuthAttemptPayload>[]
+        }
+        delete: {
+          args: Prisma.EmailOAuthAttemptDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailOAuthAttemptPayload>
+        }
+        update: {
+          args: Prisma.EmailOAuthAttemptUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailOAuthAttemptPayload>
+        }
+        deleteMany: {
+          args: Prisma.EmailOAuthAttemptDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EmailOAuthAttemptUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EmailOAuthAttemptUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailOAuthAttemptPayload>[]
+        }
+        upsert: {
+          args: Prisma.EmailOAuthAttemptUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailOAuthAttemptPayload>
+        }
+        aggregate: {
+          args: Prisma.EmailOAuthAttemptAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEmailOAuthAttempt>
+        }
+        groupBy: {
+          args: Prisma.EmailOAuthAttemptGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailOAuthAttemptGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EmailOAuthAttemptCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailOAuthAttemptCountAggregateOutputType> | number
         }
       }
     }
@@ -1452,12 +1527,27 @@ export const EmailAccountScalarFieldEnum = {
   encrypted_secret: 'encrypted_secret',
   encrypted_refresh_token: 'encrypted_refresh_token',
   access_token_expires_at: 'access_token_expires_at',
+  provider_account_id: 'provider_account_id',
+  granted_scopes: 'granted_scopes',
+  connection_error: 'connection_error',
   is_active: 'is_active',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
 
 export type EmailAccountScalarFieldEnum = (typeof EmailAccountScalarFieldEnum)[keyof typeof EmailAccountScalarFieldEnum]
+
+
+export const EmailOAuthAttemptScalarFieldEnum = {
+  state_hash: 'state_hash',
+  user_id: 'user_id',
+  provider: 'provider',
+  account_id: 'account_id',
+  encrypted_verifier: 'encrypted_verifier',
+  expires_at: 'expires_at'
+} as const
+
+export type EmailOAuthAttemptScalarFieldEnum = (typeof EmailOAuthAttemptScalarFieldEnum)[keyof typeof EmailOAuthAttemptScalarFieldEnum]
 
 
 export const AttachmentScalarFieldEnum = {
@@ -1942,6 +2032,7 @@ export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaC
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   emailAccount?: Prisma.EmailAccountOmit
+  emailOAuthAttempt?: Prisma.EmailOAuthAttemptOmit
   attachment?: Prisma.AttachmentOmit
   contact?: Prisma.ContactOmit
   template?: Prisma.TemplateOmit

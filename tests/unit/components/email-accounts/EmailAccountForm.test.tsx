@@ -10,21 +10,16 @@ describe('EmailAccountForm', () => {
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
   });
 
-  it('renders all five provider options including the placeholder', () => {
+  it('only offers the enabled Gmail provider', () => {
     render(<EmailAccountForm onSubmit={vi.fn()} />);
     const select = screen.getByLabelText('Provider') as unknown as HTMLSelectElement;
     expect(Array.from(select.options).map((o) => o.value)).toEqual([
       '',
       'gmail',
-      'microsoft',
-      'yahoo',
-      'custom_smtp',
     ]);
     expect(screen.getByRole('option', { name: 'Select provider' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Gmail' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Microsoft' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Yahoo' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Custom SMTP' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Microsoft' })).not.toBeInTheDocument();
   });
 
   it('defaults to the empty provider and empty email', () => {
@@ -48,8 +43,8 @@ describe('EmailAccountForm', () => {
   it('updates the provider when an option is selected', async () => {
     const user = userEvent.setup();
     render(<EmailAccountForm onSubmit={vi.fn()} />);
-    await user.selectOptions(screen.getByLabelText('Provider'), 'yahoo');
-    expect(screen.getByLabelText('Provider')).toHaveValue('yahoo');
+    await user.selectOptions(screen.getByLabelText('Provider'), 'gmail');
+    expect(screen.getByLabelText('Provider')).toHaveValue('gmail');
   });
 
   it('updates the email as the user types', async () => {
@@ -88,7 +83,7 @@ describe('EmailAccountForm', () => {
     const onSubmit = vi.fn();
     render(<EmailAccountForm onSubmit={onSubmit} />);
     const select = screen.getByLabelText('Provider');
-    await user.selectOptions(select, 'microsoft');
+    await user.selectOptions(select, 'gmail');
     await user.selectOptions(select, '');
     await user.type(screen.getByLabelText('Email'), 'ops@corp.io');
     await user.click(screen.getByRole('button', { name: 'Connect' }));
@@ -109,10 +104,10 @@ describe('EmailAccountForm', () => {
   it('keeps values after submitting (no reset)', async () => {
     const user = userEvent.setup();
     render(<EmailAccountForm onSubmit={vi.fn()} />);
-    await user.selectOptions(screen.getByLabelText('Provider'), 'custom_smtp');
+    await user.selectOptions(screen.getByLabelText('Provider'), 'gmail');
     await user.type(screen.getByLabelText('Email'), 'ops@corp.io');
     await user.click(screen.getByRole('button', { name: 'Connect' }));
-    expect(screen.getByLabelText('Provider')).toHaveValue('custom_smtp');
+    expect(screen.getByLabelText('Provider')).toHaveValue('gmail');
     expect(screen.getByLabelText('Email')).toHaveValue('ops@corp.io');
   });
 });

@@ -29,6 +29,8 @@ export const RATE_LIMITS: Record<string, RateLimitRule> = {
 
   'email-accounts:create': { limit: 10, windowSec: 60 },
   'email-accounts:delete': { limit: 10, windowSec: 60 },
+  'email-oauth-connect': { limit: 5, windowSec: 60 },
+  'email-oauth-disconnect': { limit: 5, windowSec: 60 },
 
   'admin:users': { limit: 60, windowSec: 60 },
   'admin:settings': { limit: 30, windowSec: 60 },

@@ -18,7 +18,7 @@ const _GET = defineRoute(async (req, ctx) => {
   const [accounts, total] = await Promise.all([
     getPrisma().emailAccount.findMany({
       where,
-      select: { id: true, provider: true, email: true, is_active: true, created_at: true },
+      select: { id: true, provider: true, email: true, auth_method: true, connection_error: true, is_active: true, created_at: true },
       orderBy: { created_at: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
@@ -40,6 +40,10 @@ const _POST = defineRoute(async (req, ctx) => {
       ),
       ctx.requestId
     );
+  }
+
+  if (parsed.data.provider !== 'gmail' || parsed.data.auth_method !== 'app_password') {
+    throw new ValidationError('Use Continue with Google to connect Gmail. Other providers are coming soon.');
   }
 
   const encryptedSecret = await encryptSecret(parsed.data.secret, process.env.SMTP_ENCRYPTION_KEY!);

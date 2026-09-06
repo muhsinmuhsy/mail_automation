@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 const require = createRequire(import.meta.url);
 require('@next/env').loadEnvConfig(process.cwd());
 const stage = process.argv.includes('--stage');
-const required = ['DATABASE_URL', 'SMTP_ENCRYPTION_KEY', 'B2_BUCKET_NAME', 'B2_REGION', 'B2_ENDPOINT', 'B2_KEY_ID', 'B2_APPLICATION_KEY'];
+const required = ['DATABASE_URL', 'SMTP_ENCRYPTION_KEY', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'B2_BUCKET_NAME', 'B2_REGION', 'B2_ENDPOINT', 'B2_KEY_ID', 'B2_APPLICATION_KEY'];
 const missing = required.filter((key) => !process.env[key]);
 if (missing.length) throw new Error(`Missing worker configuration: ${missing.join(', ')}`);
 

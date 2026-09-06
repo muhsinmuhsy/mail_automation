@@ -33,6 +33,8 @@ export type EmailAccountMinAggregateOutputType = {
   encrypted_secret: string | null
   encrypted_refresh_token: string | null
   access_token_expires_at: Date | null
+  provider_account_id: string | null
+  connection_error: string | null
   is_active: boolean | null
   created_at: Date | null
   updated_at: Date | null
@@ -47,6 +49,8 @@ export type EmailAccountMaxAggregateOutputType = {
   encrypted_secret: string | null
   encrypted_refresh_token: string | null
   access_token_expires_at: Date | null
+  provider_account_id: string | null
+  connection_error: string | null
   is_active: boolean | null
   created_at: Date | null
   updated_at: Date | null
@@ -61,6 +65,9 @@ export type EmailAccountCountAggregateOutputType = {
   encrypted_secret: number
   encrypted_refresh_token: number
   access_token_expires_at: number
+  provider_account_id: number
+  granted_scopes: number
+  connection_error: number
   is_active: number
   created_at: number
   updated_at: number
@@ -77,6 +84,8 @@ export type EmailAccountMinAggregateInputType = {
   encrypted_secret?: true
   encrypted_refresh_token?: true
   access_token_expires_at?: true
+  provider_account_id?: true
+  connection_error?: true
   is_active?: true
   created_at?: true
   updated_at?: true
@@ -91,6 +100,8 @@ export type EmailAccountMaxAggregateInputType = {
   encrypted_secret?: true
   encrypted_refresh_token?: true
   access_token_expires_at?: true
+  provider_account_id?: true
+  connection_error?: true
   is_active?: true
   created_at?: true
   updated_at?: true
@@ -105,6 +116,9 @@ export type EmailAccountCountAggregateInputType = {
   encrypted_secret?: true
   encrypted_refresh_token?: true
   access_token_expires_at?: true
+  provider_account_id?: true
+  granted_scopes?: true
+  connection_error?: true
   is_active?: true
   created_at?: true
   updated_at?: true
@@ -192,6 +206,9 @@ export type EmailAccountGroupByOutputType = {
   encrypted_secret: string | null
   encrypted_refresh_token: string | null
   access_token_expires_at: Date | null
+  provider_account_id: string | null
+  granted_scopes: string[]
+  connection_error: string | null
   is_active: boolean
   created_at: Date
   updated_at: Date
@@ -227,6 +244,9 @@ export type EmailAccountWhereInput = {
   encrypted_secret?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
   encrypted_refresh_token?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
   access_token_expires_at?: Prisma.DateTimeNullableFilter<"EmailAccount"> | Date | string | null
+  provider_account_id?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
+  granted_scopes?: Prisma.StringNullableListFilter<"EmailAccount">
+  connection_error?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
   is_active?: Prisma.BoolFilter<"EmailAccount"> | boolean
   created_at?: Prisma.DateTimeFilter<"EmailAccount"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"EmailAccount"> | Date | string
@@ -244,6 +264,9 @@ export type EmailAccountOrderByWithRelationInput = {
   encrypted_secret?: Prisma.SortOrderInput | Prisma.SortOrder
   encrypted_refresh_token?: Prisma.SortOrderInput | Prisma.SortOrder
   access_token_expires_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  provider_account_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  granted_scopes?: Prisma.SortOrder
+  connection_error?: Prisma.SortOrderInput | Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -265,6 +288,9 @@ export type EmailAccountWhereUniqueInput = Prisma.AtLeast<{
   encrypted_secret?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
   encrypted_refresh_token?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
   access_token_expires_at?: Prisma.DateTimeNullableFilter<"EmailAccount"> | Date | string | null
+  provider_account_id?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
+  granted_scopes?: Prisma.StringNullableListFilter<"EmailAccount">
+  connection_error?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
   is_active?: Prisma.BoolFilter<"EmailAccount"> | boolean
   created_at?: Prisma.DateTimeFilter<"EmailAccount"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"EmailAccount"> | Date | string
@@ -282,6 +308,9 @@ export type EmailAccountOrderByWithAggregationInput = {
   encrypted_secret?: Prisma.SortOrderInput | Prisma.SortOrder
   encrypted_refresh_token?: Prisma.SortOrderInput | Prisma.SortOrder
   access_token_expires_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  provider_account_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  granted_scopes?: Prisma.SortOrder
+  connection_error?: Prisma.SortOrderInput | Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -302,6 +331,9 @@ export type EmailAccountScalarWhereWithAggregatesInput = {
   encrypted_secret?: Prisma.StringNullableWithAggregatesFilter<"EmailAccount"> | string | null
   encrypted_refresh_token?: Prisma.StringNullableWithAggregatesFilter<"EmailAccount"> | string | null
   access_token_expires_at?: Prisma.DateTimeNullableWithAggregatesFilter<"EmailAccount"> | Date | string | null
+  provider_account_id?: Prisma.StringNullableWithAggregatesFilter<"EmailAccount"> | string | null
+  granted_scopes?: Prisma.StringNullableListFilter<"EmailAccount">
+  connection_error?: Prisma.StringNullableWithAggregatesFilter<"EmailAccount"> | string | null
   is_active?: Prisma.BoolWithAggregatesFilter<"EmailAccount"> | boolean
   created_at?: Prisma.DateTimeWithAggregatesFilter<"EmailAccount"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"EmailAccount"> | Date | string
@@ -315,6 +347,9 @@ export type EmailAccountCreateInput = {
   encrypted_secret?: string | null
   encrypted_refresh_token?: string | null
   access_token_expires_at?: Date | string | null
+  provider_account_id?: string | null
+  granted_scopes?: Prisma.EmailAccountCreategranted_scopesInput | string[]
+  connection_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -332,6 +367,9 @@ export type EmailAccountUncheckedCreateInput = {
   encrypted_secret?: string | null
   encrypted_refresh_token?: string | null
   access_token_expires_at?: Date | string | null
+  provider_account_id?: string | null
+  granted_scopes?: Prisma.EmailAccountCreategranted_scopesInput | string[]
+  connection_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -347,6 +385,9 @@ export type EmailAccountUpdateInput = {
   encrypted_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encrypted_refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   access_token_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  provider_account_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  granted_scopes?: Prisma.EmailAccountUpdategranted_scopesInput | string[]
+  connection_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -364,6 +405,9 @@ export type EmailAccountUncheckedUpdateInput = {
   encrypted_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encrypted_refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   access_token_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  provider_account_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  granted_scopes?: Prisma.EmailAccountUpdategranted_scopesInput | string[]
+  connection_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -380,6 +424,9 @@ export type EmailAccountCreateManyInput = {
   encrypted_secret?: string | null
   encrypted_refresh_token?: string | null
   access_token_expires_at?: Date | string | null
+  provider_account_id?: string | null
+  granted_scopes?: Prisma.EmailAccountCreategranted_scopesInput | string[]
+  connection_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -393,6 +440,9 @@ export type EmailAccountUpdateManyMutationInput = {
   encrypted_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encrypted_refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   access_token_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  provider_account_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  granted_scopes?: Prisma.EmailAccountUpdategranted_scopesInput | string[]
+  connection_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -407,6 +457,9 @@ export type EmailAccountUncheckedUpdateManyInput = {
   encrypted_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encrypted_refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   access_token_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  provider_account_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  granted_scopes?: Prisma.EmailAccountUpdategranted_scopesInput | string[]
+  connection_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -420,6 +473,14 @@ export type EmailAccountListRelationFilter = {
 
 export type EmailAccountOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type StringNullableListFilter<$PrismaModel = never> = {
+  equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
+  has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
+  hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
 }
 
 export type EmailAccountUser_idProviderEmailCompoundUniqueInput = {
@@ -437,6 +498,9 @@ export type EmailAccountCountOrderByAggregateInput = {
   encrypted_secret?: Prisma.SortOrder
   encrypted_refresh_token?: Prisma.SortOrder
   access_token_expires_at?: Prisma.SortOrder
+  provider_account_id?: Prisma.SortOrder
+  granted_scopes?: Prisma.SortOrder
+  connection_error?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -451,6 +515,8 @@ export type EmailAccountMaxOrderByAggregateInput = {
   encrypted_secret?: Prisma.SortOrder
   encrypted_refresh_token?: Prisma.SortOrder
   access_token_expires_at?: Prisma.SortOrder
+  provider_account_id?: Prisma.SortOrder
+  connection_error?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -465,6 +531,8 @@ export type EmailAccountMinOrderByAggregateInput = {
   encrypted_secret?: Prisma.SortOrder
   encrypted_refresh_token?: Prisma.SortOrder
   access_token_expires_at?: Prisma.SortOrder
+  provider_account_id?: Prisma.SortOrder
+  connection_error?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -517,6 +585,10 @@ export type EmailAccountUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.EmailAccountScalarWhereInput | Prisma.EmailAccountScalarWhereInput[]
 }
 
+export type EmailAccountCreategranted_scopesInput = {
+  set: string[]
+}
+
 export type EnumEmailProviderFieldUpdateOperationsInput = {
   set?: $Enums.EmailProvider
 }
@@ -527,6 +599,11 @@ export type EnumAuthMethodFieldUpdateOperationsInput = {
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
+}
+
+export type EmailAccountUpdategranted_scopesInput = {
+  set?: string[]
+  push?: string | string[]
 }
 
 export type EmailAccountCreateNestedOneWithoutCampaignsInput = {
@@ -565,6 +642,9 @@ export type EmailAccountCreateWithoutUserInput = {
   encrypted_secret?: string | null
   encrypted_refresh_token?: string | null
   access_token_expires_at?: Date | string | null
+  provider_account_id?: string | null
+  granted_scopes?: Prisma.EmailAccountCreategranted_scopesInput | string[]
+  connection_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -580,6 +660,9 @@ export type EmailAccountUncheckedCreateWithoutUserInput = {
   encrypted_secret?: string | null
   encrypted_refresh_token?: string | null
   access_token_expires_at?: Date | string | null
+  provider_account_id?: string | null
+  granted_scopes?: Prisma.EmailAccountCreategranted_scopesInput | string[]
+  connection_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -625,6 +708,9 @@ export type EmailAccountScalarWhereInput = {
   encrypted_secret?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
   encrypted_refresh_token?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
   access_token_expires_at?: Prisma.DateTimeNullableFilter<"EmailAccount"> | Date | string | null
+  provider_account_id?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
+  granted_scopes?: Prisma.StringNullableListFilter<"EmailAccount">
+  connection_error?: Prisma.StringNullableFilter<"EmailAccount"> | string | null
   is_active?: Prisma.BoolFilter<"EmailAccount"> | boolean
   created_at?: Prisma.DateTimeFilter<"EmailAccount"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"EmailAccount"> | Date | string
@@ -638,6 +724,9 @@ export type EmailAccountCreateWithoutCampaignsInput = {
   encrypted_secret?: string | null
   encrypted_refresh_token?: string | null
   access_token_expires_at?: Date | string | null
+  provider_account_id?: string | null
+  granted_scopes?: Prisma.EmailAccountCreategranted_scopesInput | string[]
+  connection_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -654,6 +743,9 @@ export type EmailAccountUncheckedCreateWithoutCampaignsInput = {
   encrypted_secret?: string | null
   encrypted_refresh_token?: string | null
   access_token_expires_at?: Date | string | null
+  provider_account_id?: string | null
+  granted_scopes?: Prisma.EmailAccountCreategranted_scopesInput | string[]
+  connection_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -684,6 +776,9 @@ export type EmailAccountUpdateWithoutCampaignsInput = {
   encrypted_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encrypted_refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   access_token_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  provider_account_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  granted_scopes?: Prisma.EmailAccountUpdategranted_scopesInput | string[]
+  connection_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -700,6 +795,9 @@ export type EmailAccountUncheckedUpdateWithoutCampaignsInput = {
   encrypted_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encrypted_refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   access_token_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  provider_account_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  granted_scopes?: Prisma.EmailAccountUpdategranted_scopesInput | string[]
+  connection_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -714,6 +812,9 @@ export type EmailAccountCreateWithoutEmail_jobsInput = {
   encrypted_secret?: string | null
   encrypted_refresh_token?: string | null
   access_token_expires_at?: Date | string | null
+  provider_account_id?: string | null
+  granted_scopes?: Prisma.EmailAccountCreategranted_scopesInput | string[]
+  connection_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -730,6 +831,9 @@ export type EmailAccountUncheckedCreateWithoutEmail_jobsInput = {
   encrypted_secret?: string | null
   encrypted_refresh_token?: string | null
   access_token_expires_at?: Date | string | null
+  provider_account_id?: string | null
+  granted_scopes?: Prisma.EmailAccountCreategranted_scopesInput | string[]
+  connection_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -760,6 +864,9 @@ export type EmailAccountUpdateWithoutEmail_jobsInput = {
   encrypted_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encrypted_refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   access_token_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  provider_account_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  granted_scopes?: Prisma.EmailAccountUpdategranted_scopesInput | string[]
+  connection_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -776,6 +883,9 @@ export type EmailAccountUncheckedUpdateWithoutEmail_jobsInput = {
   encrypted_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encrypted_refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   access_token_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  provider_account_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  granted_scopes?: Prisma.EmailAccountUpdategranted_scopesInput | string[]
+  connection_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -790,6 +900,9 @@ export type EmailAccountCreateManyUserInput = {
   encrypted_secret?: string | null
   encrypted_refresh_token?: string | null
   access_token_expires_at?: Date | string | null
+  provider_account_id?: string | null
+  granted_scopes?: Prisma.EmailAccountCreategranted_scopesInput | string[]
+  connection_error?: string | null
   is_active?: boolean
   created_at?: Date | string
   updated_at?: Date | string
@@ -803,6 +916,9 @@ export type EmailAccountUpdateWithoutUserInput = {
   encrypted_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encrypted_refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   access_token_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  provider_account_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  granted_scopes?: Prisma.EmailAccountUpdategranted_scopesInput | string[]
+  connection_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -818,6 +934,9 @@ export type EmailAccountUncheckedUpdateWithoutUserInput = {
   encrypted_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encrypted_refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   access_token_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  provider_account_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  granted_scopes?: Prisma.EmailAccountUpdategranted_scopesInput | string[]
+  connection_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -833,6 +952,9 @@ export type EmailAccountUncheckedUpdateManyWithoutUserInput = {
   encrypted_secret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encrypted_refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   access_token_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  provider_account_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  granted_scopes?: Prisma.EmailAccountUpdategranted_scopesInput | string[]
+  connection_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -887,6 +1009,9 @@ export type EmailAccountSelect<ExtArgs extends runtime.Types.Extensions.Internal
   encrypted_secret?: boolean
   encrypted_refresh_token?: boolean
   access_token_expires_at?: boolean
+  provider_account_id?: boolean
+  granted_scopes?: boolean
+  connection_error?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -905,6 +1030,9 @@ export type EmailAccountSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   encrypted_secret?: boolean
   encrypted_refresh_token?: boolean
   access_token_expires_at?: boolean
+  provider_account_id?: boolean
+  granted_scopes?: boolean
+  connection_error?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -920,6 +1048,9 @@ export type EmailAccountSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   encrypted_secret?: boolean
   encrypted_refresh_token?: boolean
   access_token_expires_at?: boolean
+  provider_account_id?: boolean
+  granted_scopes?: boolean
+  connection_error?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -935,12 +1066,15 @@ export type EmailAccountSelectScalar = {
   encrypted_secret?: boolean
   encrypted_refresh_token?: boolean
   access_token_expires_at?: boolean
+  provider_account_id?: boolean
+  granted_scopes?: boolean
+  connection_error?: boolean
   is_active?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type EmailAccountOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "provider" | "email" | "auth_method" | "encrypted_secret" | "encrypted_refresh_token" | "access_token_expires_at" | "is_active" | "created_at" | "updated_at", ExtArgs["result"]["emailAccount"]>
+export type EmailAccountOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "provider" | "email" | "auth_method" | "encrypted_secret" | "encrypted_refresh_token" | "access_token_expires_at" | "provider_account_id" | "granted_scopes" | "connection_error" | "is_active" | "created_at" | "updated_at", ExtArgs["result"]["emailAccount"]>
 export type EmailAccountInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   campaigns?: boolean | Prisma.EmailAccount$campaignsArgs<ExtArgs>
@@ -970,6 +1104,9 @@ export type $EmailAccountPayload<ExtArgs extends runtime.Types.Extensions.Intern
     encrypted_secret: string | null
     encrypted_refresh_token: string | null
     access_token_expires_at: Date | null
+    provider_account_id: string | null
+    granted_scopes: string[]
+    connection_error: string | null
     is_active: boolean
     created_at: Date
     updated_at: Date
@@ -1407,6 +1544,9 @@ export interface EmailAccountFieldRefs {
   readonly encrypted_secret: Prisma.FieldRef<"EmailAccount", 'String'>
   readonly encrypted_refresh_token: Prisma.FieldRef<"EmailAccount", 'String'>
   readonly access_token_expires_at: Prisma.FieldRef<"EmailAccount", 'DateTime'>
+  readonly provider_account_id: Prisma.FieldRef<"EmailAccount", 'String'>
+  readonly granted_scopes: Prisma.FieldRef<"EmailAccount", 'String[]'>
+  readonly connection_error: Prisma.FieldRef<"EmailAccount", 'String'>
   readonly is_active: Prisma.FieldRef<"EmailAccount", 'Boolean'>
   readonly created_at: Prisma.FieldRef<"EmailAccount", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"EmailAccount", 'DateTime'>

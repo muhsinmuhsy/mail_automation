@@ -1,6 +1,25 @@
   # Mail Automation — Production Implementation Plan
 
-  ## What We Already Proved (POC)
+  ## Gmail OAuth implementation (2026-09-06)
+
+  **Current sending architecture:** Gmail OAuth 2.0 + Gmail API is the primary flow.
+  The authoritative setup, migration, token lifecycle, provider extension, and deployment
+  instructions are in [docs/GMAIL_OAUTH.md](docs/GMAIL_OAUTH.md). The older SMTP-specific
+  examples below describe the retained advanced fallback, not the default connection UX.
+
+  - Connect Gmail -> Google consent -> encrypted access/refresh tokens -> Queue Worker -> Gmail API.
+  - Request `gmail.send` plus `openid email` to identify the connected account; no inbox-read scope.
+  - Neon Auth still owns application sign-in. The historical prohibition on custom login
+    OAuth exchange below applies to application authentication, not mailbox authorization.
+  - `EmailOAuthAttempt` stores short-lived single-use state with an encrypted PKCE verifier.
+  - `EmailAccount` stores provider account ID, granted scopes, encrypted tokens, expiry,
+    and reconnect/disconnected status. Existing SMTP accounts remain compatible.
+  - The provider registry and selector enable Gmail only. Microsoft, Yahoo, and custom SMTP
+    have reserved implementation directories and disabled Coming soon cards.
+  - Google client ID and client secret are required in both runtimes; the registered callback
+    URL is required in the Next.js app. See `.env.example`.
+
+  ## What We Already Proved (SMTP fallback POC)
 
   - Cloudflare Workers can send Gmail SMTP emails
   - Port 587 STARTTLS validated as primary production path
@@ -25,7 +44,7 @@
   - Neon PostgreSQL remains the shared source of truth between Vercel and the
     Cloudflare Worker.
   - Backblaze B2 remains the private resume PDF storage provider.
-  - Gmail SMTP remains the MVP email provider.
+  - Gmail OAuth + Gmail API is the primary email provider; SMTP is an optional fallback.
 
   New flow:
 
@@ -40,7 +59,7 @@
     -> Cloudflare Queue delivers messages to the Worker consumer
     -> Worker consumer loads job/account/template/resume data
     -> Worker downloads resume from Backblaze B2 when needed
-    -> Worker sends through Gmail SMTP
+    -> Worker refreshes OAuth credentials and sends through Gmail API
     -> Worker updates email_jobs/email_logs/usage tables in Neon DB
     -> Vercel dashboard reads Neon DB and shows current status
   ```
@@ -89,7 +108,7 @@
    | File Storage | Backblaze B2 Cloud Storage (S3-Compatible API) |
    | Queue | Cloudflare Queues via tiny background Worker |
    | Scheduler | Cloudflare Cron via tiny background Worker |
-   | Email | Gmail SMTP port 587 (STARTTLS) |
+   | Email | Gmail API with Google OAuth; optional SMTP fallback on port 587 |
 
    ### Storage Provider Decision
 
@@ -117,7 +136,7 @@
 
   Use the current Neon Auth SDK and its built-in email-verification flow. Do not implement custom verification tokens, verification tables, password hashing, custom auth endpoints, custom verification email delivery, or custom OAuth token exchange.
 
-  **Important:** "Continue with Google" is how the user logs into your application. It is separate from Gmail SMTP, which is how the application sends email. A user may sign in with Google OAuth but still configure a Gmail App Password for sending. These are independent credential flows.
+  **Important:** Neon Auth's Google button signs the user into the application. The Email Accounts Google button separately authorizes Gmail sending. The application receives mailbox OAuth tokens only from the latter flow. App Passwords are an explicit advanced fallback.
 
   **Neon Auth responsibilities:**
   - Registration
@@ -2383,10 +2402,10 @@
   **MVP provider:**
   - `lib/email/providers/gmail/` — Gmail SMTP with STARTTLS, AUTH LOGIN
     - `supportsAppPassword = true`
-    - `supportsOAuth2 = false` (not implemented in MVP)
+    - `supportsOAuth2 = true` (primary Gmail API transport; SMTP retained as fallback)
     - `supportsAttachments = true`
 
-  **Future providers (no redesign required):**
+  **Future providers (shared contracts ready; adapters/configuration still required):**
   - `lib/email/providers/microsoft/` — Microsoft 365 OAuth2 + SMTP
   - `lib/email/providers/yahoo/` — Yahoo SMTP
   - `lib/email/providers/custom-smtp/` — Generic SMTP
@@ -2394,7 +2413,7 @@
   The Queue consumer resolves the provider at runtime:
 
   ```ts
-  const provider = EmailProviderFactory.resolve(emailAccount.provider);
+  const provider = EmailProviderFactory.resolve(emailAccount.provider, { authMethod: emailAccount.auth_method });
   const capabilities = provider.getCapabilities();
   await provider.sendEmail({ ... });
   ```
@@ -2420,7 +2439,7 @@
   - DB schema is future-ready for all providers
   - Registry controls what is actually available
   - UI can query `ProviderCapabilities` to show only supported options
-  - Adding Microsoft later requires only registering the provider, no schema/campaign/job changes
+  - Adding a provider requires its tested adapter, account configuration and authorization lifecycle before registry enablement; campaign/job orchestration stays shared.
 
   ---
 

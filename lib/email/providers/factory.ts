@@ -1,14 +1,17 @@
-import { EmailProvider } from './types';
+import { EmailProvider, type ProviderOptions } from './types';
 import { ENABLED_PROVIDERS, PROVIDER_CAPABILITIES } from './registry';
-import { GmailProvider, type GmailProviderOptions } from './gmail';
+import { GmailProvider } from './gmail';
+import { GmailApiProvider } from './gmail/provider';
 
 export class EmailProviderFactory {
-  static resolve(provider: string, options: GmailProviderOptions = {}): EmailProvider {
+  static resolve(provider: string, options: ProviderOptions = {}): EmailProvider {
     if (!ENABLED_PROVIDERS.has(provider)) {
       throw new Error(`Provider ${provider} is not enabled`);
     }
     switch (provider) {
       case 'gmail': {
+        if (options.authMethod === 'oauth2') return new GmailApiProvider(options.fetcher);
+        if (options.authMethod === 'password') throw new Error('Gmail password authentication is not supported.');
         // STARTTLS on port 587 is the validated primary production path. The
         // registry supplies the canonical host/port; caller options override.
         const cfg = PROVIDER_CAPABILITIES[provider];

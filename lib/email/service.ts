@@ -1,6 +1,6 @@
 import { EmailProviderFactory } from './providers/factory';
 import { buildMimeMessage, type Attachment } from './mime';
-import type { GmailProviderOptions } from './providers/gmail';
+import type { ProviderOptions, SendEmailResult } from './providers/types';
 
 export interface SendEmailParams {
   provider: string;
@@ -16,17 +16,11 @@ export interface SendEmailParams {
     secret: string;
   };
   /** Threaded to the provider for tests / custom transports. */
-  providerOptions?: GmailProviderOptions;
+  providerOptions?: ProviderOptions;
   messageId?: string;
 }
 
-export interface SendEmailOutcome {
-  success: boolean;
-  messageId?: string;
-  smtpResponse?: string;
-  error?: string;
-  errorType?: 'temporary' | 'permanent';
-}
+export type SendEmailOutcome = SendEmailResult;
 
 /**
  * Builds a MIME message from the supplied parameters and dispatches it to the
@@ -61,6 +55,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailOutco
     success: result.success,
     messageId: result.messageId,
     smtpResponse: result.smtpResponse,
+    providerResponse: result.providerResponse,
+    reconnectRequired: result.reconnectRequired,
     error: result.error,
     errorType: result.errorType,
   };

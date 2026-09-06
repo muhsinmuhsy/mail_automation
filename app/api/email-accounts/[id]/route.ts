@@ -26,6 +26,7 @@ const _PATCH = defineRoute(async (req, ctx) => {
   if (!account) {
     return respondError(new NotFoundError('Email account not found.'), ctx.requestId);
   }
+  if (account.auth_method === 'oauth2') throw new ValidationError('Reconnect through Google to update this account.');
 
   if (!account.is_active) {
     return respondError(

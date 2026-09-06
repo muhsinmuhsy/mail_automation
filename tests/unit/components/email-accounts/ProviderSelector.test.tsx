@@ -58,7 +58,11 @@ describe('ProviderSelector', () => {
     const onSelect = vi.fn();
     render(<ProviderSelector selected="" onSelect={onSelect} />);
     await user.click(screen.getByRole('button', { name: new RegExp(name) }));
-    expect(onSelect).toHaveBeenCalledWith(id);
+    if (id === 'gmail') expect(onSelect).toHaveBeenCalledWith(id);
+    else {
+      expect(onSelect).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: new RegExp(name) })).toBeDisabled();
+    }
   });
 
   it('calls onSelect again when the already-selected provider is clicked', async () => {
@@ -95,6 +99,6 @@ describe('ProviderSelector', () => {
     expect(onSelect).toHaveBeenLastCalledWith('gmail');
     await user.tab();
     await user.keyboard(' ');
-    expect(onSelect).toHaveBeenLastCalledWith('microsoft');
+    expect(onSelect).toHaveBeenLastCalledWith('gmail');
   });
 });

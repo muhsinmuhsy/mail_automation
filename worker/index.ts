@@ -80,6 +80,8 @@ declare global {
     DATABASE_URL: string;
     EMAIL_QUEUE: Queue;
     SMTP_ENCRYPTION_KEY?: string;
+    GOOGLE_CLIENT_ID: string;
+    GOOGLE_CLIENT_SECRET: string;
     B2_BUCKET_NAME: string;
     B2_REGION: string;
     B2_ENDPOINT: string;

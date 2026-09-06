@@ -8,9 +8,6 @@ import { Select } from '@/components/ui/Select';
 const providerOptions = [
   { value: '', label: 'Select provider' },
   { value: 'gmail', label: 'Gmail' },
-  { value: 'microsoft', label: 'Microsoft' },
-  { value: 'yahoo', label: 'Yahoo' },
-  { value: 'custom_smtp', label: 'Custom SMTP' },
 ];
 
 export function EmailAccountForm({ onSubmit }: { onSubmit: (data: { provider: string; email: string }) => void }) {

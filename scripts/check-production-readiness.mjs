@@ -7,6 +7,8 @@ import {
 } from '@aws-sdk/client-s3';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { createRequire } from 'node:module';
+import { Pool } from '@neondatabase/serverless';
 
 const root = process.cwd();
 const envPath = resolve(root, '.env');
@@ -61,12 +63,13 @@ function validateUrl(name, errors) {
 }
 
 async function checkB2(errors) {
+  const priorErrors = errors.length;
   const bucket = requireValue('B2_BUCKET_NAME', errors);
   const endpoint = requireValue('B2_ENDPOINT', errors);
   const region = requireValue('B2_REGION', errors);
   const accessKeyId = requireValue('B2_KEY_ID', errors);
   const secretAccessKey = requireValue('B2_APPLICATION_KEY', errors);
-  if (errors.length > 0) return;
+  if (errors.length > priorErrors) return;
 
   const client = new S3Client({
     endpoint,
@@ -104,6 +107,7 @@ async function checkB2(errors) {
 }
 
 async function main() {
+  createRequire(import.meta.url)('@next/env').loadEnvConfig(root, false);
   loadDotEnv(envPath);
 
   const errors = [];
@@ -120,8 +124,19 @@ async function main() {
   if (appUrl) {
     validateUrl('NEXT_PUBLIC_APP_URL', errors);
     if (mode === 'production' && isLocalUrl(appUrl)) {
-      warnings.push('NEXT_PUBLIC_APP_URL points to localhost; set it to the deployed HTTPS origin before production.');
+      errors.push('NEXT_PUBLIC_APP_URL points to localhost; set it to the deployed HTTPS origin before production.');
     }
+  }
+
+  requireValue('GOOGLE_CLIENT_ID', errors);
+  requireValue('GOOGLE_CLIENT_SECRET', errors);
+  const redirect = requireValue('GOOGLE_REDIRECT_URI', errors);
+  if (redirect) {
+    try {
+      const url = new URL(redirect);
+      if (url.origin !== new URL(appUrl).origin || url.pathname !== '/api/email-accounts/callback/gmail' || url.search || url.hash || url.username || url.password) errors.push('GOOGLE_REDIRECT_URI must match the app origin and /api/email-accounts/callback/gmail exactly.');
+      if (url.protocol !== 'https:' && !(mode === 'local' && url.protocol === 'http:' && isLocalUrl(redirect))) errors.push('Google redirect URI must use HTTPS (HTTP localhost is allowed for local checks).');
+    } catch { errors.push('GOOGLE_REDIRECT_URI must be a valid URL.'); }
   }
 
   const smtpKey = requireValue('SMTP_ENCRYPTION_KEY', errors);
@@ -130,6 +145,17 @@ async function main() {
   }
 
   await checkB2(errors);
+
+  if (process.env.DATABASE_URL) {
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 10000 });
+    try {
+      const result = await pool.query(`SELECT to_regclass('public.email_oauth_attempts') AS attempts,
+        (SELECT count(*)::int FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'email_accounts'
+          AND column_name IN ('provider_account_id', 'granted_scopes', 'connection_error')) AS columns`);
+      if (!result.rows[0]?.attempts || result.rows[0]?.columns !== 3) errors.push('Gmail OAuth database migration is pending. Run npx prisma migrate deploy before starting the updated app and worker.');
+    } catch { errors.push('Database readiness check failed. Check database access and apply migrations.'); }
+    finally { await pool.end(); }
+  }
 
   for (const warning of warnings) {
     console.warn(`WARN ${warning}`);
@@ -143,7 +169,7 @@ async function main() {
     return;
   }
 
-  console.log(`${mode === 'local' ? 'Local production' : 'Production'} readiness checks passed.`);
+  console.log(`${mode === 'local' ? 'Local production' : 'Production'} configuration and storage checks passed. Google consent/verification and a real authorized Gmail send must be checked separately.`);
 }
 
 await main();

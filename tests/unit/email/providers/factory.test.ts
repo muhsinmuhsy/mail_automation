@@ -34,7 +34,7 @@ describe('lib/email/providers/factory', () => {
   it('returns gmail capabilities via getCapabilities', () => {
     const caps = EmailProviderFactory.getCapabilities('gmail');
     expect(caps).toEqual({
-      supportsOAuth2: false,
+      supportsOAuth2: true,
       supportsAppPassword: true,
       supportsPassword: false,
       supportsAttachments: true,
