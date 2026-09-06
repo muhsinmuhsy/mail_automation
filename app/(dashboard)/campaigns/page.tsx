@@ -185,7 +185,7 @@ export default function CampaignsPage() {
         requestJson<EmailAccountRow[]>('/api/email-accounts?limit=100'),
         requestJson<AttachmentRow[]>('/api/attachments?limit=100'),
         requestJson<TemplateRow[]>('/api/templates?limit=100'),
-        requestJson<ContactRow[]>('/api/contacts?limit=500'),
+        requestJson<ContactRow[]>('/api/contacts?limit=100'),
       ]);
 
       const responses = [accounts, attachments, templates, contacts];
