@@ -11,7 +11,7 @@ const workerHandler = {
   fetch(request: Request) {
     const url = new URL(request.url);
     if (url.pathname === '/health' || url.pathname === '/api/health') {
-      return Response.json({ status: 'ok', service: 'mail-automation-worker' });
+      return Response.json({ status: 'ok', service: 'mail-automation-worker', emailTransports: ['gmail_api', 'gmail_smtp'] });
     }
 
     return Response.json(

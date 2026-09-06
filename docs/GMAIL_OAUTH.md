@@ -39,6 +39,14 @@ The additive migration `20260906_gmail_oauth` preserves SMTP credentials, accoun
 - Disconnect removes stored tokens and deactivates sending before attempting Google revocation. If Google cannot be reached, the UI tells the user to remove access in Google Account settings. An already in-flight send may finish. Revoking a Google grant can affect other connections using that same Google account and OAuth client.
 - Test verifies Google authorization without sending mail or requesting mailbox-read scopes. A real send is still needed to check Gmail service access and delivery.
 
+## Real localhost production checks
+
+`npm run build` followed by `npm run start` serves the production app at localhost:3000 using real `.env` values. `npm run dev` is the development server. Keep the Google redirect URI at `http://localhost:3000/api/email-accounts/callback/gmail` when testing that origin.
+
+Run `npm run test:gmail:live -- --account you@gmail.com` after connecting the same Gmail address through Email Accounts. This opt-in test loads the real environment, verifies encrypted credentials in the database, refreshes the token through Google, and verifies identity and sending scope. It does not send an email. Ordinary unit tests remain isolated with mocks.
+
+Campaign sending still runs in the separately deployed Cloudflare Worker, even when the UI is localhost. Updating `.env` or rebuilding Next.js does **not** update that worker. Run `npm run deploy:worker` to deploy the updated worker and its Google client ID/secret. This activates Cron and can process pending campaigns. The worker health response must include `emailTransports: ["gmail_api", "gmail_smtp"]`; an older response indicates a stale deployment. A `Password rejected ... gsmtp` error on an OAuth account is a strong indication that an old worker is treating its OAuth token as an SMTP password.
+
 ## Provider extensions
 
 `lib/email/providers/registry.ts` defines public provider availability and capabilities. `factory.ts` selects the implementation and authentication method. `types.ts` defines shared sending contracts. The shared MIME builder supports attachments; the scheduler and campaign records stay independent of the transport.

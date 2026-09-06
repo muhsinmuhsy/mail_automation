@@ -80,6 +80,7 @@ describe('worker/index', () => {
       await expect(result.json()).resolves.toEqual({
         status: 'ok',
         service: 'mail-automation-worker',
+        emailTransports: ['gmail_api', 'gmail_smtp'],
       });
     });
 

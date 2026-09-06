@@ -19,8 +19,10 @@ export class GmailApiProvider implements EmailProvider {
 
   async sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
     if (!input.credentials?.secret) return { success: false, errorType: 'permanent', error: 'Reconnect your Gmail account.', reconnectRequired: true };
+    // Workers' native fetch must not receive the provider instance as `this`.
+    const fetcher = this.fetcher;
     try {
-      const response = await this.fetcher('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      const response = await fetcher('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
         method: 'POST', headers: { Authorization: `Bearer ${input.credentials.secret}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ raw: base64url(new TextEncoder().encode(input.mimeMessage)) }),
         signal: AbortSignal.timeout(30000),

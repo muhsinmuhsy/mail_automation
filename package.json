@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:integration": "vitest run tests/integration",
+    "test:gmail:live": "node scripts/test-gmail-live.mjs",
     "test:unit": "vitest run tests/unit",
     "test:e2e": "playwright test --pass-with-no-tests",
     "test:smoke": "playwright test tests/e2e/smoke --pass-with-no-tests",

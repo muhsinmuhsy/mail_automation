@@ -9,6 +9,14 @@ const env = { GOOGLE_CLIENT_ID: 'client', GOOGLE_CLIENT_SECRET: 'secret', GOOGLE
 const input = { from: 'me@gmail.com', to: 'you@example.com', subject: 'Hello', body: 'Hi', mimeMessage: 'Subject: Hello\r\n\r\nHello 世界', credentials: { email: 'me@gmail.com', secret: 'token' } };
 
 describe('Gmail API and authorization protocol', () => {
+  it('invokes fetch without a receiver, as required by Cloudflare Workers', async () => {
+    const fetcher = vi.fn(function (this: unknown) {
+      if (this !== undefined) throw new TypeError('Illegal invocation');
+      return Promise.resolve(Response.json({ id: 'accepted' }));
+    });
+    expect(await new GmailApiProvider(fetcher).sendEmail(input)).toMatchObject({ success: true, messageId: 'accepted' });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it('encodes a maximum-size attachment without exceeding argument limits', () => {
     const attachment = new Uint8Array(5 * 1024 * 1024).fill(255);
     const encoded = base64url(attachment);
