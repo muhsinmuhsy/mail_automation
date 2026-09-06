@@ -103,6 +103,7 @@ describe('GET /api/emails', () => {
     expect(mockPrisma.emailJob.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { user_id: 'user-1' },
+        select: expect.objectContaining({ scheduled_at: true, next_attempt_at: true, campaign: { select: { timezone: true, name: true } } }),
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },

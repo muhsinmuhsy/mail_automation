@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatScheduledTime } from '@/lib/scheduling/time';
 import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -41,6 +42,10 @@ interface EmailRow {
   to_email: string;
   subject: string;
   status: string;
+  scheduled_at: string;
+  next_attempt_at: string | null;
+  error_message: string | null;
+  campaign: { timezone: string; name: string } | null;
   sent_at: string | null;
   created_at: string;
 }
@@ -100,7 +105,11 @@ export default function EmailsPage() {
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => void load(controller.signal), 250);
+    const refresh = setInterval(() => {
+      if (document.visibilityState === 'visible') void load(controller.signal);
+    }, 15_000);
     return () => {
+      clearInterval(refresh);
       clearTimeout(timer);
       controller.abort();
     };
@@ -178,7 +187,12 @@ export default function EmailsPage() {
               {
                 key: 'status',
                 header: 'Status',
-                render: (email) => <StatusBadge status={email.status} />,
+                render: (email) => <div><StatusBadge status={email.status} />{email.error_message && <p className="mt-1 text-caption text-text-secondary">{email.error_message}</p>}{email.next_attempt_at && email.status === 'RETRY_WAIT' && <p className="text-caption">Retry: {formatScheduledTime(email.next_attempt_at, email.campaign?.timezone)}</p>}</div>,
+              },
+              {
+                key: 'scheduled_at',
+                header: 'Scheduled for',
+                render: (email) => <span>{formatScheduledTime(email.scheduled_at, email.campaign?.timezone)}</span>,
               },
               {
                 key: 'created_at',

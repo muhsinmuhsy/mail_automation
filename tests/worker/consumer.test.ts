@@ -60,9 +60,11 @@ describe('worker/consumer', () => {
       SMTP_ENCRYPTION_KEY: 'key',
     });
 
-    await processQueueJob(prisma, env, 'job-1');
+    const providerOptions = { socketFactory: { connect: vi.fn() } };
+    await processQueueJob(prisma, env, 'job-1', providerOptions);
     expect(mockedSendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
+        providerOptions,
         attachment: expect.objectContaining({
           filename: 'attachment.pdf',
           contentType: 'application/pdf',

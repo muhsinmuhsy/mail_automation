@@ -13,6 +13,14 @@ const _GET = defineRoute(async (_req, ctx) => {
 
   const campaign = await getPrisma().campaign.findUnique({
     where: { id: parsed.data.id },
+    include: {
+      _count: { select: { email_jobs: true } },
+      email_jobs: {
+        select: { id: true, to_email: true, status: true, scheduled_at: true, sent_at: true },
+        orderBy: [{ scheduled_at: 'asc' }, { id: 'asc' }],
+        take: 100,
+      },
+    },
   });
 
   if (!campaign) {

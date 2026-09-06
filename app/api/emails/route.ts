@@ -34,7 +34,7 @@ const _GET = defineRoute(async (req, ctx) => {
   const [emails, total] = await Promise.all([
     getPrisma().emailJob.findMany({
       where,
-      select: { id: true, to_email: true, subject: true, status: true, sent_at: true, created_at: true },
+      select: { id: true, to_email: true, subject: true, status: true, sent_at: true, created_at: true, scheduled_at: true, next_attempt_at: true, error_message: true, campaign: { select: { timezone: true, name: true } } },
       orderBy: { created_at: 'desc' },
       skip: (page - 1) * limit,
       take: limit,

@@ -44,6 +44,7 @@ vi.mock('@/lib/limits/email-limit-service', () => ({
   recoverReservations: (...a: unknown[]) => mocks.recoverReservations(...a),
 }));
 
+vi.mock('@/worker/smtp', () => ({ workerSocketFactory: { connect: vi.fn() } }));
 import workerHandler from '@/worker';
 
 function makeMessage(jobId: string | undefined) {
@@ -56,6 +57,7 @@ function makeMessage(jobId: string | undefined) {
 
 const env = (overrides: Record<string, unknown> = {}) => ({
   DATABASE_URL: 'postgresql://u:p@localhost:5432/db',
+  EMAIL_QUEUE: { sendBatch: vi.fn().mockResolvedValue(undefined) },
   ...overrides,
 });
 
@@ -144,9 +146,10 @@ describe('worker/index', () => {
       expect(mocks.prismaMock.$disconnect).toHaveBeenCalledOnce();
     });
 
-    it('skips enqueue when there is no EMAIL_QUEUE binding', async () => {
+    it('fails before claiming jobs when there is no EMAIL_QUEUE binding', async () => {
       mocks.scheduleDueJobs.mockResolvedValue(['job-1']);
-      await workerHandler.scheduled({} as never, env() as never);
+      await expect(workerHandler.scheduled({} as never, env({ EMAIL_QUEUE: undefined }) as never)).rejects.toThrow('EMAIL_QUEUE');
+      expect(mocks.scheduleDueJobs).not.toHaveBeenCalled();
       expect(mocks.prismaMock.$disconnect).toHaveBeenCalledOnce();
     });
   });
@@ -159,8 +162,8 @@ describe('worker/index', () => {
       await workerHandler.queue({ messages: [m1, m2] } as never, env() as never);
 
       expect(mocks.processQueueJob).toHaveBeenCalledTimes(2);
-      expect(mocks.processQueueJob).toHaveBeenCalledWith(mocks.prismaMock, env(), 'job-1');
-      expect(mocks.processQueueJob).toHaveBeenCalledWith(mocks.prismaMock, env(), 'job-2');
+      expect(mocks.processQueueJob).toHaveBeenCalledWith(mocks.prismaMock, expect.objectContaining({ DATABASE_URL: expect.any(String) }), 'job-1', { socketFactory: expect.objectContaining({ connect: expect.any(Function) }) });
+      expect(mocks.processQueueJob).toHaveBeenCalledWith(mocks.prismaMock, expect.objectContaining({ DATABASE_URL: expect.any(String) }), 'job-2', { socketFactory: expect.objectContaining({ connect: expect.any(Function) }) });
       expect(m1.ack).toHaveBeenCalledOnce();
       expect(m2.ack).toHaveBeenCalledOnce();
       expect(m1.retry).not.toHaveBeenCalled();

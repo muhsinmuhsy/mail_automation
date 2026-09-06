@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { localDateTimeInZone, zonedDateTimeToIso, formatScheduledTime } from '@/lib/scheduling/time';
 import { Button } from '@/components/ui/Button';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Input } from '@/components/ui/Input';
@@ -38,12 +39,9 @@ interface CampaignWizardProps {
 function defaultLocalDateTime(): string {
   const date = new Date(Date.now() + 10 * 60 * 1000);
   date.setSeconds(0, 0);
-  return date.toISOString().slice(0, 16);
+  return localDateTimeInZone(date, Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
 }
 
-function localDateTimeToIso(value: string): string {
-  return new Date(value).toISOString();
-}
 
 function optionList(label: string, options: CampaignSelectOption[]) {
   if (options.length === 0) return [{ value: '', label }];
@@ -105,8 +103,10 @@ export function CampaignWizard({
     if (targetStep === 3) {
       const parsedInterval = Number(intervalMinutes);
       const parsedLimit = dailyLimit.trim() ? Number(dailyLimit) : null;
-      if (!startAt || Number.isNaN(new Date(startAt).getTime())) {
-        nextErrors.startAt = 'Choose a valid start time.';
+      try {
+        zonedDateTimeToIso(startAt, timezone.trim());
+      } catch (error) {
+        nextErrors.startAt = error instanceof Error ? error.message : 'Choose a valid start time.';
       }
       if (!timezone.trim()) {
         nextErrors.timezone = 'Timezone is required.';
@@ -152,7 +152,7 @@ export function CampaignWizard({
       attachmentId: effectiveAttachmentId,
       templateId: effectiveTemplateId,
       contactIds,
-      startAt: localDateTimeToIso(startAt),
+      startAt: zonedDateTimeToIso(startAt, timezone.trim()),
       timezone: timezone.trim(),
       intervalMinutes: Number(intervalMinutes),
       dailyLimit: dailyLimit.trim() ? Number(dailyLimit) : null,
@@ -315,7 +315,7 @@ export function CampaignWizard({
               <div>
                 <dt className="text-caption text-text-secondary">Schedule</dt>
                 <dd className="font-medium text-text-primary">
-                  Starts {new Date(localDateTimeToIso(startAt)).toLocaleString()} every {intervalMinutes} minutes
+                  Starts {formatScheduledTime(zonedDateTimeToIso(startAt, timezone.trim()), timezone.trim())} every {intervalMinutes} minutes
                 </dd>
               </div>
               <div>

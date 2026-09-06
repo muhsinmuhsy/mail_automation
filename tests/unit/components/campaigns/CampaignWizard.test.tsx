@@ -107,7 +107,7 @@ describe('CampaignWizard', () => {
       attachmentId: 'attachment-1',
       templateId: 'template-1',
       contactIds: ['contact-1', 'contact-2'],
-      startAt: expect.stringMatching(/^2026-09-03T/),
+      startAt: '2026-09-03T04:00:00.000Z',
       timezone: 'Asia/Calcutta',
       intervalMinutes: 10,
       dailyLimit: 20,

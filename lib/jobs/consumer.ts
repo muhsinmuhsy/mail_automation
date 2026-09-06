@@ -7,6 +7,7 @@ import {
 import { sendEmail } from '../email/service';
 import { decryptSecret } from '../security/encryption';
 import { createStorageService } from '../storage/storage.factory';
+import type { GmailProviderOptions } from '../email/providers/gmail';
 
 const MAX_ATTEMPTS = 3;
 
@@ -39,7 +40,8 @@ function encryptionKey(env: Record<string, unknown>): string {
 export async function processQueueJob(
   prisma: PrismaClient,
   env: Record<string, unknown>,
-  jobId: string
+  jobId: string,
+  providerOptions?: GmailProviderOptions
 ): Promise<void> {
   const job = await prisma.emailJob.findUnique({
     where: { id: jobId },
@@ -153,6 +155,7 @@ export async function processQueueJob(
       // message (→ DELIVERY_UNKNOWN, never auto-retry) from a thrown error
       // before acceptance (→ temporary failure, safe to retry).
       const result = await sendEmail({
+        ...(providerOptions ? { providerOptions } : {}),
         provider: emailAccount.provider,
         from: emailAccount.email,
         to: job.to_email,

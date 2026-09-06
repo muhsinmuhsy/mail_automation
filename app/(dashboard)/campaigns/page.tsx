@@ -8,6 +8,8 @@ import {
   type CampaignSelectOption,
   type CampaignSubmitData,
 } from '@/components/campaigns/CampaignWizard';
+import { CampaignDetails } from '@/components/campaigns/CampaignDetails';
+import { formatScheduledTime } from '@/lib/scheduling/time';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -53,6 +55,10 @@ interface CampaignRow {
   name: string;
   status: string;
   created_at: string;
+  start_at: string;
+  timezone: string;
+  interval_minutes: number;
+  daily_limit: number | null;
 }
 
 interface EmailAccountRow {
@@ -103,6 +109,7 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<ApiRespo
 
 export default function CampaignsPage() {
   const router = useRouter();
+  const [detailsId, setDetailsId] = useState<string | null>(null);
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [page, setPage] = useState(1);
@@ -165,7 +172,11 @@ export default function CampaignsPage() {
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => void load(controller.signal), 250);
+    const refresh = setInterval(() => {
+      if (document.visibilityState === 'visible') void load(controller.signal);
+    }, 15_000);
     return () => {
+      clearInterval(refresh);
       clearTimeout(timer);
       controller.abort();
     };
@@ -407,11 +418,13 @@ export default function CampaignsPage() {
                   <div className="min-w-0">
                     <p className="truncate font-medium text-text-primary">{campaign.name}</p>
                     <p className="text-caption text-text-secondary">
-                      Created {new Date(campaign.created_at).toLocaleDateString()}
+                      Starts {formatScheduledTime(campaign.start_at, campaign.timezone)}
+                      <br />Every {campaign.interval_minutes} minutes ? Daily limit: {campaign.daily_limit ?? 'No campaign limit'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={campaign.status} />
+                    <Button variant="secondary" size="sm" onClick={() => setDetailsId(campaign.id)}>View details</Button>
                     {campaign.status === 'ACTIVE' && (
                       <Button
                         variant="secondary"
@@ -460,6 +473,8 @@ export default function CampaignsPage() {
           )}
         </div>
       )}
+
+      {detailsId && <CampaignDetails campaignId={detailsId} onClose={() => setDetailsId(null)} />}
 
       <ConfirmDialog
         open={cancelTarget !== null}

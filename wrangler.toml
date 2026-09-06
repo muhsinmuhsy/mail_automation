@@ -4,6 +4,9 @@ compatibility_date = "2026-08-22"
 compatibility_flags = ["nodejs_compat"]
 minify = true
 
+[observability]
+enabled = true
+
 # Backblaze B2 (S3-Compatible API) is configured via Worker secrets/env,
 # NOT a Cloudflare R2 binding. Set these with `wrangler secret put`:
 #   B2_BUCKET_NAME, B2_REGION, B2_ENDPOINT, B2_KEY_ID, B2_APPLICATION_KEY

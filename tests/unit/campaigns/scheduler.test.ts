@@ -83,7 +83,7 @@ describe('lib/campaigns/scheduler', () => {
     expect(jobs[20].scheduled_at.getUTCDate()).toBe(16);
   });
 
-  it('should convert wall-clock time to UTC based on timezone', async () => {
+  it('preserves the UTC instant without applying the timezone twice', async () => {
     const mockContact = { id: 'contact-1', email: 'test@example.com', user_id: 'user-1' };
     const createMany = vi.fn().mockResolvedValue({ count: 1 });
     const prisma = {
@@ -111,6 +111,6 @@ describe('lib/campaigns/scheduler', () => {
 
     expect(jobs.length).toBe(1);
     const scheduledAt = jobs[0].scheduled_at;
-    expect(scheduledAt.getUTCHours()).toBe(14);
+    expect(scheduledAt.toISOString()).toBe('2024-01-15T09:00:00.000Z');
   });
 });

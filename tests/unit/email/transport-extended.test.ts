@@ -170,9 +170,14 @@ describe('lib/email/providers/smtp/transport', () => {
       const before: SmtpSocket = {
         readable: makeReadable('220 ready\r\n250 EHLO pre\r\n220 2.0.0 Ready to start TLS\r\n'),
         writable: makeWritable(written),
-        startTls: () => ({ readable: after, writable: makeWritable(written) }),
+        startTls: () => {
+          expect(before.readable.locked).toBe(false);
+          expect(before.writable.locked).toBe(false);
+          return { readable: after, writable: makeWritable(written) };
+        },
       };
       const client = new SmtpClient(before, 15000);
+      await client.greet('example.com');
       const r = await client.startTls('example.com');
       expect(r.code).toBe(250);
       expect(written.join('')).toContain('STARTTLS');

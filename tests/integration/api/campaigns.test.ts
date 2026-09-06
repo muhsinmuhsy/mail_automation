@@ -186,6 +186,7 @@ describe('GET /api/campaigns', () => {
     expect(mockPrisma.campaign.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { user_id: 'user-1' },
+        select: expect.objectContaining({ start_at: true, timezone: true, interval_minutes: true, daily_limit: true }),
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },

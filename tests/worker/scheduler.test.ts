@@ -37,6 +37,8 @@ describe('lib/jobs/scheduler', () => {
       const query = mockCalls[0][0];
       const queryString = typeof query === 'string' ? query : String(query);
       expect(queryString).toContain('LIMIT 100');
+      expect(queryString).toContain("email_jobs.status = 'QUEUED' AND email_jobs.updated_at <= now() - interval '10 minutes'");
+      expect(queryString).toContain("campaigns.status = 'ACTIVE'");
     });
   });
 

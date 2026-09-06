@@ -192,7 +192,12 @@ export class SmtpClient {
     if (typeof this.socket.startTls !== 'function') {
       throw new SmtpError('STARTTLS upgrade is not supported by the underlying socket.');
     }
-    // Upgrade to TLS and rebind the streams before re-negotiating.
+    // Cloudflare requires both stream locks released before startTls().
+    // Do not close the streams: that would close the underlying TCP socket.
+    this.writer.releaseLock();
+    this.reader.releaseLock();
+    this.buffer = '';
+    this.decoder = new TextDecoder();
     this.socket = await this.socket.startTls();
     this.resetStreams();
     return this.sendCommand(`EHLO ${domain}`);

@@ -1,46 +1,6 @@
 import { PrismaClient, Prisma } from '../generated/prisma/client';
 import { replaceTemplateVariables } from '@/lib/email/template';
 
-function wallClockToUTC(wallClock: Date, timezone: string): Date {
-  const year = wallClock.getUTCFullYear();
-  const month = wallClock.getUTCMonth();
-  const day = wallClock.getUTCDate();
-  const hour = wallClock.getUTCHours();
-  const minute = wallClock.getUTCMinutes();
-
-  const tzFormatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
-
-  const naiveDate = new Date(Date.UTC(year, month, day, hour, minute, 0));
-  const parts = tzFormatter.formatToParts(naiveDate);
-  const values: Record<string, string> = {};
-  for (const part of parts) {
-    if (part.type !== 'literal') {
-      values[part.type] = part.value;
-    }
-  }
-
-  const naiveUTC = naiveDate.getTime();
-  const adjustedUTC = Date.UTC(
-    parseInt(values.year),
-    parseInt(values.month) - 1,
-    parseInt(values.day),
-    parseInt(values.hour),
-    parseInt(values.minute),
-    parseInt(values.second || '0')
-  );
-
-  return new Date(naiveUTC + (naiveUTC - adjustedUTC));
-}
-
 export async function generateCampaignJobs(
   prisma: PrismaClient,
   campaign: {
@@ -70,7 +30,7 @@ export async function generateCampaignJobs(
   }
 
   const maxPerDay = campaign.daily_limit ?? Infinity;
-  const utcStartAt = wallClockToUTC(campaign.start_at, campaign.timezone);
+  const utcStartAt = new Date(campaign.start_at);
 
   const jobs = contacts.map((contact, index) => {
     const dayIndex = Math.floor(index / maxPerDay);
@@ -112,6 +72,7 @@ export async function scheduleDueJobs(prisma: PrismaClient): Promise<string[]> {
         (
           (email_jobs.status = 'SCHEDULED' AND email_jobs.scheduled_at <= now())
           OR (email_jobs.status = 'RETRY_WAIT' AND email_jobs.next_attempt_at <= now())
+          OR (email_jobs.status = 'QUEUED' AND email_jobs.updated_at <= now() - interval '10 minutes')
         )
         AND (
           email_jobs.campaign_id IS NULL
@@ -120,7 +81,7 @@ export async function scheduleDueJobs(prisma: PrismaClient): Promise<string[]> {
       ORDER BY COALESCE(email_jobs.next_attempt_at, email_jobs.scheduled_at)
       LIMIT 100
     )
-    AND status IN ('SCHEDULED', 'RETRY_WAIT')
+    AND status IN ('SCHEDULED', 'RETRY_WAIT', 'QUEUED')
     RETURNING id
   `;
 

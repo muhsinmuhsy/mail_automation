@@ -39,9 +39,10 @@ const workerHandler = {
       const sendingEnabled = settings ? settings.email_sending_enabled : true;
 
       if (sendingEnabled) {
-        const dueIds = await scheduleDueJobs(prisma);
         const queue = (env as QueueEnv).EMAIL_QUEUE;
-        if (queue && dueIds.length > 0) {
+        if (!queue) throw new Error('EMAIL_QUEUE binding is required for scheduled sending.');
+        const dueIds = await scheduleDueJobs(prisma);
+        if (dueIds.length > 0) {
           await queue.sendBatch(dueIds.map((id) => ({ body: { jobId: id } })));
         }
       }
@@ -61,7 +62,8 @@ const workerHandler = {
         continue;
       }
       try {
-        await processQueueJob(prisma, env, jobId);
+        const { workerSocketFactory } = await import('./smtp');
+        await processQueueJob(prisma, env, jobId, { socketFactory: workerSocketFactory });
         message.ack();
       } catch {
         message.retry();
