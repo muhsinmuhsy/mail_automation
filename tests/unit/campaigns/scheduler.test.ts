@@ -34,6 +34,7 @@ describe('lib/campaigns/scheduler', () => {
           contact_id: 'contact-1',
           email_account_id: 'account-1',
           attachment_id: 'attachment-1',
+          attachment_ids: ['attachment-1'],
           template_id: 'template-1',
           to_email: 'test@example.com',
           subject: 'Subject',

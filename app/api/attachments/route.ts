@@ -30,7 +30,7 @@ const _GET = defineRoute(async (req, ctx) => {
   const [attachments, total] = await Promise.all([
     getPrisma().attachment.findMany({
       where,
-      select: { id: true, filename: true, is_default: true, created_at: true },
+      select: { id: true, filename: true, size_bytes: true, is_default: true, created_at: true },
       orderBy: { created_at: 'desc' },
       skip: (page - 1) * limit,
       take: limit,

@@ -36,7 +36,7 @@ describe('CampaignForm', () => {
       expect.objectContaining({
         name: 'Wrapped campaign',
         emailAccountId: 'account-1',
-        attachmentId: 'attachment-1',
+        attachmentIds: [],
         templateId: 'template-1',
         contactIds: ['contact-1'],
       })

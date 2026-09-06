@@ -71,7 +71,7 @@ describe('integration/worker (consumer, no real DB)', () => {
 
     expect(mockedSendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        attachment: expect.objectContaining({ filename: 'attachment.pdf', contentType: 'application/pdf' }),
+        attachments: [expect.objectContaining({ filename: 'attachment.pdf', contentType: 'application/pdf' })],
       }),
     );
     expect(prisma.emailJob.update).toHaveBeenCalledWith(

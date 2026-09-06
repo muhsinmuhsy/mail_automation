@@ -65,10 +65,10 @@ describe('worker/consumer', () => {
     expect(mockedSendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         providerOptions,
-        attachment: expect.objectContaining({
+        attachments: [expect.objectContaining({
           filename: 'attachment.pdf',
           contentType: 'application/pdf',
-        }),
+        })],
       })
     );
 

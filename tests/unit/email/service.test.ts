@@ -31,6 +31,16 @@ beforeEach(() => {
 });
 
 describe('lib/email/service (sendEmail dispatcher)', () => {
+  it('includes every selected file in MIME and supports an empty selection', async () => {
+    fakeProvider.sendEmail.mockResolvedValue({ success: true });
+    const attachments = ['one.pdf', 'two.pdf'].map(filename => ({ filename, content: new TextEncoder().encode(filename), contentType: 'application/pdf' }));
+    await sendEmail({ ...baseParams, attachments });
+    const sent = fakeProvider.sendEmail.mock.calls[0][0];
+    expect(sent.attachments).toEqual(attachments);
+    for (const file of attachments) expect(sent.mimeMessage).toContain(`filename="${file.filename}"`);
+    await sendEmail({ ...baseParams, attachments: [] });
+    expect(fakeProvider.sendEmail.mock.calls[1][0].mimeMessage).not.toContain('Content-Disposition: attachment');
+  });
   it('resolves the provider by name and dispatches to it', async () => {
     fakeProvider.sendEmail.mockResolvedValue({
       success: true,

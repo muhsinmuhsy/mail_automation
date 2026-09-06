@@ -72,6 +72,7 @@ interface AttachmentRow {
   id: string;
   filename: string;
   is_default: boolean;
+  size_bytes: number | null;
 }
 
 interface TemplateRow {
@@ -222,6 +223,7 @@ export default function CampaignsPage() {
         attachments: attachments.body.success
           ? attachments.body.data.map((attachment) => ({
               id: attachment.id,
+              size_bytes: attachment.size_bytes,
               label: attachment.is_default ? `${attachment.filename} (default)` : attachment.filename,
             }))
           : [],
@@ -271,13 +273,14 @@ export default function CampaignsPage() {
   };
 
   const createCampaign = async (data: CampaignSubmitData) => {
+    try {
     const { status: httpStatus, body } = await requestJson<CampaignRow>('/api/campaigns', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: data.name,
         email_account_id: data.emailAccountId,
-        attachment_id: data.attachmentId,
+        attachment_ids: data.attachmentIds,
         template_id: data.templateId,
         contact_ids: data.contactIds,
         start_at: data.startAt,
@@ -299,6 +302,7 @@ export default function CampaignsPage() {
     } else {
       showToast(body.error.message, 'error');
     }
+    } catch { showToast('Could not confirm campaign creation. Refresh the list before trying again.', 'error'); }
   };
 
   const toggleWizard = () => {
@@ -328,10 +332,6 @@ export default function CampaignsPage() {
               email account
             </Link>
             , a{' '}
-            <Link href="/attachments" className="text-information hover:underline">
-              attachment
-            </Link>
-            , a{' '}
             <Link href="/templates" className="text-information hover:underline">
               template
             </Link>{' '}
@@ -339,16 +339,17 @@ export default function CampaignsPage() {
             <Link href="/contacts" className="text-information hover:underline">
               contact
             </Link>
-            .
+            . Attachments are optional.
           </p>
           {optionsError && <p role="alert" className="mb-4 text-sm text-error">{optionsError}</p>}
+          <Button variant="secondary" size="sm" onClick={() => void loadCampaignOptions()} disabled={optionsLoading}>Refresh available options</Button>
           <CampaignWizard
             emailAccounts={options.emailAccounts}
             attachments={options.attachments}
             templates={options.templates}
             contacts={options.contacts}
             loading={optionsLoading}
-            onSubmit={(data) => void createCampaign(data)}
+            onSubmit={createCampaign}
           />
         </div>
       )}

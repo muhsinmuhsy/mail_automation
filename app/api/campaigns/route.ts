@@ -7,6 +7,8 @@ import { createCampaignSchema } from '@/lib/validation/campaign';
 import { generateCampaignJobs } from '@/lib/jobs/scheduler';
 import { ValidationError, ForbiddenError } from '@/lib/errors';
 
+import { attachmentSelectionError } from '@/lib/email/attachment-limits';
+
 const CAMPAIGN_STATUSES = ['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'] as const;
 
 const _GET = defineRoute(async (req, ctx) => {
@@ -52,13 +54,14 @@ const _POST = defineRoute(async (req, ctx) => {
     );
   }
 
-  const [emailAccount, attachment, template] = await Promise.all([
+  const attachmentIds = parsed.data.attachment_ids ?? (parsed.data.attachment_id ? [parsed.data.attachment_id] : []);
+  const [emailAccount, attachments, template] = await Promise.all([
     getPrisma().emailAccount.findFirst({
       where: { id: parsed.data.email_account_id, user_id: ctx.user.id },
     }),
-    getPrisma().attachment.findFirst({
-      where: { id: parsed.data.attachment_id, user_id: ctx.user.id, deleted_at: null },
-    }),
+    Promise.all(attachmentIds.map(id => getPrisma().attachment.findFirst({
+      where: { id, user_id: ctx.user.id, deleted_at: null },
+    }))),
     getPrisma().template.findFirst({
       where: { id: parsed.data.template_id, user_id: ctx.user.id },
     }),
@@ -70,12 +73,15 @@ const _POST = defineRoute(async (req, ctx) => {
       ctx.requestId
     );
   }
-  if (!attachment) {
+  if (attachments.some(attachment => !attachment)) {
     return respondError(new ForbiddenError('Attachment not found or does not belong to you.'), ctx.requestId);
   }
   if (!template) {
     return respondError(new ForbiddenError('Template not found or does not belong to you.'), ctx.requestId);
   }
+
+  const attachmentError = attachmentSelectionError(attachments.filter(a => a !== null));
+  if (attachmentError) return respondError(new ValidationError(attachmentError), ctx.requestId);
 
   const contactCount = await getPrisma().contact.count({
     where: { id: { in: parsed.data.contact_ids }, user_id: ctx.user.id },
@@ -93,7 +99,8 @@ const _POST = defineRoute(async (req, ctx) => {
       user_id: ctx.user.id,
       name: parsed.data.name,
       email_account_id: parsed.data.email_account_id,
-      attachment_id: parsed.data.attachment_id,
+      attachment_id: parsed.data.attachment_id ?? null,
+      attachment_ids: attachmentIds,
       template_id: parsed.data.template_id,
       start_at: parsed.data.start_at,
       timezone: parsed.data.timezone,
@@ -114,7 +121,8 @@ const _POST = defineRoute(async (req, ctx) => {
       interval_minutes: parsed.data.interval_minutes,
       daily_limit: parsed.data.daily_limit,
       email_account_id: parsed.data.email_account_id,
-      attachment_id: parsed.data.attachment_id,
+      attachment_id: parsed.data.attachment_id ?? null,
+      attachment_ids: attachmentIds,
       template_id: parsed.data.template_id,
     },
     parsed.data.contact_ids

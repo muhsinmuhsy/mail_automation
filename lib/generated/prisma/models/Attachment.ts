@@ -441,9 +441,9 @@ export type AttachmentSumOrderByAggregateInput = {
   size_bytes?: Prisma.SortOrder
 }
 
-export type AttachmentScalarRelationFilter = {
-  is?: Prisma.AttachmentWhereInput
-  isNot?: Prisma.AttachmentWhereInput
+export type AttachmentNullableScalarRelationFilter = {
+  is?: Prisma.AttachmentWhereInput | null
+  isNot?: Prisma.AttachmentWhereInput | null
 }
 
 export type AttachmentCreateNestedManyWithoutUserInput = {
@@ -494,10 +494,12 @@ export type AttachmentCreateNestedOneWithoutCampaignsInput = {
   connect?: Prisma.AttachmentWhereUniqueInput
 }
 
-export type AttachmentUpdateOneRequiredWithoutCampaignsNestedInput = {
+export type AttachmentUpdateOneWithoutCampaignsNestedInput = {
   create?: Prisma.XOR<Prisma.AttachmentCreateWithoutCampaignsInput, Prisma.AttachmentUncheckedCreateWithoutCampaignsInput>
   connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutCampaignsInput
   upsert?: Prisma.AttachmentUpsertWithoutCampaignsInput
+  disconnect?: Prisma.AttachmentWhereInput | boolean
+  delete?: Prisma.AttachmentWhereInput | boolean
   connect?: Prisma.AttachmentWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.AttachmentUpdateToOneWithWhereWithoutCampaignsInput, Prisma.AttachmentUpdateWithoutCampaignsInput>, Prisma.AttachmentUncheckedUpdateWithoutCampaignsInput>
 }
@@ -508,10 +510,12 @@ export type AttachmentCreateNestedOneWithoutEmail_jobsInput = {
   connect?: Prisma.AttachmentWhereUniqueInput
 }
 
-export type AttachmentUpdateOneRequiredWithoutEmail_jobsNestedInput = {
+export type AttachmentUpdateOneWithoutEmail_jobsNestedInput = {
   create?: Prisma.XOR<Prisma.AttachmentCreateWithoutEmail_jobsInput, Prisma.AttachmentUncheckedCreateWithoutEmail_jobsInput>
   connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutEmail_jobsInput
   upsert?: Prisma.AttachmentUpsertWithoutEmail_jobsInput
+  disconnect?: Prisma.AttachmentWhereInput | boolean
+  delete?: Prisma.AttachmentWhereInput | boolean
   connect?: Prisma.AttachmentWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.AttachmentUpdateToOneWithWhereWithoutEmail_jobsInput, Prisma.AttachmentUpdateWithoutEmail_jobsInput>, Prisma.AttachmentUncheckedUpdateWithoutEmail_jobsInput>
 }

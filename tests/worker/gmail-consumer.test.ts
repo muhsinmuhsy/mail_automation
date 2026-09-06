@@ -20,6 +20,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.send.mockReset(); mocks.token.mockReset().mockResolvedValue('token');
   mocks.reserve.mockResolvedValue({ success: true });
+  mocks.release.mockResolvedValue(undefined);
   db.emailJob.findUnique.mockResolvedValue({ id: 'job', user_id: 'user', email_account_id: 'account', attachment_id: 'attachment', to_email: 'recipient@example.com', subject: 'subject', body: 'body', attempt_count: 0 });
   db.emailJob.updateMany.mockResolvedValue({ count: 1 });
   db.emailJob.update.mockReset().mockResolvedValue({});
@@ -30,6 +31,22 @@ beforeEach(() => {
 const run = () => processQueueJob(db as unknown as PrismaClient, { SMTP_ENCRYPTION_KEY: 'key' }, 'job');
 
 describe('Gmail OAuth queue consumer', () => {
+  it.each([{ ids: [] }, { ids: ['one', 'two'] }])('sends the selected attachment collection $ids', async ({ ids }) => {
+    const job = await db.emailJob.findUnique();
+    db.emailJob.findUnique.mockResolvedValue({ ...job, attachment_id: null, attachment_ids: ids });
+    mocks.send.mockResolvedValue({ success: true });
+    await run();
+    expect(mocks.send).toHaveBeenCalledWith(expect.objectContaining({ attachments: expect.any(Array) }));
+    expect(mocks.send.mock.calls[0][0].attachments).toHaveLength(ids.length);
+    expect(db.attachment.findUnique).toHaveBeenCalledTimes(ids.length);
+    for (const id of ids) expect(db.attachment.findUnique).toHaveBeenCalledWith({ where: { id, user_id: 'user', deleted_at: null } });
+  });
+  it('does not send when a selected attachment is missing', async () => {
+    db.attachment.findUnique.mockResolvedValue(null);
+    await run();
+    expect(mocks.send).not.toHaveBeenCalled();
+    expect(mocks.release).toHaveBeenCalled();
+  });
   it('dispatches OAuth credentials and commits accepted usage', async () => {
     mocks.send.mockResolvedValue({ success: true, messageId: 'google-id', providerResponse: 'Accepted' });
     await run();

@@ -24,7 +24,8 @@ async function completeWizard(onSubmit = vi.fn()) {
   await user.click(screen.getByRole('button', { name: 'Continue' }));
 
   expect(screen.getByLabelText('Sending account')).toHaveValue('account-1');
-  expect(screen.getByLabelText('Attachment')).toHaveValue('attachment-1');
+  expect(screen.getByRole('checkbox', { name: /Attachment.pdf/ })).not.toBeChecked();
+  await user.click(screen.getByRole('checkbox', { name: /Attachment.pdf/ }));
   expect(screen.getByLabelText('Template')).toHaveValue('template-1');
   await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -46,6 +47,33 @@ async function completeWizard(onSubmit = vi.fn()) {
 }
 
 describe('CampaignWizard', () => {
+  it('selects multiple files, preserves them on Back, and clears the selection', async () => {
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} attachments={[{ id: 'a', label: 'One.pdf', size_bytes: 1024 }, { id: 'b', label: 'Two.pdf', size_bytes: 1024 }]} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Multiple');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('checkbox', { name: /One.pdf/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Two.pdf/ }));
+    expect(screen.getByRole('status')).toHaveTextContent('2 files selected');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('checkbox', { name: /One.pdf/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /Two.pdf/ })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Clear attachments' }));
+    expect(screen.getByRole('status')).toHaveTextContent('0 files selected');
+  });
+  it('blocks excessive combined size and allows continuing after clearing files', async () => {
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} attachments={Array.from({ length: 5 }, (_, i) => ({ id: String(i), label: `File${i}.pdf`, size_bytes: 5 * 1024 * 1024 }))} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Limits');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    for (const checkbox of screen.getAllByRole('checkbox')) await user.click(checkbox);
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('20 MB');
+    await user.click(screen.getByRole('button', { name: 'Clear attachments' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByLabelText(/Ada Lovelace/)).toBeInTheDocument();
+  });
   it('renders all five guided campaign creation steps', () => {
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
@@ -75,7 +103,7 @@ describe('CampaignWizard', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(screen.getByRole('option', { name: 'sender@example.com (gmail)' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Attachment.pdf (default)' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Attachment.pdf/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Follow-up' })).toBeInTheDocument();
   });
 
@@ -104,7 +132,7 @@ describe('CampaignWizard', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       name: 'Hiring outreach',
       emailAccountId: 'account-1',
-      attachmentId: 'attachment-1',
+      attachmentIds: ['attachment-1'],
       templateId: 'template-1',
       contactIds: ['contact-1', 'contact-2'],
       startAt: '2026-09-03T04:00:00.000Z',

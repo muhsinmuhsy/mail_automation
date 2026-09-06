@@ -11,6 +11,7 @@ export interface SendEmailParams {
   subject: string;
   body: string;
   attachment?: Attachment;
+  attachments?: Attachment[];
   credentials: {
     email: string;
     secret: string;
@@ -37,7 +38,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailOutco
     toName: params.toName,
     subject: params.subject,
     body: params.body,
-    attachments: params.attachment ? [params.attachment] : undefined,
+    attachments: params.attachments ?? (params.attachment ? [params.attachment] : undefined),
     messageId: params.messageId,
   });
 
@@ -47,7 +48,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailOutco
     subject: params.subject,
     body: params.body,
     mimeMessage,
-    attachments: params.attachment ? [params.attachment] : undefined,
+    attachments: params.attachments ?? (params.attachment ? [params.attachment] : undefined),
     credentials: params.credentials,
   });
 

@@ -170,8 +170,9 @@ model Campaign {
   user               User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
   email_account_id   String           @db.Uuid
   email_account      EmailAccount     @relation(fields: [email_account_id], references: [id])
-  attachment_id      String           @db.Uuid
-  attachment         Attachment       @relation(fields: [attachment_id], references: [id])
+  attachment_id      String?           @db.Uuid
+  attachment         Attachment?       @relation(fields: [attachment_id], references: [id])
+  attachment_ids String[] @default([]) @db.Uuid
   template_id        String           @db.Uuid
   template           Template         @relation(fields: [template_id], references: [id])
   name               String           @db.VarChar(255)
@@ -201,8 +202,9 @@ model EmailJob {
   contact                 Contact       @relation(fields: [contact_id], references: [id])
   email_account_id        String        @db.Uuid
   email_account           EmailAccount  @relation(fields: [email_account_id], references: [id])
-  attachment_id           String        @db.Uuid
-  attachment              Attachment    @relation(fields: [attachment_id], references: [id])
+  attachment_id           String?        @db.Uuid
+  attachment              Attachment?    @relation(fields: [attachment_id], references: [id])
+  attachment_ids String[] @default([]) @db.Uuid
   template_id             String        @db.Uuid
   template                Template      @relation(fields: [template_id], references: [id])
   to_email                String        @db.VarChar(255)

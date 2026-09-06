@@ -264,6 +264,29 @@ describe('GET /api/campaigns', () => {
 });
 
 describe('POST /api/campaigns', () => {
+  it.each([{ ids: [] }, { ids: [ATTACHMENT_ID, CONTACT_ID_B] }])('persists and schedules optional attachment arrays $ids', async ({ ids }) => {
+    const body = validCreateBody({ attachment_ids: ids });
+    delete body.attachment_id;
+    const response = await createCampaign(jsonRequest(body));
+    expect(response.status).toBe(201);
+    expect(mockPrisma.campaign.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ attachment_id: null, attachment_ids: ids }) }));
+    expect(mockGenerateCampaignJobs).toHaveBeenCalledWith(mockPrisma, expect.objectContaining({ attachment_ids: ids }), [CONTACT_ID_A]);
+    expect(mockPrisma.attachment.findFirst).toHaveBeenCalledTimes(ids.length);
+  });
+  it('rejects an inaccessible file among multiple selected attachments', async () => {
+    mockPrisma.attachment.findFirst.mockResolvedValueOnce({ size_bytes: 1 }).mockResolvedValueOnce(null);
+    const body = validCreateBody({ attachment_ids: [ATTACHMENT_ID, CONTACT_ID_B] });
+    delete body.attachment_id;
+    expect((await createCampaign(jsonRequest(body))).status).toBe(403);
+    expect(mockPrisma.campaign.create).not.toHaveBeenCalled();
+  });
+  it('enforces combined attachment bytes on the server', async () => {
+    mockPrisma.attachment.findFirst.mockResolvedValue({ size_bytes: 11 * 1024 * 1024 });
+    const body = validCreateBody({ attachment_ids: [ATTACHMENT_ID, CONTACT_ID_B] });
+    delete body.attachment_id;
+    expect((await createCampaign(jsonRequest(body))).status).toBe(400);
+    expect(mockPrisma.campaign.create).not.toHaveBeenCalled();
+  });
   it('creates a campaign and schedules its jobs', async () => {
     const response = await createCampaign(jsonRequest(validCreateBody()));
     const body = (await response.json()) as ApiBody;

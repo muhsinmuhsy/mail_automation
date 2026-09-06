@@ -22,7 +22,7 @@ const _DELETE = defineRoute(async (_req, ctx) => {
 
   const pendingJobCount = await getPrisma().emailJob.count({
     where: {
-      attachment_id: parsed.data.id,
+      OR: [{ attachment_id: parsed.data.id }, { attachment_ids: { has: parsed.data.id } }],
       status: { in: ['SCHEDULED', 'QUEUED', 'PROCESSING', 'RETRY_WAIT'] },
     },
   });

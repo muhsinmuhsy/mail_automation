@@ -339,11 +339,11 @@ describe('worker/consumer additional coverage', () => {
         await processQueueJob(prisma, createMockEnv(), 'job-1');
         const call = sendEmail.mock.calls.find(
 
-          (c: any) => c[0].attachment?.filename === filename
+          (c: any) => c[0].attachments?.[0]?.filename === filename
         );
         expect(call).toBeDefined();
 
-        expect((call as any)[0].attachment.contentType).toBe(contentType);
+        expect((call as any)[0].attachments[0].contentType).toBe(contentType);
         expect(commitReservation).toHaveBeenCalled();
       });
     }
