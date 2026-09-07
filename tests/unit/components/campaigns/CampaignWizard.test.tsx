@@ -5,8 +5,8 @@ import { CampaignWizard, type CampaignSelectOption } from '@/components/campaign
 
 const options = {
   emailAccounts: [
-    { id: 'account-1', label: 'sender@example.com (gmail)' },
-    { id: 'account-2', label: 'backup@example.com (gmail)' },
+    { id: 'account-1', provider: 'gmail', label: 'sender@example.com (gmail)' },
+    { id: 'account-2', provider: 'gmail', label: 'backup@example.com (gmail)' },
   ],
   attachments: [{ id: 'attachment-1', label: 'Attachment.pdf (default)' }],
   templates: [{ id: 'template-1', label: 'Follow-up', description: 'Hello {{name}}' }],
@@ -156,7 +156,7 @@ describe('CampaignWizard', () => {
   it('shows a loading state while campaign prerequisites are loading', () => {
     render(<CampaignWizard loading onSubmit={vi.fn()} />);
 
-    expect(screen.getByText('Loading campaign options...')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.getByLabelText('Campaign name')).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
   });
 });

@@ -222,6 +222,12 @@ describe('GET /api/attachments', () => {
 });
 
 describe('POST /api/attachments', () => {
+  it.each([['notes.txt', 'Hello', 'text/plain'], ['contacts.csv', 'name,email', 'text/csv'], ['slides.pptx', 'PK\x03\x04contents', 'application/vnd.openxmlformats-officedocument.presentationml.presentation']])('uploads %s with the correct storage content type', async (name, data, mime) => {
+    const response = await uploadAttachment(uploadRequest([['file', new File([data], name)]]));
+    expect(response.status).toBe(201);
+    expect(storageUpload.mock.calls[0][0].contentType).toBe(mime);
+    expect(storageUpload.mock.calls[0][0].key.endsWith(`.${name.split('.').pop()}`)).toBe(true);
+  });
   it('uploads a PDF, stores it and creates the attachment row', async () => {
     const response = await uploadAttachment(uploadRequest([['file', pdfFile()]]));
     const body = (await response.json()) as ApiBody;
@@ -275,7 +281,7 @@ describe('POST /api/attachments', () => {
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Attachment must be a PDF no larger than 5 MB.');
+    expect(body.error?.message).toBe('Attachment must be non-empty and no larger than 5 MB.');
   });
 
   it('returns 400 for a file larger than 5 MB', async () => {
@@ -289,14 +295,14 @@ describe('POST /api/attachments', () => {
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Attachment must be a PDF no larger than 5 MB.');
+    expect(body.error?.message).toBe('Attachment must be non-empty and no larger than 5 MB.');
     expect(storageUpload).not.toHaveBeenCalled();
   });
 
-  it('returns 400 when the extension is not .pdf', async () => {
+  it('rejects unsupported executable extensions', async () => {
     const wrongName = new File(
       [new TextEncoder().encode('%PDF-1.7\n') as unknown as BlobPart],
-      'attachment.txt',
+      'attachment.exe',
       { type: 'application/pdf' }
     );
 
@@ -304,21 +310,14 @@ describe('POST /api/attachments', () => {
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Attachment must be a valid PDF file.');
+    expect(body.error?.message).toBe('Unsupported file type or invalid file contents.');
   });
 
-  it('returns 400 when the mime type is not application/pdf', async () => {
-    const wrongType = new File(
-      [new TextEncoder().encode('%PDF-1.7\n') as unknown as BlobPart],
-      'attachment.pdf',
-      { type: 'text/plain' }
-    );
-
-    const response = await uploadAttachment(uploadRequest([['file', wrongType]]));
-    const body = (await response.json()) as ApiBody;
-
-    expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Attachment must be a valid PDF file.');
+  it('derives the MIME type from validated content rather than browser metadata', async () => {
+    const file = new File(['%PDF-1.7\n'], 'attachment.pdf', { type: 'application/octet-stream' });
+    const response = await uploadAttachment(uploadRequest([['file', file]]));
+    expect(response.status).toBe(201);
+    expect(storageUpload.mock.calls[0][0].contentType).toBe('application/pdf');
   });
 
   it('returns 400 when the magic bytes are not a PDF header', async () => {
@@ -332,7 +331,7 @@ describe('POST /api/attachments', () => {
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Attachment must be a valid PDF file.');
+    expect(body.error?.message).toBe('Unsupported file type or invalid file contents.');
   });
 
   it('returns 400 when the file is too short to contain a PDF header', async () => {
@@ -346,7 +345,7 @@ describe('POST /api/attachments', () => {
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(400);
-    expect(body.error?.message).toBe('Attachment must be a valid PDF file.');
+    expect(body.error?.message).toBe('Unsupported file type or invalid file contents.');
   });
 
   it('returns 400 when the metadata fails schema validation', async () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -61,34 +61,6 @@ interface CampaignRow {
   daily_limit: number | null;
 }
 
-interface EmailAccountRow {
-  id: string;
-  provider: string;
-  email: string;
-  is_active: boolean;
-}
-
-interface AttachmentRow {
-  id: string;
-  filename: string;
-  is_default: boolean;
-  size_bytes: number | null;
-}
-
-interface TemplateRow {
-  id: string;
-  name: string;
-  subject: string;
-}
-
-interface ContactRow {
-  id: string;
-  name: string;
-  email: string;
-  company: string | null;
-  job_title: string | null;
-}
-
 interface CampaignOptions {
   emailAccounts: CampaignSelectOption[];
   attachments: CampaignSelectOption[];
@@ -125,6 +97,8 @@ export default function CampaignsPage() {
     templates: [],
     contacts: [],
   });
+  const optionsRequest = useRef<Promise<void> | null>(null);
+  const optionsLoadedAt = useRef(0);
   const [optionsLoading, setOptionsLoading] = useState(false);
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [busyCampaignId, setBusyCampaignId] = useState<string | null>(null);
@@ -189,65 +163,34 @@ export default function CampaignsPage() {
     void load();
   };
 
-  const loadCampaignOptions = useCallback(async () => {
+  const loadCampaignOptions = useCallback(() => {
+    if (optionsRequest.current) return optionsRequest.current;
     setOptionsLoading(true);
     setOptionsError(null);
-    try {
-      const [accounts, attachments, templates, contacts] = await Promise.all([
-        requestJson<EmailAccountRow[]>('/api/email-accounts?limit=100'),
-        requestJson<AttachmentRow[]>('/api/attachments?limit=100'),
-        requestJson<TemplateRow[]>('/api/templates?limit=100'),
-        requestJson<ContactRow[]>('/api/contacts?limit=100'),
-      ]);
-
-      const responses = [accounts, attachments, templates, contacts];
-      if (responses.some((response) => response.status === 401)) {
-        router.replace('/login');
-        return;
+    const pending = (async () => {
+      try {
+        const { status, body } = await requestJson<CampaignOptions>('/api/campaigns/options');
+        if (status === 401) { router.replace('/login'); return; }
+        if (!body.success) { setOptionsError(body.error.message); return; }
+        setOptions(body.data);
+        optionsLoadedAt.current = Date.now();
+      } catch {
+        setOptionsError('Could not load your saved choices. Please try again.');
+      } finally {
+        setOptionsLoading(false);
+        optionsRequest.current = null;
       }
-      const failure = responses.find((response) => !response.body.success);
-      if (failure && !failure.body.success) {
-        setOptionsError(failure.body.error.message);
-        return;
-      }
-
-      setOptions({
-        emailAccounts: accounts.body.success
-          ? accounts.body.data
-              .filter((account) => account.is_active)
-              .map((account) => ({
-                id: account.id,
-                label: `${account.email} (${account.provider})`,
-              }))
-          : [],
-        attachments: attachments.body.success
-          ? attachments.body.data.map((attachment) => ({
-              id: attachment.id,
-              size_bytes: attachment.size_bytes,
-              label: attachment.is_default ? `${attachment.filename} (default)` : attachment.filename,
-            }))
-          : [],
-        templates: templates.body.success
-          ? templates.body.data.map((template) => ({
-              id: template.id,
-              label: template.name,
-              description: template.subject,
-            }))
-          : [],
-        contacts: contacts.body.success
-          ? contacts.body.data.map((contact) => ({
-              id: contact.id,
-              label: contact.name,
-              description: [contact.email, contact.company, contact.job_title].filter(Boolean).join(' - '),
-            }))
-          : [],
-      });
-    } catch {
-      setOptionsError('Failed to load campaign options.');
-    } finally {
-      setOptionsLoading(false);
-    }
+    })();
+    optionsRequest.current = pending;
+    return pending;
   }, [router]);
+
+  useEffect(() => {
+    void loadCampaignOptions();
+    const onFocus = () => { if (document.visibilityState === 'visible') void loadCampaignOptions(); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [loadCampaignOptions]);
 
   const runAction = async (campaign: CampaignRow, action: 'pause' | 'resume' | 'cancel') => {
     setBusyCampaignId(campaign.id);
@@ -306,7 +249,7 @@ export default function CampaignsPage() {
   };
 
   const toggleWizard = () => {
-    if (!showWizard) void loadCampaignOptions();
+    if (!showWizard && Date.now() - optionsLoadedAt.current > 60_000) void loadCampaignOptions();
     setShowWizard((previous) => !previous);
   };
 
@@ -342,7 +285,7 @@ export default function CampaignsPage() {
             . Attachments are optional.
           </p>
           {optionsError && <p role="alert" className="mb-4 text-sm text-error">{optionsError}</p>}
-          <Button variant="secondary" size="sm" onClick={() => void loadCampaignOptions()} disabled={optionsLoading}>Refresh available options</Button>
+          {optionsError && <Button variant="secondary" size="sm" onClick={() => void loadCampaignOptions()} disabled={optionsLoading}>Try again</Button>}
           <CampaignWizard
             emailAccounts={options.emailAccounts}
             attachments={options.attachments}
@@ -398,7 +341,7 @@ export default function CampaignsPage() {
                 variant="primary"
                 onClick={() => {
                   setShowWizard(true);
-                  void loadCampaignOptions();
+                  if (Date.now() - optionsLoadedAt.current > 60_000) void loadCampaignOptions();
                 }}
               >
                 Create campaign

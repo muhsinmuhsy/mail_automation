@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
 import { GET as listCampaigns, POST as createCampaign } from '@/app/api/campaigns/route';
+import { GET as getCampaignOptions } from '@/app/api/campaigns/options/route';
 import { GET as getCampaign } from '@/app/api/campaigns/[id]/route';
 import { POST as pauseCampaign } from '@/app/api/campaigns/[id]/pause/route';
 import { POST as cancelCampaign } from '@/app/api/campaigns/[id]/cancel/route';
@@ -46,15 +47,19 @@ const mockPrisma = {
     upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
   },
   emailAccount: {
+    findMany: vi.fn(),
     findFirst: vi.fn(),
   },
   attachment: {
+    findMany: vi.fn(),
     findFirst: vi.fn(),
   },
   template: {
+    findMany: vi.fn(),
     findFirst: vi.fn(),
   },
   contact: {
+    findMany: vi.fn(),
     count: vi.fn(),
   },
   $disconnect: vi.fn(),
@@ -167,10 +172,33 @@ beforeEach(() => {
   });
   mockPrisma.campaign.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.emailJob.updateMany.mockResolvedValue({ count: 3 });
-  mockPrisma.emailAccount.findFirst.mockResolvedValue({ id: EMAIL_ACCOUNT_ID, user_id: 'user-1' });
+  mockPrisma.emailAccount.findFirst.mockResolvedValue({ id: EMAIL_ACCOUNT_ID, user_id: 'user-1', provider: 'gmail' });
   mockPrisma.attachment.findFirst.mockResolvedValue({ id: ATTACHMENT_ID, user_id: 'user-1' });
   mockPrisma.template.findFirst.mockResolvedValue({ id: TEMPLATE_ID, user_id: 'user-1' });
   mockPrisma.contact.count.mockResolvedValue(1);
+});
+
+describe('GET /api/campaigns/options', () => {
+  it('returns only owned, enabled sender choices and no sensitive account fields', async () => {
+    mockPrisma.emailAccount.findMany.mockResolvedValue([{ id: EMAIL_ACCOUNT_ID, email: 'me@gmail.com', provider: 'gmail' }, { id: 'future', email: 'me@outlook.com', provider: 'microsoft' }]);
+    mockPrisma.attachment.findMany.mockResolvedValue([{ id: ATTACHMENT_ID, filename: 'notes.txt', size_bytes: 12 }]);
+    mockPrisma.template.findMany.mockResolvedValue([]);
+    mockPrisma.contact.findMany.mockResolvedValue([]);
+    const response = await getCampaignOptions(new NextRequest('http://localhost/api/campaigns/options'));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+    const body = await response.json() as { data: { emailAccounts: unknown[]; attachments: { size_bytes: number }[] } };
+    expect(body.data.emailAccounts).toEqual([{ id: EMAIL_ACCOUNT_ID, label: 'me@gmail.com', provider: 'gmail' }]);
+    expect(body.data.attachments[0].size_bytes).toBe(12);
+    for (const model of [mockPrisma.emailAccount, mockPrisma.attachment, mockPrisma.template, mockPrisma.contact]) {
+      expect(model.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ user_id: 'user-1' }) }));
+    }
+  });
+  it('requires authentication', async () => {
+    unauthenticated();
+    expect((await getCampaignOptions(new NextRequest('http://localhost/api/campaigns/options'))).status).toBe(401);
+    expect(mockPrisma.emailAccount.findMany).not.toHaveBeenCalled();
+  });
 });
 
 describe('GET /api/campaigns', () => {

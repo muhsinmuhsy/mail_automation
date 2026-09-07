@@ -80,7 +80,7 @@ const _POST = defineRoute(async (req, ctx) => {
     return respondError(new ForbiddenError('Template not found or does not belong to you.'), ctx.requestId);
   }
 
-  const attachmentError = attachmentSelectionError(attachments.filter(a => a !== null));
+  const attachmentError = attachmentSelectionError(attachments.filter(a => a !== null), emailAccount.provider);
   if (attachmentError) return respondError(new ValidationError(attachmentError), ctx.requestId);
 
   const contactCount = await getPrisma().contact.count({

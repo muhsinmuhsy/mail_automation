@@ -7,16 +7,8 @@ import { createAttachmentSchema } from '@/lib/validation/attachment';
 import { createStorageService } from '@/lib/storage/storage.factory';
 import { ValidationError } from '@/lib/errors';
 
-const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
-
-function isPdf(file: File, bytes: Uint8Array): boolean {
-  return (
-    file.name.toLowerCase().endsWith('.pdf') &&
-    file.type === 'application/pdf' &&
-    bytes.length >= 5 &&
-    new TextDecoder().decode(bytes.slice(0, 5)) === '%PDF-'
-  );
-}
+import { MAX_FILE_BYTES } from '@/lib/email/attachment-limits';
+import { attachmentContentType, fileExtension, validAttachmentFormat } from '@/lib/attachments/file-types';
 
 const _GET = defineRoute(async (req, ctx) => {
   const { page, limit, search } = parseListQuery(req, { search: true });
@@ -48,23 +40,23 @@ const _POST = defineRoute(async (req, ctx) => {
     return respondError(new ValidationError('Please select a file.'), ctx.requestId);
   }
   const file = candidate;
-  if (file.size === 0 || file.size > MAX_ATTACHMENT_BYTES) {
-    return respondError(new ValidationError('Attachment must be a PDF no larger than 5 MB.'), ctx.requestId);
+  if (file.size === 0 || file.size > MAX_FILE_BYTES) {
+    return respondError(new ValidationError('Attachment must be non-empty and no larger than 5 MB.'), ctx.requestId);
   }
   const bytes = new Uint8Array(await file.arrayBuffer());
-  if (!isPdf(file, bytes)) {
-    return respondError(new ValidationError('Attachment must be a valid PDF file.'), ctx.requestId);
+  if (!validAttachmentFormat(file.name, bytes)) {
+    return respondError(new ValidationError('Unsupported file type or invalid file contents.'), ctx.requestId);
   }
-  const parsed = createAttachmentSchema.safeParse({ filename: file.name, mimeType: file.type, sizeBytes: file.size });
+  const parsed = createAttachmentSchema.safeParse({ filename: file.name, mimeType: attachmentContentType(file.name), sizeBytes: file.size });
   if (!parsed.success) {
     return respondError(new ValidationError('Attachment metadata is invalid.'), ctx.requestId);
   }
-  const storageKey = `attachments/${ctx.user.id}/${crypto.randomUUID()}.pdf`;
+  const storageKey = `attachments/${ctx.user.id}/${crypto.randomUUID()}.${fileExtension(file.name)}`;
   const storage = createStorageService(process.env);
   await storage.upload({
     key: storageKey,
     body: bytes,
-    contentType: 'application/pdf',
+    contentType: attachmentContentType(file.name),
     contentLength: bytes.byteLength,
     metadata: { userId: ctx.user.id, originalFilename: file.name },
   });

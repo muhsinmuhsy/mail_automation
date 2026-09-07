@@ -1,5 +1,6 @@
 'use client';
 
+import { ATTACHMENT_TYPE_DESCRIPTION } from '@/lib/attachments/file-types';
 import { AttachmentCard } from '@/components/attachments/AttachmentCard';
 import { AttachmentUpload } from '@/components/attachments/AttachmentUpload';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -44,7 +45,7 @@ export default function AttachmentsPage() {
 
       <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
         <h2 className="text-lg font-semibold text-text-primary">Upload attachment</h2>
-        <p className="text-sm text-text-secondary">PDF files only, max 5MB.</p>
+        <p className="text-sm text-text-secondary">{ATTACHMENT_TYPE_DESCRIPTION}. Up to 5 MB per file (app upload limit).</p>
         <div className="mt-4">
           <AttachmentUpload onUpload={async (file) => {
             setError(null);

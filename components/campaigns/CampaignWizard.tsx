@@ -1,5 +1,6 @@
 'use client';
 
+import { getAttachmentPolicy } from '@/lib/email/providers/attachment-policies';
 import Link from 'next/link';
 import { attachmentSelectionError, MAX_FILE_BYTES } from '@/lib/email/attachment-limits';
 import { useMemo, useState } from 'react';
@@ -16,6 +17,7 @@ export interface CampaignSelectOption {
   label: string;
   description?: string;
   size_bytes?: number | null;
+  provider?: string;
 }
 
 export interface CampaignSubmitData {
@@ -81,7 +83,9 @@ export function CampaignWizard({
 
   const effectiveEmailAccountId = emailAccountId || emailAccounts[0]?.id || '';
   const selectedAttachments = attachments.filter(item => attachmentIds.includes(item.id));
-  const attachmentError = attachmentSelectionError(selectedAttachments);
+  const provider = emailAccounts.find(account => account.id === effectiveEmailAccountId)?.provider ?? '';
+  const attachmentPolicy = getAttachmentPolicy(provider);
+  const attachmentError = effectiveEmailAccountId ? attachmentSelectionError(selectedAttachments, provider) : null;
   const attachmentBytes = selectedAttachments.reduce((sum, item) => sum + (item.size_bytes ?? MAX_FILE_BYTES), 0);
   const effectiveTemplateId = templateId || templates[0]?.id || '';
 
@@ -191,9 +195,7 @@ export function CampaignWizard({
 
       <p className="text-sm text-text-secondary">Step {step + 1} of {steps.length} ? {['Name your campaign so you can find it later.', 'Choose the sender, message template, and optional files.', 'Choose who will receive this campaign.', 'Set when emails start and how often they are sent.', 'Check your selections before scheduling.'][step]}</p>
       <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
-        {loading ? (
-          <p className="text-body text-text-secondary">Loading campaign options...</p>
-        ) : step === 0 ? (
+        {step === 0 ? (
           <Input
             label="Campaign name"
             value={name}
@@ -201,6 +203,8 @@ export function CampaignWizard({
             error={errors.name}
             required
           />
+        ) : loading && emailAccounts.length === 0 ? (
+          <div role="status" aria-label="Preparing campaign choices" className="space-y-4 animate-pulse"><div className="h-10 rounded bg-surface" /><div className="h-24 rounded bg-surface" /></div>
         ) : step === 1 ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Select
@@ -221,9 +225,9 @@ export function CampaignWizard({
             />
             <fieldset className="md:col-span-3 flex flex-col gap-3 border-t border-neutral-200 pt-5">
               <legend className="font-medium text-text-primary">Attachments (optional)</legend>
-              <p id="attachment-help" className="text-sm text-text-secondary">Send without attachments, or choose up to 10 PDFs. Maximum 5 MB per file and 20 MB total.</p>
+              <p id="attachment-help" className="text-sm text-text-secondary">Send without attachments, or choose files for {attachmentPolicy?.name ?? 'your sender'}. Up to {attachmentPolicy?.maxCount ?? 0} files, {(attachmentPolicy?.maxFileBytes ?? 0) / 1024 / 1024} MB each and {(attachmentPolicy?.maxTotalBytes ?? 0) / 1024 / 1024} MB total (app sending limits).</p>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span role="status">{attachmentIds.length} files selected ? {(attachmentBytes / 1024 / 1024).toFixed(1)} / 20 MB</span>
+                <span role="status">{attachmentIds.length} files selected ? {(attachmentBytes / 1024 / 1024).toFixed(1)} / {(attachmentPolicy?.maxTotalBytes ?? 0) / 1024 / 1024} MB</span>
                 {attachmentIds.length > 0 && <Button variant="secondary" size="sm" onClick={() => setAttachmentIds([])}>Clear attachments</Button>}
               </div>
               <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
@@ -234,7 +238,7 @@ export function CampaignWizard({
               </div>
               {attachments.length === 0 && <p className="text-sm text-text-secondary">No files uploaded. You can continue without attachments.</p>}
               {attachmentError && <p role="alert" className="text-sm text-error">{attachmentError}</p>}
-              <Link href="/attachments" target="_blank" className="text-sm text-information hover:underline">Upload PDFs in Attachments (opens a new tab)</Link>
+              <Link href="/attachments" target="_blank" className="text-sm text-information hover:underline">Upload files in Attachments (opens a new tab)</Link>
             </fieldset>
           </div>
         ) : step === 2 ? (
@@ -360,7 +364,7 @@ export function CampaignWizard({
             {submitting ? 'Scheduling?' : 'Start campaign'}
           </Button>
         ) : (
-          <Button onClick={goNext} disabled={loading}>
+          <Button onClick={goNext} disabled={loading && step > 0 && emailAccounts.length === 0}>
             Continue
           </Button>
         )}

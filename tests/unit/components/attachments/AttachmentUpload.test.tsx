@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ATTACHMENT_ACCEPT } from '@/lib/attachments/file-types';
 import { AttachmentUpload } from '@/components/attachments/AttachmentUpload';
 
 function makeFile(name = 'cv.pdf', size = 1024, type = 'application/pdf'): File {
@@ -45,10 +46,10 @@ describe('AttachmentUpload', () => {
     expect(screen.getByRole('button', { name: 'Upload' })).toBeDisabled();
   });
 
-  it('renders a file input restricted to PDF files', () => {
+  it('renders a file input for supported documents and images', () => {
     const { container } = render(<AttachmentUpload onUpload={vi.fn()} />);
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
-    expect(input).toHaveAttribute('accept', '.pdf');
+    expect(input).toHaveAttribute('accept', ATTACHMENT_ACCEPT);
   });
 
   it('enables Upload once a file is supplied through the uploader', async () => {
@@ -129,6 +130,6 @@ describe('AttachmentUpload', () => {
   it('renders the FileUpload accept and size hints via attributes', () => {
     const { container } = render(<AttachmentUpload onUpload={vi.fn()} />);
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
-    expect(input).toHaveAttribute('accept', '.pdf');
+    expect(input).toHaveAttribute('accept', ATTACHMENT_ACCEPT);
   });
 });

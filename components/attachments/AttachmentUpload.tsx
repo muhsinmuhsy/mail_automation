@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { ATTACHMENT_ACCEPT } from '@/lib/attachments/file-types';
 import { FileUpload } from '@/components/ui/FileUpload';
 
 export function AttachmentUpload({ onUpload }: { onUpload: (file: File) => Promise<void> }) {
@@ -29,7 +30,7 @@ export function AttachmentUpload({ onUpload }: { onUpload: (file: File) => Promi
       }}
       className="flex flex-col gap-4"
     >
-      <FileUpload key={inputKey} onFileChange={setFile} accept=".pdf" maxSizeMB={5} />
+      <FileUpload key={inputKey} onFileChange={setFile} accept={ATTACHMENT_ACCEPT} maxSizeMB={5} />
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
       <Button type="submit" disabled={!file || pending}>
         {pending ? 'Uploading…' : 'Upload'}

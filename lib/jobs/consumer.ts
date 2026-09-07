@@ -1,4 +1,5 @@
-import { MAX_CAMPAIGN_ATTACHMENTS, MAX_CAMPAIGN_ATTACHMENT_BYTES } from '@/lib/email/attachment-limits';
+import { getAttachmentPolicy } from '@/lib/email/providers/attachment-policies';
+import { attachmentContentType } from '@/lib/attachments/file-types';
 import { PrismaClient } from '../generated/prisma/client';
 import {
   reserveEmailCapacity,
@@ -13,24 +14,6 @@ import { gmailAccessToken } from '../email/accounts/credential-service';
 import { ReconnectRequiredError } from '../email/providers/gmail/oauth';
 
 const MAX_ATTEMPTS = 3;
-
-function contentTypeForFilename(filename: string): string {
-  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
-  switch (ext) {
-    case 'pdf':
-      return 'application/pdf';
-    case 'docx':
-      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    case 'doc':
-      return 'application/msword';
-    case 'txt':
-      return 'text/plain';
-    case 'rtf':
-      return 'application/rtf';
-    default:
-      return 'application/octet-stream';
-  }
-}
 
 function encryptionKey(env: Record<string, unknown>): string {
   const key = (env.SMTP_ENCRYPTION_KEY as string) ?? process.env.SMTP_ENCRYPTION_KEY;
@@ -133,10 +116,12 @@ export async function processQueueJob(
       return;
     }
 
+    const policy = getAttachmentPolicy(emailAccount.provider);
+    if (!policy) throw new Error('Attachment policy is not configured for this provider.');
     const attachmentIds = job.attachment_ids?.length ? job.attachment_ids : (job.attachment_id ? [job.attachment_id] : []);
     const attachmentEmails = [];
     let totalBytes = 0;
-    if (attachmentIds.length > MAX_CAMPAIGN_ATTACHMENTS) throw new Error('Too many attachments.');
+    if (attachmentIds.length > policy.maxCount) throw new Error('Too many attachments.');
     for (const id of attachmentIds) {
       const attachment = await prisma.attachment.findUnique({
         where: { id, user_id: job.user_id, deleted_at: null },
@@ -145,8 +130,9 @@ export async function processQueueJob(
       const stream = await createStorageService(env).download(attachment.storage_key);
       const content = new Uint8Array(await new Response(stream).arrayBuffer());
       totalBytes += content.byteLength;
-      if (totalBytes > MAX_CAMPAIGN_ATTACHMENT_BYTES) throw new Error('Attachments exceed the 20 MB limit.');
-      attachmentEmails.push({ filename: attachment.filename, content, contentType: contentTypeForFilename(attachment.filename) });
+      if (totalBytes > policy.maxTotalBytes) throw new Error('Attachments exceed the provider total size limit.');
+      if (content.byteLength > policy.maxFileBytes) throw new Error('Attachment exceeds the provider file size limit.');
+      attachmentEmails.push({ filename: attachment.filename, content, contentType: attachmentContentType(attachment.filename) });
     }
 
     let accepted = false;

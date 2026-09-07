@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { CampaignForm } from '@/components/campaigns/CampaignForm';
 
 const options = {
-  emailAccounts: [{ id: 'account-1', label: 'sender@example.com (gmail)' }],
+  emailAccounts: [{ id: 'account-1', provider: 'gmail', label: 'sender@example.com (gmail)' }],
   attachments: [{ id: 'attachment-1', label: 'Attachment.pdf' }],
   templates: [{ id: 'template-1', label: 'Follow-up' }],
   contacts: [{ id: 'contact-1', label: 'Ada Lovelace', description: 'ada@example.com' }],
@@ -46,7 +46,7 @@ describe('CampaignForm', () => {
   it('forwards the loading state', () => {
     render(<CampaignForm loading onSubmit={vi.fn()} />);
 
-    expect(screen.getByText('Loading campaign options...')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.getByLabelText('Campaign name')).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
   });
 });
