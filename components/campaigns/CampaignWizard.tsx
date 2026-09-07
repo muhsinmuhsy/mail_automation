@@ -122,16 +122,18 @@ export function CampaignWizard({
       if (!timezone.trim()) {
         nextErrors.timezone = 'Timezone is required.';
       }
-      if (!Number.isInteger(parsedInterval) || parsedInterval <= 0) {
+      if (contactIds.length > 1 && (!Number.isInteger(parsedInterval) || parsedInterval <= 0)) {
         nextErrors.intervalMinutes = 'Enter at least 1 minute, using a whole number.';
       }
-      if (parsedLimit !== null && (!Number.isInteger(parsedLimit) || parsedLimit <= 0)) {
+      if (contactIds.length > 1 && parsedLimit !== null && (!Number.isInteger(parsedLimit) || parsedLimit <= 0)) {
         nextErrors.dailyLimit = 'Enter at least 1 email, or leave this blank for no campaign cap.';
       }
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
+
+  const singleRecipient = contactIds.length === 1;
 
   const canSubmit =
     name.trim() &&
@@ -141,7 +143,7 @@ export function CampaignWizard({
     contactIds.length > 0 &&
     startAt &&
     timezone.trim() &&
-    Number(intervalMinutes) > 0;
+    (singleRecipient || Number(intervalMinutes) > 0);
 
   const goNext = () => {
     if (!validateStep()) return;
@@ -167,8 +169,8 @@ export function CampaignWizard({
       contactIds,
       startAt: zonedDateTimeToIso(startAt, timezone.trim()),
       timezone: timezone.trim(),
-      intervalMinutes: Number(intervalMinutes),
-      dailyLimit: dailyLimit.trim() ? Number(dailyLimit) : null,
+      intervalMinutes: singleRecipient ? 5 : Number(intervalMinutes),
+      dailyLimit: singleRecipient ? null : (dailyLimit.trim() ? Number(dailyLimit) : null),
     }); } finally { setSubmitting(false); }
   };
 
@@ -281,7 +283,7 @@ export function CampaignWizard({
         ) : step === 3 ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <DateTimePicker
-              label="Start time"
+              label={singleRecipient ? "When to send" : "Start time"}
               value={startAt}
               onChange={(event) => setStartAt(event.target.value)}
               error={errors.startAt}
@@ -294,7 +296,7 @@ export function CampaignWizard({
               error={errors.timezone}
               required
             />
-            <div className="space-y-2"><Input
+            {!singleRecipient && <><div className="space-y-2"><Input
               label="Time between emails (minutes)"
               aria-describedby="interval-help"
               type="number"
@@ -317,7 +319,7 @@ export function CampaignWizard({
               error={errors.dailyLimit}
             />
             <p id="daily-help" className="text-sm text-text-secondary">Send up to this many emails in each daily batch. Leave blank to keep sending without a campaign cap.</p>
-            <Button variant="secondary" size="sm" onClick={() => setDailyLimit('')} disabled={!dailyLimit}>Use no daily cap</Button></div>
+            <Button variant="secondary" size="sm" onClick={() => setDailyLimit('')} disabled={!dailyLimit}>Use no daily cap</Button></div></>}
             <div className="md:col-span-2"><SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={contactIds.length} /></div>
           </div>
         ) : (
@@ -350,13 +352,13 @@ export function CampaignWizard({
               <div>
                 <dt className="text-caption text-text-secondary">Schedule</dt>
                 <dd className="font-medium text-text-primary">
-                  Starts {formatScheduledTime(zonedDateTimeToIso(startAt, timezone.trim()), timezone.trim())} every {intervalMinutes} minutes
+                  Starts {formatScheduledTime(zonedDateTimeToIso(startAt, timezone.trim()), timezone.trim())}{!singleRecipient && <> every {intervalMinutes} minutes</>}
                 </dd>
               </div>
-              <div>
+              {!singleRecipient && <div>
                 <dt className="text-caption text-text-secondary">Emails per day</dt>
                 <dd className="font-medium text-text-primary">{dailyLimit.trim() || 'No campaign limit'}</dd>
-              </div>
+              </div>}
             </dl>
             <SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={contactIds.length} />
           </div>

@@ -30,7 +30,7 @@ const _GET = defineRoute(async (req, ctx) => {
   const [campaigns, total] = await Promise.all([
     getPrisma().campaign.findMany({
       where,
-      select: { id: true, name: true, status: true, created_at: true, start_at: true, timezone: true, interval_minutes: true, daily_limit: true },
+      select: { _count: { select: { email_jobs: true } }, id: true, name: true, status: true, created_at: true, start_at: true, timezone: true, interval_minutes: true, daily_limit: true },
       orderBy: { created_at: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
@@ -108,7 +108,7 @@ const _POST = defineRoute(async (req, ctx) => {
       daily_limit: parsed.data.daily_limit ?? undefined,
       status: 'ACTIVE',
     },
-    select: { id: true, name: true, status: true, created_at: true, start_at: true, timezone: true, interval_minutes: true, daily_limit: true },
+    select: { _count: { select: { email_jobs: true } }, id: true, name: true, status: true, created_at: true, start_at: true, timezone: true, interval_minutes: true, daily_limit: true },
   });
 
   await generateCampaignJobs(

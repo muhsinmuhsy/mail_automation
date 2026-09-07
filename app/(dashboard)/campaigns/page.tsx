@@ -51,6 +51,7 @@ interface ApiResponse<T> {
 }
 
 interface CampaignRow {
+  _count?: { email_jobs: number };
   id: string;
   name: string;
   status: string;
@@ -363,7 +364,7 @@ export default function CampaignsPage() {
                     <p className="truncate font-medium text-text-primary">{campaign.name}</p>
                     <p className="text-caption text-text-secondary">
                       Starts {formatScheduledTime(campaign.start_at, campaign.timezone)}
-                      <br />One email every {campaign.interval_minutes} minutes. Emails per day: {campaign.daily_limit ?? 'No campaign limit'}
+                      <br />{campaign._count?.email_jobs === 1 ? '1 scheduled email' : <>One email every {campaign.interval_minutes} minutes. Emails per day: {campaign.daily_limit ?? 'No campaign limit'}</>}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

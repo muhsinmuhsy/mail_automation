@@ -4,6 +4,11 @@ import { SchedulePreview } from '@/components/campaigns/SchedulePreview';
 
 const props = { startAt: '2030-01-01T09:00', timezone: 'UTC', intervalMinutes: '5', dailyLimit: '20', count: 50 };
 describe('sending preview', () => {
+  it('shows a single scheduled email without pace or cap even if hidden inputs are invalid', () => {
+    render(<SchedulePreview {...props} count={1} intervalMinutes="0" dailyLimit="-1" />);
+    expect(screen.getByText(/1 email will be scheduled for/)).toBeInTheDocument();
+    expect(screen.queryByText(/daily cap|daily batch|every/)).not.toBeInTheDocument();
+  });
   it('explains spacing and batches and shows the next batch and final email', () => {
     render(<SchedulePreview {...props} />);
     expect(screen.getByText(/Send 1 email every 5 minutes/)).toHaveTextContent('up to 20');

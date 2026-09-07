@@ -47,6 +47,33 @@ async function completeWizard(onSubmit = vi.fn()) {
 }
 
 describe('CampaignWizard', () => {
+  it('hides pace for one recipient, preserves it for multiple, and ignores hidden invalid values on submit', async () => {
+    const onSubmit = vi.fn();
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={onSubmit} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Single email');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByLabelText('When to send')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Time between emails (minutes)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Emails per day (optional)')).not.toBeInTheDocument();
+    expect(screen.getByText(/1 email will be scheduled for/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.clear(screen.getByLabelText('Time between emails (minutes)'));
+    await user.type(screen.getByLabelText('Time between emails (minutes)'), '0');
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.queryByText('Emails per day')).not.toBeInTheDocument();
+    expect(screen.queryByText(/every 0 minutes/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Start campaign' }));
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ contactIds: ['contact-1'], intervalMinutes: 5, dailyLimit: null }));
+  });
   it('explains the schedule and lets users remove the daily cap explicitly', async () => {
     const { user } = await completeWizard();
     await user.click(screen.getByRole('button', { name: 'Back' }));
