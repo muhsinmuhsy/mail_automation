@@ -15,7 +15,7 @@ export default function GoogleSignInButton() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ provider: 'google' }),
+        body: JSON.stringify({ provider: 'google', callbackURL: '/dashboard' }),
       });
 
       if (!response.ok) {
