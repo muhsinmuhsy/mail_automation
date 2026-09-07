@@ -1,14 +1,14 @@
 'use client';
-import Link from 'next/link';
-import { useActionState } from 'react';
-import { signInWithEmail } from './actions';
+// import Link from 'next/link';
+// import { useActionState } from 'react';
+// import { signInWithEmail } from './actions';
 import GoogleSignInButton from '@/components/ui/GoogleSignInButton';
-import { Button } from '@/components/ui/Button';
-import { FormMessage } from '@/components/ui/FormMessage';
-import { Input } from '@/components/ui/Input';
+// import { Button } from '@/components/ui/Button';
+// import { FormMessage } from '@/components/ui/FormMessage';
+// import { Input } from '@/components/ui/Input';
 
 export default function LoginPage() {
-  const [state, action, isPending] = useActionState(signInWithEmail, null);
+  // const [state, action, isPending] = useActionState(signInWithEmail, null);
 
   return (
     <div className="flex flex-col gap-6">
@@ -24,7 +24,7 @@ export default function LoginPage() {
 
       <GoogleSignInButton />
 
-      <div className="flex items-center gap-3">
+      {/* <div className="flex items-center gap-3">
         <div className="h-px flex-1 bg-neutral-200" />
         <span className="text-caption text-text-secondary">OR</span>
         <div className="h-px flex-1 bg-neutral-200" />
@@ -59,7 +59,7 @@ export default function LoginPage() {
             Forgot password?
           </Link>
         </p>
-      </div>
+      </div> */}
     </div>
   );
 }

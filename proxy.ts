@@ -20,9 +20,9 @@ function isUnauthenticatedPath(pathname: string): boolean {
   return (
     pathname === '/api/health' ||
     pathname.startsWith('/login') ||
-    pathname.startsWith('/register') ||
-    pathname.startsWith('/forgot-password') ||
-    pathname.startsWith('/verify-email') ||
+    // pathname.startsWith('/register') ||
+    // pathname.startsWith('/forgot-password') ||
+    // pathname.startsWith('/verify-email') ||
     pathname.startsWith('/api/auth')
   );
 }
@@ -62,14 +62,14 @@ export default async function proxy(request: NextRequest) {
   }
 
   const sessionResult = await auth.getSession();
-  if (sessionResult?.data?.user) {
-    if (!sessionResult.data.user.emailVerified) {
-      const verifyUrl = new URL('/verify-email', request.url);
-      if (pathname !== '/verify-email') {
-        return NextResponse.redirect(verifyUrl);
-      }
-    }
-  }
+  // if (sessionResult?.data?.user) {
+  //   if (!sessionResult.data.user.emailVerified) {
+  //     const verifyUrl = new URL('/verify-email', request.url);
+  //     if (pathname !== '/verify-email') {
+  //       return NextResponse.redirect(verifyUrl);
+  //     }
+  //   }
+  // }
 
   const response = await neonAuthMiddleware(request);
 

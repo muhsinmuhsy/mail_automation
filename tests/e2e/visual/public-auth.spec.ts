@@ -2,9 +2,9 @@ import { expect, test } from '@playwright/test';
 
 const authScreens = [
   { path: '/login', name: 'login' },
-  { path: '/register', name: 'register' },
-  { path: '/forgot-password', name: 'forgot-password' },
-  { path: '/verify-email', name: 'verify-email' },
+  // { path: '/register', name: 'register' },
+  // { path: '/forgot-password', name: 'forgot-password' },
+  // { path: '/verify-email', name: 'verify-email' },
 ];
 
 test.describe('public auth visual regression', () => {

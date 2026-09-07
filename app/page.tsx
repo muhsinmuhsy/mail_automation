@@ -17,12 +17,12 @@ export default function Home() {
           >
             Sign in
           </Link>
-          <Link
+          {/* <Link
             href="/register"
             className="inline-flex h-12 items-center justify-center rounded-[var(--radius-md)] border border-neutral-200 bg-background px-6 text-base font-medium text-text-primary hover:bg-selected transition-colors"
           >
             Create account
-          </Link>
+          </Link> */}
         </div>
       </main>
     </div>
