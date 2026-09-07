@@ -145,4 +145,108 @@ describe('ContactsPage', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('Save failed')
     );
   });
+
+  it('renders a delete button for each contact', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: [
+          mockContact('c1', 'Alice', 'alice@example.com'),
+          mockContact('c2', 'Bob', 'bob@example.com'),
+        ],
+      }),
+    } as Response);
+
+    render(<ContactsPage />);
+
+    await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Delete Alice' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete Bob' })).toBeInTheDocument();
+  });
+
+  it('deletes a contact when confirmed and removes it from the list', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: [
+          mockContact('c1', 'Alice', 'alice@example.com'),
+          mockContact('c2', 'Bob', 'bob@example.com'),
+        ],
+      }),
+    } as Response);
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, data: null }),
+    } as Response);
+
+    render(<ContactsPage />);
+
+    await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
+    expect(screen.getByText('Bob')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Delete Alice' }));
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/contacts/c1', expect.objectContaining({ method: 'DELETE' }))
+    );
+
+    await waitFor(() => expect(screen.queryByText('Alice')).not.toBeInTheDocument());
+    expect(screen.getByText('Bob')).toBeInTheDocument();
+  });
+
+  it('shows an error when deleting a contact fails', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: [mockContact('c1', 'Alice', 'alice@example.com')],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: 'Delete failed' }),
+      } as Response);
+
+    render(<ContactsPage />);
+
+    await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Delete Alice' }));
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('Delete failed')
+    );
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+  });
+
+  it('does not call the API when the delete dialog is cancelled', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: [mockContact('c1', 'Alice', 'alice@example.com')],
+      }),
+    } as Response);
+
+    render(<ContactsPage />);
+
+    await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Delete Alice' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+  });
 });

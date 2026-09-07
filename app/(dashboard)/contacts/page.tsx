@@ -57,6 +57,23 @@ export default function ContactsPage() {
     }
   };
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    setError(null);
+    try {
+      const response = await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
+      const payload = (await response.json()) as ApiResponse<null>;
+      if (!response.ok) { setError(payload.message || 'Unable to delete contact.'); return; }
+      setContacts((previous) => previous.filter((contact) => contact.id !== id));
+    } catch {
+      setError('Unable to delete contact.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
@@ -110,7 +127,12 @@ export default function ContactsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {contacts.map((contact) => (
-            <ContactCard key={contact.id} contact={contact} />
+            <ContactCard
+              key={contact.id}
+              contact={contact}
+              onDelete={handleDelete}
+              deleting={deletingId === contact.id}
+            />
           ))}
         </div>
       )}
