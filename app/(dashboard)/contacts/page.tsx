@@ -6,13 +6,25 @@ import { ContactImport } from '@/components/contacts/ContactImport';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useEffect, useState } from 'react';
+import { Pagination } from '@/components/ui/Pagination';
+import { useCallback, useEffect, useState } from 'react';
 
-type ApiResponse<T> = { data: T; message?: string };
+const PAGE_SIZE = 20;
+
+interface PaginationMeta {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+type ApiResponse<T> = { data: T; message?: string; pagination?: PaginationMeta };
 type Contact = { id: string; name: string; email: string; company?: string };
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta | null>(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddContact, setShowAddContact] = useState(false);
@@ -20,27 +32,26 @@ export default function ContactsPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const load = useCallback(async () => {
+    const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+    try {
+      const response = await fetch(`/api/contacts?${params.toString()}`);
+      const payload = (await response.json()) as ApiResponse<Contact[]>;
+      if (!response.ok) throw new Error(payload.message || 'Unable to load contacts.');
+      setContacts(payload.data);
+      setMeta(payload.pagination ?? null);
+      setError(null);
+    } catch (cause) {
+      setError((cause as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [page]);
+
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const response = await fetch('/api/contacts');
-        const payload = (await response.json()) as ApiResponse<Contact[]>;
-        if (!active) return;
-        if (!response.ok) throw new Error(payload.message || 'Unable to load contacts.');
-        setContacts(payload.data);
-        setError(null);
-      } catch (cause) {
-        if (!active) return;
-        setError((cause as Error).message);
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
+  }, [load]);
 
   const handleSubmit = async (data: { name: string; email: string; company?: string }) => {
     setSaving(true);
@@ -49,8 +60,9 @@ export default function ContactsPage() {
       const response = await fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
       const payload = (await response.json()) as ApiResponse<{ id: string; name: string; email: string; company?: string }>;
       if (!response.ok) { const message = payload.message || 'Unable to save contact.'; setFormError(message); return; }
-      setContacts((previous) => [...previous, payload.data]);
       setShowAddContact(false);
+      setPage(1);
+      await load();
     } catch {
       setFormError('Unable to save contact.');
     } finally {
@@ -69,8 +81,8 @@ export default function ContactsPage() {
       const response = await fetch(`/api/contacts/${deleteTarget.id}`, { method: 'DELETE' });
       const payload = (await response.json()) as ApiResponse<null>;
       if (!response.ok) { setError(payload.message || 'Unable to delete contact.'); return; }
-      setContacts((previous) => previous.filter((contact) => contact.id !== deleteTarget.id));
       setDeleteTarget(null);
+      await load();
     } catch {
       setError('Unable to delete contact.');
     } finally {
@@ -129,15 +141,28 @@ export default function ContactsPage() {
           description="Add your first contact or import from CSV."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {contacts.map((contact) => (
-            <ContactCard
-              key={contact.id}
-              contact={contact}
-              onDelete={(id) => setDeleteTarget(contacts.find((c) => c.id === id) ?? null)}
-              deleting={deleting && deleteTarget?.id === contact.id}
-            />
-          ))}
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {contacts.map((contact) => (
+              <ContactCard
+                key={contact.id}
+                contact={contact}
+                onDelete={(id) => setDeleteTarget(contacts.find((c) => c.id === id) ?? null)}
+                deleting={deleting && deleteTarget?.id === contact.id}
+              />
+            ))}
+          </div>
+
+          {meta && (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-supporting text-text-secondary">
+                {meta.total} {meta.total === 1 ? 'contact' : 'contacts'}
+              </p>
+              {meta.totalPages > 1 && (
+                <Pagination page={meta.page} totalPages={meta.totalPages} onPageChange={setPage} />
+              )}
+            </div>
+          )}
         </div>
       )}
 

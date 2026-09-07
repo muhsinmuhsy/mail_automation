@@ -10,13 +10,29 @@ const mockContact = (id: string, name: string, email: string, company?: string) 
   company,
 });
 
+const mockPagination = (total: number, page: number, pageSize = 20) => ({
+  total,
+  page,
+  pageSize,
+  totalPages: Math.max(1, Math.ceil(total / pageSize)),
+});
+
+const mockListResponse = (contacts: ReturnType<typeof mockContact>[], total?: number) => ({
+  ok: true,
+  json: async () => ({
+    success: true,
+    data: contacts,
+    pagination: mockPagination(total ?? contacts.length, 1),
+  }),
+}) as Response;
+
 describe('ContactsPage', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('shows loading state while fetching', () => {
-    let resolveFetch: (value: Response) => void;
+  it('shows loading state while fetching', async () => {
+    let resolveFetch!: (value: Response) => void;
     vi.spyOn(globalThis, 'fetch').mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -26,36 +42,33 @@ describe('ContactsPage', () => {
 
     render(<ContactsPage />);
 
+    await waitFor(() => expect(resolveFetch).toBeDefined());
+
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.queryByText('No contacts yet')).not.toBeInTheDocument();
 
-    resolveFetch!({
+    resolveFetch({
       ok: true,
-      json: async () => ({ success: true, data: [] }),
+      json: async () => ({ success: true, data: [], pagination: mockPagination(0, 1) }),
     } as Response);
   });
 
-  it('loads contacts on mount', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        success: true,
-        data: [mockContact('c1', 'Alice', 'alice@example.com', 'Acme')],
-      }),
-    } as Response);
+  it('loads contacts on mount with pagination params', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockListResponse([mockContact('c1', 'Alice', 'alice@example.com', 'Acme')])
+    );
 
     render(<ContactsPage />);
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/contacts'));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/contacts?page=1&limit=20')
+    );
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('alice@example.com')).toBeInTheDocument();
   });
 
   it('shows empty state when there are no contacts', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true, data: [] }),
-    } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockListResponse([]));
 
     render(<ContactsPage />);
 
@@ -75,17 +88,13 @@ describe('ContactsPage', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Network error'));
   });
 
-  it('submits the contact form and adds the new contact to the list', async () => {
+  it('submits the contact form and reloads the list', async () => {
     const user = userEvent.setup();
     const fetchMock = vi.spyOn(globalThis, 'fetch');
 
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        success: true,
-        data: [mockContact('c1', 'Existing', 'existing@example.com')],
-      }),
-    } as Response);
+    fetchMock.mockResolvedValueOnce(
+      mockListResponse([mockContact('c1', 'Existing', 'existing@example.com')])
+    );
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -94,6 +103,14 @@ describe('ContactsPage', () => {
         data: mockContact('c2', 'New Contact', 'new@example.com', 'NewCo'),
       }),
     } as Response);
+
+    fetchMock.mockResolvedValueOnce(
+      mockListResponse(
+        [mockContact('c2', 'New Contact', 'new@example.com', 'NewCo'),
+         mockContact('c1', 'Existing', 'existing@example.com')],
+        2
+      )
+    );
 
     render(<ContactsPage />);
 
@@ -116,17 +133,14 @@ describe('ContactsPage', () => {
       )
     );
 
-    expect(screen.getByText('New Contact')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('New Contact')).toBeInTheDocument());
     expect(screen.getByText('new@example.com')).toBeInTheDocument();
   });
 
   it('shows an error when saving a contact fails', async () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, data: [] }),
-      } as Response)
+      .mockResolvedValueOnce(mockListResponse([]))
       .mockResolvedValueOnce({
         ok: false,
         json: async () => ({ message: 'Save failed' }),
@@ -147,16 +161,12 @@ describe('ContactsPage', () => {
   });
 
   it('renders a delete button for each contact', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        success: true,
-        data: [
-          mockContact('c1', 'Alice', 'alice@example.com'),
-          mockContact('c2', 'Bob', 'bob@example.com'),
-        ],
-      }),
-    } as Response);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockListResponse([
+        mockContact('c1', 'Alice', 'alice@example.com'),
+        mockContact('c2', 'Bob', 'bob@example.com'),
+      ])
+    );
 
     render(<ContactsPage />);
 
@@ -169,21 +179,21 @@ describe('ContactsPage', () => {
     const user = userEvent.setup();
     const fetchMock = vi.spyOn(globalThis, 'fetch');
 
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        success: true,
-        data: [
-          mockContact('c1', 'Alice', 'alice@example.com'),
-          mockContact('c2', 'Bob', 'bob@example.com'),
-        ],
-      }),
-    } as Response);
+    fetchMock.mockResolvedValueOnce(
+      mockListResponse([
+        mockContact('c1', 'Alice', 'alice@example.com'),
+        mockContact('c2', 'Bob', 'bob@example.com'),
+      ], 2)
+    );
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: null }),
     } as Response);
+
+    fetchMock.mockResolvedValueOnce(
+      mockListResponse([mockContact('c2', 'Bob', 'bob@example.com')], 1)
+    );
 
     render(<ContactsPage />);
 
@@ -210,13 +220,9 @@ describe('ContactsPage', () => {
   it('shows an error when deleting a contact fails', async () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          success: true,
-          data: [mockContact('c1', 'Alice', 'alice@example.com')],
-        }),
-      } as Response)
+      .mockResolvedValueOnce(
+        mockListResponse([mockContact('c1', 'Alice', 'alice@example.com')], 1)
+      )
       .mockResolvedValueOnce({
         ok: false,
         json: async () => ({ message: 'Delete failed' }),
@@ -239,13 +245,9 @@ describe('ContactsPage', () => {
 
   it('does not call the API when the delete dialog is cancelled', async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        success: true,
-        data: [mockContact('c1', 'Alice', 'alice@example.com')],
-      }),
-    } as Response);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockListResponse([mockContact('c1', 'Alice', 'alice@example.com')], 1)
+    );
 
     render(<ContactsPage />);
 
@@ -258,5 +260,149 @@ describe('ContactsPage', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Alice')).toBeInTheDocument();
+  });
+
+  describe('pagination', () => {
+    it('shows the total contact count', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        mockListResponse([mockContact('c1', 'Alice', 'alice@example.com')], 25)
+      );
+
+      render(<ContactsPage />);
+
+      await waitFor(() => expect(screen.getByText('25 contacts')).toBeInTheDocument());
+    });
+
+    it('uses the singular "contact" when there is exactly one', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        mockListResponse([mockContact('c1', 'Alice', 'alice@example.com')], 1)
+      );
+
+      render(<ContactsPage />);
+
+      await waitFor(() => expect(screen.getByText('1 contact')).toBeInTheDocument());
+    });
+
+    it('does not render pagination controls when there is only one page', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        mockListResponse([mockContact('c1', 'Alice', 'alice@example.com')], 1)
+      );
+
+      render(<ContactsPage />);
+
+      await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
+      expect(screen.queryByRole('button', { name: 'Previous' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
+    });
+
+    it('renders pagination controls when there are multiple pages', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        mockListResponse([mockContact('c1', 'Alice', 'alice@example.com')], 25)
+      );
+
+      render(<ContactsPage />);
+
+      await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
+      expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
+    });
+
+    it('fetches the next page when Next is clicked', async () => {
+      const user = userEvent.setup();
+      const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+      const page1Contacts = Array.from({ length: 20 }, (_, i) =>
+        mockContact(`p1-${i}`, `Page1 ${i}`, `p1${i}@example.com`)
+      );
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: page1Contacts,
+          pagination: mockPagination(25, 1),
+        }),
+      } as Response);
+
+      const page2Contacts = Array.from({ length: 5 }, (_, i) =>
+        mockContact(`p2-${i}`, `Page2 ${i}`, `p2${i}@example.com`)
+      );
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: page2Contacts,
+          pagination: mockPagination(25, 2),
+        }),
+      } as Response);
+
+      render(<ContactsPage />);
+
+      await waitFor(() => expect(screen.getByText('Page1 0')).toBeInTheDocument());
+
+      await user.click(screen.getByRole('button', { name: 'Next' }));
+
+      await waitFor(() =>
+        expect(fetchMock).toHaveBeenCalledWith('/api/contacts?page=2&limit=20')
+      );
+      await waitFor(() => expect(screen.getByText('Page2 0')).toBeInTheDocument());
+      expect(screen.queryByText('Page1 0')).not.toBeInTheDocument();
+      expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+    });
+
+    it('fetches the previous page when Previous is clicked', async () => {
+      const user = userEvent.setup();
+      const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+      const page1Contacts = Array.from({ length: 20 }, (_, i) =>
+        mockContact(`p1-${i}`, `Page1 ${i}`, `p1${i}@example.com`)
+      );
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: page1Contacts,
+          pagination: mockPagination(25, 1),
+        }),
+      } as Response);
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: [mockContact('p2-0', 'Page2 Contact', 'p2@example.com')],
+          pagination: mockPagination(25, 2),
+        }),
+      } as Response);
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: [mockContact('p1-0', 'Page1 Contact', 'p1@example.com')],
+          pagination: mockPagination(25, 1),
+        }),
+      } as Response);
+
+      render(<ContactsPage />);
+
+      await waitFor(() => expect(screen.getByText('Page1 0')).toBeInTheDocument());
+
+      await user.click(screen.getByRole('button', { name: 'Next' }));
+      await waitFor(() => expect(screen.getByText('Page2 Contact')).toBeInTheDocument());
+      expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Previous' }));
+
+      await waitFor(() =>
+        expect(fetchMock).toHaveBeenCalledWith('/api/contacts?page=1&limit=20')
+      );
+      await waitFor(() => expect(screen.getByText('Page1 Contact')).toBeInTheDocument());
+      expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+    });
   });
 });
