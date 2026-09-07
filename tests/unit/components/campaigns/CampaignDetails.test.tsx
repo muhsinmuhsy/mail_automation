@@ -16,7 +16,8 @@ describe('CampaignDetails', () => {
     render(<CampaignDetails campaignId="c1" onClose={close} />);
     expect(await screen.findByText('recipient@example.com')).toBeInTheDocument();
     expect(screen.getAllByText(/Asia\/Calcutta/)).toHaveLength(2);
-    expect(screen.getByText('Every 5 minutes')).toBeInTheDocument();
+    expect(screen.queryByText('Every 5 minutes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Emails per day')).not.toBeInTheDocument();
     expect(screen.getByText('Scheduled')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(close).toHaveBeenCalledOnce();
