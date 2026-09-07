@@ -5,36 +5,48 @@ import { AttachmentCard } from '@/components/attachments/AttachmentCard';
 import { AttachmentUpload } from '@/components/attachments/AttachmentUpload';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useEffect, useState } from 'react';
+import { Pagination } from '@/components/ui/Pagination';
+import { useCallback, useEffect, useState } from 'react';
+
+const PAGE_SIZE = 20;
+
+interface PaginationMeta {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 
 type Attachment = { id: string; filename: string; size_bytes: number; is_default: boolean };
-type ApiResponse<T> = { data: T; message?: string; error?: { message: string } };
+type ApiResponse<T> = { data: T; message?: string; error?: { message: string }; pagination?: PaginationMeta };
 
 export default function AttachmentsPage() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta | null>(null);
+  const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const load = useCallback(async () => {
+    const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+    try {
+      const response = await fetch(`/api/attachments?${params.toString()}`);
+      const payload = (await response.json()) as ApiResponse<Attachment[]>;
+      if (!response.ok) throw new Error(payload.error?.message || payload.message || 'Unable to load attachments.');
+      setAttachments(payload.data);
+      setMeta(payload.pagination ?? null);
+      setError(null);
+    } catch (cause) {
+      setError((cause as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [page]);
+
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const response = await fetch('/api/attachments');
-        const payload = (await response.json()) as ApiResponse<Attachment[]>;
-        if (!active) return;
-        if (!response.ok) throw new Error(payload.error?.message || payload.message || 'Unable to load attachments.');
-        setAttachments(payload.data);
-      } catch (cause) {
-        if (!active) return;
-        setError((cause as Error).message);
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
+  }, [load]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -53,7 +65,8 @@ export default function AttachmentsPage() {
             const response = await fetch('/api/attachments', { method: 'POST', body: formData });
             const payload = await response.json() as ApiResponse<Attachment>;
             if (!response.ok) throw new Error(payload.error?.message || payload.message || 'Unable to upload attachment.');
-            setAttachments((previous) => [...previous, payload.data]);
+            setPage(1);
+            await load();
           }} />
         </div>
       </div>
@@ -74,6 +87,17 @@ export default function AttachmentsPage() {
           {attachments.map((attachment) => (
             <AttachmentCard key={attachment.id} attachment={attachment} />
           ))}
+
+          {meta && (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-supporting text-text-secondary">
+                {meta.total} {meta.total === 1 ? 'attachment' : 'attachments'}
+              </p>
+              {meta.totalPages > 1 && (
+                <Pagination page={meta.page} totalPages={meta.totalPages} onPageChange={setPage} />
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

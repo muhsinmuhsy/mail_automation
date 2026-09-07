@@ -4,44 +4,55 @@ import { TemplateCard } from '@/components/templates/TemplateCard';
 import { TemplateForm } from '@/components/templates/TemplateForm';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useEffect, useState } from 'react';
+import { Pagination } from '@/components/ui/Pagination';
+import { useCallback, useEffect, useState } from 'react';
+
+const PAGE_SIZE = 20;
+
+interface PaginationMeta {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 
 type Template = { id: string; name: string; subject: string; created_at: string };
 type ApiEnvelope<T> =
-  | { success: true; data: T; message?: string }
+  | { success: true; data: T; message?: string; pagination?: PaginationMeta }
   | { success: false; error: { message: string; fields?: Record<string, string> } };
 
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta | null>(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const response = await fetch('/api/templates');
-        const payload = (await response.json()) as ApiEnvelope<Template[]>;
-        if (!active) return;
-        if (!payload.success) {
-          throw new Error(payload.error.message);
-        }
-        setTemplates(payload.data);
-        setError(null);
-      } catch (cause) {
-        if (!active) return;
-        setError((cause as Error).message);
-      } finally {
-        if (active) setLoading(false);
+  const load = useCallback(async () => {
+    const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+    try {
+      const response = await fetch(`/api/templates?${params.toString()}`);
+      const payload = (await response.json()) as ApiEnvelope<Template[]>;
+      if (!payload.success) {
+        throw new Error(payload.error.message);
       }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
+      setTemplates(payload.data);
+      setMeta(payload.pagination ?? null);
+      setError(null);
+    } catch (cause) {
+      setError((cause as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [page]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
+  }, [load]);
 
   const handleSubmit = async (data: { name: string; subject: string; body: string }) => {
     setSaving(true);
@@ -57,8 +68,9 @@ export default function TemplatesPage() {
         setFormError(payload.error.message);
         return;
       }
-      setTemplates((prev) => [payload.data, ...prev]);
       setShowForm(false);
+      setPage(1);
+      await load();
     } catch {
       setFormError('Unable to save template.');
     } finally {
@@ -99,10 +111,23 @@ export default function TemplatesPage() {
           description="Create your first email template to get started."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {templates.map((template) => (
-            <TemplateCard key={template.id} template={template} />
-          ))}
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {templates.map((template) => (
+              <TemplateCard key={template.id} template={template} />
+            ))}
+          </div>
+
+          {meta && (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-supporting text-text-secondary">
+                {meta.total} {meta.total === 1 ? 'template' : 'templates'}
+              </p>
+              {meta.totalPages > 1 && (
+                <Pagination page={meta.page} totalPages={meta.totalPages} onPageChange={setPage} />
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
