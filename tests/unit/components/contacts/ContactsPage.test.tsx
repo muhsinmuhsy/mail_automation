@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ContactsPage from '@/app/(dashboard)/contacts/page';
 
@@ -161,11 +161,11 @@ describe('ContactsPage', () => {
     render(<ContactsPage />);
 
     await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Delete Alice' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Delete Bob' })).toBeInTheDocument();
+    const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
+    expect(deleteButtons).toHaveLength(2);
   });
 
-  it('deletes a contact when confirmed and removes it from the list', async () => {
+  it('opens a confirmation dialog when delete is clicked and deletes on confirm', async () => {
     const user = userEvent.setup();
     const fetchMock = vi.spyOn(globalThis, 'fetch');
 
@@ -190,8 +190,14 @@ describe('ContactsPage', () => {
     await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
     expect(screen.getByText('Bob')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Delete Alice' }));
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getAllByRole('button', { name: 'Delete' })[0]);
+
+    const dialog = screen.getByText('Delete contact').parentElement!;
+    expect(
+      within(dialog).getByText(/Are you sure you want to delete Alice\?/)
+    ).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith('/api/contacts/c1', expect.objectContaining({ method: 'DELETE' }))
@@ -220,8 +226,10 @@ describe('ContactsPage', () => {
 
     await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: 'Delete Alice' }));
     await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    const dialog = screen.getByText('Delete contact').parentElement!;
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent('Delete failed')
@@ -243,8 +251,10 @@ describe('ContactsPage', () => {
 
     await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: 'Delete Alice' }));
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    const dialog = screen.getByText('Delete contact').parentElement!;
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Alice')).toBeInTheDocument();

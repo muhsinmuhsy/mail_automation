@@ -3,6 +3,7 @@
 import { ContactCard } from '@/components/contacts/ContactCard';
 import { ContactForm } from '@/components/contacts/ContactForm';
 import { ContactImport } from '@/components/contacts/ContactImport';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useEffect, useState } from 'react';
@@ -57,20 +58,23 @@ export default function ContactsPage() {
     }
   };
 
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     setError(null);
     try {
-      const response = await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/contacts/${deleteTarget.id}`, { method: 'DELETE' });
       const payload = (await response.json()) as ApiResponse<null>;
       if (!response.ok) { setError(payload.message || 'Unable to delete contact.'); return; }
-      setContacts((previous) => previous.filter((contact) => contact.id !== id));
+      setContacts((previous) => previous.filter((contact) => contact.id !== deleteTarget.id));
+      setDeleteTarget(null);
     } catch {
       setError('Unable to delete contact.');
     } finally {
-      setDeletingId(null);
+      setDeleting(false);
     }
   };
 
@@ -130,12 +134,30 @@ export default function ContactsPage() {
             <ContactCard
               key={contact.id}
               contact={contact}
-              onDelete={handleDelete}
-              deleting={deletingId === contact.id}
+              onDelete={(id) => setDeleteTarget(contacts.find((c) => c.id === id) ?? null)}
+              deleting={deleting && deleteTarget?.id === contact.id}
             />
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title="Delete contact"
+        description={
+          deleteTarget
+            ? `Are you sure you want to delete ${deleteTarget.name}? This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        loading={deleting}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
