@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+const { mockSignOut } = vi.hoisted(() => ({ mockSignOut: vi.fn() }));
+vi.mock('@/app/(auth)/logout/actions', () => ({
+  signOut: mockSignOut,
+}));
+
 import { DashboardHeader } from '@/components/layout/DashboardHeader';
 
 describe('DashboardHeader', () => {
@@ -51,11 +57,12 @@ describe('DashboardHeader', () => {
     expect(screen.queryByRole('button', { name: 'Profile' })).not.toBeInTheDocument();
   });
 
-  it('invokes the Sign out handler and closes the menu', async () => {
+  it('invokes the signOut server action and closes the menu', async () => {
     const user = userEvent.setup();
     render(<DashboardHeader />);
     await user.click(screen.getByRole('button', { name: 'Account' }));
     await user.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(mockSignOut).toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Sign out' })).not.toBeInTheDocument();
   });
 

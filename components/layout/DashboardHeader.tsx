@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/Button';
 import { Dropdown } from '@/components/ui/Dropdown';
+import { signOut } from '@/app/(auth)/logout/actions';
 
 export function DashboardHeader() {
   return (
@@ -21,7 +22,7 @@ export function DashboardHeader() {
         items={[
           { label: 'Profile', href: '/profile' },
           { label: 'Settings', href: '/settings' },
-          { label: 'Sign out', onClick: () => {} },
+          { label: 'Sign out', onClick: () => { void signOut(); } },
         ]}
       />
     </header>

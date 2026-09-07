@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+const { mockSignOut } = vi.hoisted(() => ({ mockSignOut: vi.fn() }));
+vi.mock('@/app/(auth)/logout/actions', () => ({
+  signOut: mockSignOut,
+}));
+
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 vi.mock('next/navigation', () => ({
