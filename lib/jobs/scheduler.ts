@@ -1,3 +1,4 @@
+import { campaignEmailTime } from '@/lib/scheduling/campaign';
 import { PrismaClient, Prisma } from '../generated/prisma/client';
 import { replaceTemplateVariables } from '@/lib/email/template';
 
@@ -30,17 +31,8 @@ export async function generateCampaignJobs(
     throw new Error(`Template ${campaign.template_id} not found for campaign ${campaign.id}`);
   }
 
-  const maxPerDay = campaign.daily_limit ?? Infinity;
-  const utcStartAt = new Date(campaign.start_at);
-
   const jobs = contacts.map((contact, index) => {
-    const dayIndex = Math.floor(index / maxPerDay);
-    const slotInDay = index % maxPerDay;
-
-    const scheduledAt = new Date(utcStartAt);
-    scheduledAt.setUTCDate(scheduledAt.getUTCDate() + dayIndex);
-    scheduledAt.setUTCMinutes(scheduledAt.getUTCMinutes() + slotInDay * campaign.interval_minutes);
-    scheduledAt.setUTCSeconds(0, 0);
+    const scheduledAt = campaignEmailTime(new Date(campaign.start_at), index, campaign.interval_minutes, campaign.daily_limit ?? null);
 
     return {
       user_id: campaign.user_id,

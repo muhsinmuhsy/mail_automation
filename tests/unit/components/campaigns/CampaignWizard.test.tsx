@@ -37,16 +37,29 @@ async function completeWizard(onSubmit = vi.fn()) {
   await user.type(screen.getByLabelText('Start time'), '2026-09-03T09:30');
   await user.clear(screen.getByLabelText('Timezone'));
   await user.type(screen.getByLabelText('Timezone'), 'Asia/Calcutta');
-  await user.clear(screen.getByLabelText('Interval minutes'));
-  await user.type(screen.getByLabelText('Interval minutes'), '10');
-  await user.clear(screen.getByLabelText('Daily limit'));
-  await user.type(screen.getByLabelText('Daily limit'), '20');
+  await user.clear(screen.getByLabelText('Time between emails (minutes)'));
+  await user.type(screen.getByLabelText('Time between emails (minutes)'), '10');
+  await user.clear(screen.getByLabelText('Emails per day (optional)'));
+  await user.type(screen.getByLabelText('Emails per day (optional)'), '20');
   await user.click(screen.getByRole('button', { name: 'Continue' }));
 
   return { user, onSubmit };
 }
 
 describe('CampaignWizard', () => {
+  it('explains the schedule and lets users remove the daily cap explicitly', async () => {
+    const { user } = await completeWizard();
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByLabelText('Time between emails (minutes)')).toHaveAttribute('aria-describedby', 'interval-help');
+    expect(screen.getByText(/Space out your emails/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Use no daily cap' }));
+    expect(screen.getByLabelText('Emails per day (optional)')).toHaveValue(null);
+    expect(screen.getByText(/Send 1 email every 10 minutes/)).toHaveTextContent('no daily cap');
+    await user.clear(screen.getByLabelText('Time between emails (minutes)'));
+    await user.type(screen.getByLabelText('Time between emails (minutes)'), '0');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByText('Enter at least 1 minute, using a whole number.')).toBeInTheDocument();
+  });
   it('selects multiple files, preserves them on Back, and clears the selection', async () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} attachments={[{ id: 'a', label: 'One.pdf', size_bytes: 1024 }, { id: 'b', label: 'Two.pdf', size_bytes: 1024 }]} onSubmit={vi.fn()} />);

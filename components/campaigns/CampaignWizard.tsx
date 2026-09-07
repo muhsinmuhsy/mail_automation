@@ -1,6 +1,7 @@
 'use client';
 
 import { getAttachmentPolicy } from '@/lib/email/providers/attachment-policies';
+import { SchedulePreview } from './SchedulePreview';
 import Link from 'next/link';
 import { attachmentSelectionError, MAX_FILE_BYTES } from '@/lib/email/attachment-limits';
 import { useMemo, useState } from 'react';
@@ -122,10 +123,10 @@ export function CampaignWizard({
         nextErrors.timezone = 'Timezone is required.';
       }
       if (!Number.isInteger(parsedInterval) || parsedInterval <= 0) {
-        nextErrors.intervalMinutes = 'Interval must be a positive whole number.';
+        nextErrors.intervalMinutes = 'Enter at least 1 minute, using a whole number.';
       }
       if (parsedLimit !== null && (!Number.isInteger(parsedLimit) || parsedLimit <= 0)) {
-        nextErrors.dailyLimit = 'Daily limit must be a positive whole number.';
+        nextErrors.dailyLimit = 'Enter at least 1 email, or leave this blank for no campaign cap.';
       }
     }
     setErrors(nextErrors);
@@ -293,8 +294,9 @@ export function CampaignWizard({
               error={errors.timezone}
               required
             />
-            <Input
-              label="Interval minutes"
+            <div className="space-y-2"><Input
+              label="Time between emails (minutes)"
+              aria-describedby="interval-help"
               type="number"
               min={1}
               step={1}
@@ -303,8 +305,10 @@ export function CampaignWizard({
               error={errors.intervalMinutes}
               required
             />
-            <Input
-              label="Daily limit"
+            <p id="interval-help" className="text-sm text-text-secondary">Space out your emails. For example, 5 means one email every 5 minutes.</p></div>
+            <div className="space-y-2"><Input
+              label="Emails per day (optional)"
+              aria-describedby="daily-help"
               type="number"
               min={1}
               step={1}
@@ -312,6 +316,9 @@ export function CampaignWizard({
               onChange={(event) => setDailyLimit(event.target.value)}
               error={errors.dailyLimit}
             />
+            <p id="daily-help" className="text-sm text-text-secondary">Send up to this many emails in each daily batch. Leave blank to keep sending without a campaign cap.</p>
+            <Button variant="secondary" size="sm" onClick={() => setDailyLimit('')} disabled={!dailyLimit}>Use no daily cap</Button></div>
+            <div className="md:col-span-2"><SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={contactIds.length} /></div>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -347,10 +354,11 @@ export function CampaignWizard({
                 </dd>
               </div>
               <div>
-                <dt className="text-caption text-text-secondary">Daily limit</dt>
+                <dt className="text-caption text-text-secondary">Emails per day</dt>
                 <dd className="font-medium text-text-primary">{dailyLimit.trim() || 'No campaign limit'}</dd>
               </div>
             </dl>
+            <SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={contactIds.length} />
           </div>
         )}
       </div>

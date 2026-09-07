@@ -49,8 +49,8 @@ export function CampaignDetails({ campaignId, onClose }: { campaignId: string; o
       {details && <>
         <dl className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div><dt>Start time</dt><dd>{formatScheduledTime(details.start_at, details.timezone)}</dd></div>
-          <div><dt>Sending interval</dt><dd>Every {details.interval_minutes} minutes</dd></div>
-          <div><dt>Daily limit</dt><dd>{details.daily_limit ?? 'No campaign limit'}</dd></div>
+          <div><dt>Time between emails</dt><dd>Every {details.interval_minutes} minutes</dd></div>
+          <div><dt>Emails per day</dt><dd>{details.daily_limit ?? 'No campaign limit'}</dd></div>
           <div><dt>Recipients</dt><dd>{details._count.email_jobs}</dd></div>
         </dl>
         <h3 className="mb-2 font-semibold">Delivery progress</h3>
