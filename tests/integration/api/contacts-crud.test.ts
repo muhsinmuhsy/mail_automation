@@ -313,6 +313,73 @@ describe('POST /api/contacts', () => {
     expect(body.error?.type).toBe('AUTHORIZATION_ERROR');
     expect(mockCheckApiRateLimit).not.toHaveBeenCalled();
   });
+
+  it('creates custom field values when the POST body includes custom fields', async () => {
+    const FIELD_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+    mockPrisma.contactField.findMany.mockResolvedValue([
+      { id: FIELD_ID, name: 't_shirt_size', field_type: 'text', is_required: false },
+    ]);
+    mockPrisma.contact.create.mockResolvedValue({
+      id: CONTACT_ID,
+      name: 'Ada',
+      email: 'ada@example.com',
+      company: null,
+      job_title: null,
+    });
+
+    const response = await createContact(jsonRequest({
+      name: 'Ada',
+      email: 'ada@example.com',
+      t_shirt_size: 'M',
+    }));
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(201);
+    expect(body.success).toBe(true);
+    expect(mockPrisma.contact.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ name: 'Ada', email: 'ada@example.com' }),
+      })
+    );
+    expect(mockPrisma.contactFieldValue.createMany).toHaveBeenCalledWith({
+      data: [
+        { contact_id: CONTACT_ID, field_id: FIELD_ID, value: 'M' },
+      ],
+    });
+  });
+
+  it('rejects custom field values that fail type validation', async () => {
+    mockPrisma.contactField.findMany.mockResolvedValue([
+      { id: 'f1', name: 'score', field_type: 'number', is_required: false },
+    ]);
+
+    const response = await createContact(jsonRequest({
+      name: 'Ada',
+      email: 'ada@example.com',
+      score: 'not-a-number',
+    }));
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(400);
+    expect(body.error?.type).toBe('VALIDATION_ERROR');
+    expect(mockPrisma.contact.create).not.toHaveBeenCalled();
+  });
+
+  it('validates required custom fields', async () => {
+    mockPrisma.contactField.findMany.mockResolvedValue([
+      { id: 'f1', name: 't_shirt_size', field_type: 'text', is_required: true },
+    ]);
+
+    const response = await createContact(jsonRequest({
+      name: 'Ada',
+      email: 'ada@example.com',
+    }));
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(400);
+    expect(body.error?.type).toBe('VALIDATION_ERROR');
+    expect(mockPrisma.contact.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('PATCH /api/contacts/[id]', () => {

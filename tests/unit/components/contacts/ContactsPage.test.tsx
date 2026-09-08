@@ -144,6 +144,53 @@ describe('ContactsPage', () => {
     expect(screen.getByText('new@example.com')).toBeInTheDocument();
   });
 
+  it('renders custom field inputs and includes their values in the submit body', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    fetchMock.mockResolvedValueOnce(mockListResponse([]));
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: [
+          { id: 'f1', name: 't_shirt_size', label: 'T-shirt size', field_type: 'text', is_required: false },
+        ],
+      }),
+    } as Response);
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, data: mockContact('c2', 'Jane', 'jane@example.com') }),
+    } as Response);
+
+    fetchMock.mockResolvedValueOnce(mockListResponse([mockContact('c2', 'Jane', 'jane@example.com')]));
+
+    render(<ContactsPage />);
+
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Add contact' }));
+    await waitFor(() => expect(screen.getByLabelText('T-shirt size')).toBeInTheDocument());
+
+    await user.type(screen.getByLabelText('Name'), 'Jane');
+    await user.type(screen.getByLabelText('Email'), 'jane@example.com');
+    await user.type(screen.getByLabelText('T-shirt size'), 'M');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/contacts',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'Jane', email: 'jane@example.com', t_shirt_size: 'M' }),
+        })
+      )
+    );
+  });
+
   it('shows an error when saving a contact fails', async () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch')
