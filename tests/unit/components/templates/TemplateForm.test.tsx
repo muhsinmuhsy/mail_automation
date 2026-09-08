@@ -141,8 +141,6 @@ describe('TemplateForm', () => {
       await user.click(screen.getAllByRole('button', { name: 'Insert merge tag' })[0]);
       expect(screen.getByText(/\{\{name\}\}/)).toBeInTheDocument();
       expect(screen.getByText(/\{\{email\}\}/)).toBeInTheDocument();
-      expect(screen.getByText(/\{\{company\}\}/)).toBeInTheDocument();
-      expect(screen.getByText(/\{\{job_title\}\}/)).toBeInTheDocument();
       expect(screen.getByText(/\{\{first_name\}\}/)).toBeInTheDocument();
     });
 

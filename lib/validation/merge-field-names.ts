@@ -18,7 +18,7 @@ export const BUILTIN_MERGE_FIELD_NAMES: readonly string[] = SUPPORTED_TEMPLATE_V
  * because creating a custom field with these names would collide with the
  * column (§11.2).
  */
-export const BUILTIN_COLUMN_NAMES: readonly string[] = ['notes'] as const;
+export const BUILTIN_COLUMN_NAMES: readonly string[] = [] as const;
 
 /**
  * System/database tokens reserved for future system merge tags or that must

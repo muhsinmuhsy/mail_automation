@@ -9,15 +9,11 @@ describe('lib/email/template', () => {
   const contact = {
     name: 'Jane Doe',
     email: 'jane@example.com',
-    company: 'Acme',
-    job_title: 'Engineer',
   };
 
   it('substitutes known contact variables', () => {
     expect(replaceTemplateVariables('Hi {{name}}', contact)).toBe('Hi Jane Doe');
     expect(replaceTemplateVariables('{{email}}', contact)).toBe('jane@example.com');
-    expect(replaceTemplateVariables('{{company}}', contact)).toBe('Acme');
-    expect(replaceTemplateVariables('{{job_title}}', contact)).toBe('Engineer');
   });
 
   it('derives first_name from name', () => {
@@ -52,8 +48,6 @@ describe('lib/email/template', () => {
     const customContact = {
       name: 'Jane',
       email: 'jane@example.com',
-      company: null,
-      job_title: null,
       size: 'M',
       plan: 'Pro',
     };

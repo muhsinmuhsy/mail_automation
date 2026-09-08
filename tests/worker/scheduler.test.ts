@@ -98,7 +98,7 @@ describe('lib/jobs/scheduler', () => {
       const prisma = {
         contact: {
           findMany: vi.fn().mockResolvedValue([
-            { id: 'contact-1', name: 'Jane Doe', email: 'jane@example.com', company: 'Acme', job_title: 'Engineer', contact_field_values: [] },
+            { id: 'contact-1', name: 'Jane Doe', email: 'jane@example.com', contact_field_values: [] },
           ]),
         },
         contactField: {
@@ -108,7 +108,7 @@ describe('lib/jobs/scheduler', () => {
           findUnique: vi.fn().mockResolvedValue({
             id: 'template-1',
             subject: 'Hi {{name}}',
-            body: 'Hello {{first_name}} at {{company}}',
+            body: 'Hello {{first_name}}',
           }),
         },
         emailJob: {
@@ -137,7 +137,7 @@ describe('lib/jobs/scheduler', () => {
             expect.objectContaining({
               to_email: 'jane@example.com',
               subject: 'Hi Jane Doe',
-              body: 'Hello Jane at Acme',
+              body: 'Hello Jane',
             }),
           ]),
         })
@@ -152,8 +152,6 @@ describe('lib/jobs/scheduler', () => {
               id: 'contact-1',
               name: 'Jane Doe',
               email: 'jane@example.com',
-              company: 'Acme',
-              job_title: 'Engineer',
               contact_field_values: [
                 { field_id: 'field-1', value: 'M' },
               ],

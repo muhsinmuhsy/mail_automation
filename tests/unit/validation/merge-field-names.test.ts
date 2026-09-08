@@ -15,10 +15,7 @@ describe('lib/validation/merge-field-names', () => {
     it('rejects built-in field names', () => {
       expect(isReservedMergeFieldName('name')).toBe(true);
       expect(isReservedMergeFieldName('email')).toBe(true);
-      expect(isReservedMergeFieldName('company')).toBe(true);
-      expect(isReservedMergeFieldName('job_title')).toBe(true);
       expect(isReservedMergeFieldName('first_name')).toBe(true);
-      expect(isReservedMergeFieldName('notes')).toBe(true);
     });
 
     it('rejects system/database tokens', () => {
@@ -48,6 +45,10 @@ describe('lib/validation/merge-field-names', () => {
       expect(isReservedMergeFieldName('plan')).toBe(false);
       expect(isReservedMergeFieldName('t_shirt_size')).toBe(false);
       expect(isReservedMergeFieldName('birthdate')).toBe(false);
+      // Former built-in columns are no longer reserved (removed from the schema).
+      expect(isReservedMergeFieldName('company')).toBe(false);
+      expect(isReservedMergeFieldName('job_title')).toBe(false);
+      expect(isReservedMergeFieldName('notes')).toBe(false);
     });
 
     it('exports the lists for reuse', () => {

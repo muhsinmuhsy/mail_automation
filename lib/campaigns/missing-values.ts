@@ -11,7 +11,7 @@ import { VARIABLE_PATTERN, SUPPORTED_TEMPLATE_VARIABLES } from '@/lib/email/temp
  */
 
 /** Built-in columns that can be "missing" (null/empty) on a contact. */
-const BUILTIN_NULLABLE_COLUMNS = ['company', 'job_title'] as const;
+const BUILTIN_NULLABLE_COLUMNS = [] as const;
 
 export interface MissingValueEntry {
   token: string;
@@ -81,7 +81,7 @@ export async function runMissingValueCheck(
 
   const contacts = await prisma.contact.findMany({
     where: { id: { in: contactIds }, user_id: userId },
-    select: { id: true, name: true, email: true, company: true, job_title: true },
+    select: { id: true, name: true, email: true },
   });
 
   const fieldValues = await prisma.contactFieldValue.findMany({
@@ -103,10 +103,7 @@ export async function runMissingValueCheck(
     const missingContactIds: string[] = [];
     for (const contact of contacts) {
       if (BUILTIN_NULLABLE_COLUMNS.includes(token as typeof BUILTIN_NULLABLE_COLUMNS[number])) {
-        const col = token === 'company' ? contact.company : token === 'job_title' ? contact.job_title : null;
-        if (!col || col.trim() === '') {
-          missingContactIds.push(contact.id);
-        }
+        continue;
       } else {
         const fieldId = fieldIdByToken.get(token);
         if (!fieldId) continue;

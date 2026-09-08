@@ -27,8 +27,6 @@
 export const SUPPORTED_TEMPLATE_VARIABLES = [
   'name',
   'email',
-  'company',
-  'job_title',
   'first_name',
 ] as const;
 
@@ -43,8 +41,6 @@ export const SUPPORTED_TEMPLATE_VARIABLES = [
 export type TemplateContact = Record<string, string | null | undefined> & {
   name?: string | null;
   email?: string | null;
-  company?: string | null;
-  job_title?: string | null;
 };
 
 /** Regex used to detect `{{token}}` patterns. Exported for reuse (§11.19). */

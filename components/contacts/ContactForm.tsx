@@ -15,7 +15,7 @@ export interface ContactFieldDef {
 }
 
 interface ContactFormProps {
-  onSubmit: (data: { name: string; email: string; company?: string; customFields?: Record<string, string> }) => void | Promise<void>;
+  onSubmit: (data: { name?: string; email: string; customFields?: Record<string, string> }) => void | Promise<void>;
   saving?: boolean;
   error?: string | null;
   /** Custom field definitions, ordered by sort_order. */
@@ -64,7 +64,6 @@ function CustomFieldInput({
 export function ContactForm({ onSubmit, saving = false, error, fields = [] }: ContactFormProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [company, setCompany] = useState('');
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
 
   const sortedFields = [...fields].sort((a, b) => {
@@ -79,17 +78,15 @@ export function ContactForm({ onSubmit, saving = false, error, fields = [] }: Co
         e.preventDefault();
         const hasCustom = Object.keys(customValues).length > 0;
         await onSubmit({
-          name,
+          name: name || undefined,
           email,
-          company: company || undefined,
           ...(hasCustom ? { customFields: customValues } : {}),
         });
       }}
       className="flex flex-col gap-4"
     >
-      <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} />
       <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      <Input label="Company" value={company} onChange={(e) => setCompany(e.target.value)} />
       {sortedFields.map((field) => (
         <CustomFieldInput
           key={field.id}

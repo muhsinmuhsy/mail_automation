@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { ContactCard } from '@/components/contacts/ContactCard';
 
 describe('ContactCard', () => {
-  const contact = { id: 'k1', name: 'Jane Doe', email: 'jane@example.com', company: 'Acme' };
+  const contact = { id: 'k1', name: 'Jane Doe', email: 'jane@example.com' };
 
   it('renders the contact name', () => {
     render(<ContactCard contact={contact} />);
@@ -16,12 +16,7 @@ describe('ContactCard', () => {
     expect(screen.getByText('jane@example.com')).toBeInTheDocument();
   });
 
-  it('does not render the optional company on the card', () => {
-    render(<ContactCard contact={contact} />);
-    expect(screen.queryByText('Acme')).not.toBeInTheDocument();
-  });
-
-  it('renders without an optional company field', () => {
+  it('renders a contact with only name and email', () => {
     const { container } = render(
       <ContactCard contact={{ id: 'k2', name: 'No Company', email: 'nc@example.com' }} />
     );

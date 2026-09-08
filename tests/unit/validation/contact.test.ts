@@ -17,9 +17,6 @@ describe('lib/validation/contact', () => {
         createContactSchema.parse({
           name: 'John Doe',
           email: 'john@example.com',
-          company: 'Acme',
-          job_title: 'Engineer',
-          notes: 'Met at conference',
         })
       ).not.toThrow();
     });
@@ -33,13 +30,21 @@ describe('lib/validation/contact', () => {
       ).not.toThrow();
     });
 
-    it('rejects empty name', () => {
+    it('accepts an empty name (name is optional)', () => {
       expect(() =>
         createContactSchema.parse({
           name: '',
           email: 'john@example.com',
         })
-      ).toThrow();
+      ).not.toThrow();
+    });
+
+    it('accepts a missing name (name is optional)', () => {
+      expect(() =>
+        createContactSchema.parse({
+          email: 'john@example.com',
+        })
+      ).not.toThrow();
     });
 
     it('rejects invalid email', () => {
@@ -57,7 +62,6 @@ describe('lib/validation/contact', () => {
       expect(() =>
         updateContactSchema.parse({
           name: 'Jane Doe',
-          company: 'Acme',
         })
       ).not.toThrow();
     });

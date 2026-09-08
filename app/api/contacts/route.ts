@@ -44,7 +44,7 @@ const _GET = defineRoute(async (req, ctx) => {
     }),
     getPrisma().contact.findMany({
       where,
-      select: { id: true, name: true, email: true, company: true, job_title: true },
+      select: { id: true, name: true, email: true },
       orderBy: { created_at: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
@@ -116,13 +116,10 @@ const _POST = defineRoute(async (req, ctx) => {
       const created = await tx.contact.create({
         data: {
           user_id: ctx.user.id,
-          name: builtins.name as string,
+          name: (builtins.name as string | undefined) ?? null,
           email: builtins.email as string,
-          company: (builtins.company as string | undefined) ?? null,
-          job_title: (builtins.job_title as string | undefined) ?? null,
-          notes: (builtins.notes as string | undefined) ?? null,
         },
-        select: { id: true, name: true, email: true, company: true, job_title: true },
+        select: { id: true, name: true, email: true },
       });
 
       if (customEntries.length > 0) {

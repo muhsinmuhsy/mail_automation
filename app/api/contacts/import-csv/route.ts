@@ -11,7 +11,7 @@ import { ValidationError } from '@/lib/errors';
  * See docs/CUSTOM_MERGE_FIELDS.md §4 Phase 4, §11.1 (unknown-column prompt),
  * §11.14 (resource limits), §11.20 (batch + file-size), §11.27 (import session ID).
  *
- * - Built-in headers (`name`, `email`, `company`, `job_title`, `notes`) map to columns.
+ * - Built-in headers (`name`, `email`) map to columns.
  * - Any other header maps to a custom field by `name` token if one exists.
  * - Unknown columns trigger an explicit "Create & Import" prompt: the server
  *   returns the unknown columns; the client re-POSTs with `create_unknown_fields=true`
@@ -20,7 +20,7 @@ import { ValidationError } from '@/lib/errors';
  * - Each import gets a session ID for idempotent retry (§11.27).
  */
 
-const BUILTIN_HEADERS = ['name', 'email', 'company', 'job_title', 'notes'] as const;
+const BUILTIN_HEADERS = ['name', 'email'] as const;
 
 const _POST = defineRoute(async (req, ctx) => {
   const formData = await req.formData();
@@ -72,12 +72,9 @@ const _POST = defineRoute(async (req, ctx) => {
 
   const nameIdx = header.indexOf('name');
   const emailIdx = header.indexOf('email');
-  const companyIdx = header.indexOf('company');
-  const jobTitleIdx = header.indexOf('job_title');
-  const notesIdx = header.indexOf('notes');
 
-  if (nameIdx === -1 || emailIdx === -1) {
-    return respondError(new ValidationError('CSV must contain name and email columns.'), ctx.requestId);
+  if (emailIdx === -1) {
+    return respondError(new ValidationError('CSV must contain an email column.'), ctx.requestId);
   }
 
   // Fetch the user's existing custom field definitions.
@@ -180,13 +177,10 @@ const _POST = defineRoute(async (req, ctx) => {
 
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(',').map((c) => c.trim());
-    const name = cols[nameIdx] || '';
+    const name = nameIdx >= 0 && cols[nameIdx] ? cols[nameIdx] : '';
     const email = cols[emailIdx] || '';
-    const company = companyIdx >= 0 && cols[companyIdx] ? cols[companyIdx] : undefined;
-    const job_title = jobTitleIdx >= 0 && cols[jobTitleIdx] ? cols[jobTitleIdx] : undefined;
-    const notes = notesIdx >= 0 && cols[notesIdx] ? cols[notesIdx] : undefined;
 
-    const parsed = createContactSchema.safeParse({ name, email, company, job_title, notes });
+    const parsed = createContactSchema.safeParse({ name, email });
     if (!parsed.success) {
       invalidCount++;
       failedRows.push({
@@ -232,11 +226,8 @@ const _POST = defineRoute(async (req, ctx) => {
       const contact = await getPrisma().contact.create({
         data: {
           user_id: ctx.user.id,
-          name: parsed.data.name,
+          name: parsed.data.name || null,
           email: parsed.data.email,
-          company: parsed.data.company || null,
-          job_title: parsed.data.job_title || null,
-          notes: parsed.data.notes || null,
           import_session_id: importSessionId,
         },
         select: { id: true },

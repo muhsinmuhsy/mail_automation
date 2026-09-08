@@ -43,9 +43,6 @@ type ApiEnvelope<T> =
 const BUILTIN_FIELDS: Array<{ name: string; label: string; field_type: FieldType }> = [
   { name: 'name', label: 'Name', field_type: 'text' },
   { name: 'email', label: 'Email', field_type: 'text' },
-  { name: 'company', label: 'Company', field_type: 'text' },
-  { name: 'job_title', label: 'Job Title', field_type: 'text' },
-  { name: 'notes', label: 'Notes', field_type: 'text' },
 ];
 
 export default function FieldsSettingsPage() {

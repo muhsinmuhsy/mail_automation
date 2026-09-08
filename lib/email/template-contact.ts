@@ -7,7 +7,7 @@
  * `updated_at`, and relation fields. None of these should be resolvable via
  * `{{id}}`, `{{user_id}}`, etc. in an outgoing email. This helper returns a
  * flat map containing ONLY:
- *   - the built-in field names (`name`, `email`, `company`, `job_title`)
+ *   - the built-in field names (`name`, `email`)
  *   - the user's defined custom field names mapped to their per-contact values
  *
  * The returned map is created with `Object.create(null)` (no prototype chain)
@@ -40,8 +40,6 @@ export type ContactFieldValueRow = {
 export type ContactBuiltinFields = {
   name?: string | null;
   email?: string | null;
-  company?: string | null;
-  job_title?: string | null;
 };
 
 /** The prototype-less flat map returned to the substitution engine. */
@@ -71,8 +69,6 @@ export function buildTemplateContact(
   // Built-ins. `first_name` is derived inside `replaceTemplateVariables`.
   result.name = contact.name ?? null;
   result.email = contact.email ?? null;
-  result.company = contact.company ?? null;
-  result.job_title = contact.job_title ?? null;
 
   // Index field definitions by id for O(1) lookup.
   const definitionById = new Map<string, ContactFieldDefinition>();

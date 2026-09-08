@@ -13,7 +13,6 @@ interface Contact {
   id: string;
   name: string;
   email: string;
-  company?: string;
   /** Custom field label/value pairs, keyed by token name. */
   custom_fields?: Record<string, string | null>;
 }

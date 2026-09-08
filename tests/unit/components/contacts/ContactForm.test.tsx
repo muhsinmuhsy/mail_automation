@@ -4,18 +4,16 @@ import userEvent from '@testing-library/user-event';
 import { ContactForm } from '@/components/contacts/ContactForm';
 
 describe('ContactForm', () => {
-  it('renders name, email and company inputs', () => {
+  it('renders name and email inputs', () => {
     render(<ContactForm onSubmit={vi.fn()} />);
     expect(screen.getByLabelText('Name')).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
-    expect(screen.getByLabelText('Company')).toBeInTheDocument();
   });
 
-  it('marks name and email required but company optional', () => {
+  it('marks email required and name optional', () => {
     render(<ContactForm onSubmit={vi.fn()} />);
-    expect(screen.getByLabelText('Name')).toBeRequired();
+    expect(screen.getByLabelText('Name')).not.toBeRequired();
     expect(screen.getByLabelText('Email')).toBeRequired();
-    expect(screen.getByLabelText('Company')).not.toBeRequired();
   });
 
   it('uses an email input type for the email field', () => {
@@ -30,11 +28,10 @@ describe('ContactForm', () => {
     expect(button).toHaveAttribute('type', 'submit');
   });
 
-  it('starts with all fields empty', () => {
+  it('starts with name and email empty', () => {
     render(<ContactForm onSubmit={vi.fn()} />);
     expect(screen.getByLabelText('Name')).toHaveValue('');
     expect(screen.getByLabelText('Email')).toHaveValue('');
-    expect(screen.getByLabelText('Company')).toHaveValue('');
   });
 
   it('updates each field as the user types', async () => {
@@ -42,38 +39,32 @@ describe('ContactForm', () => {
     render(<ContactForm onSubmit={vi.fn()} />);
     await user.type(screen.getByLabelText('Name'), 'Jane');
     await user.type(screen.getByLabelText('Email'), 'jane@example.com');
-    await user.type(screen.getByLabelText('Company'), 'Acme');
     expect(screen.getByLabelText('Name')).toHaveValue('Jane');
     expect(screen.getByLabelText('Email')).toHaveValue('jane@example.com');
-    expect(screen.getByLabelText('Company')).toHaveValue('Acme');
   });
 
-  it('submits the entered values including company', async () => {
+  it('submits the entered values', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<ContactForm onSubmit={onSubmit} />);
     await user.type(screen.getByLabelText('Name'), 'Jane');
     await user.type(screen.getByLabelText('Email'), 'jane@example.com');
-    await user.type(screen.getByLabelText('Company'), 'Acme');
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(onSubmit).toHaveBeenCalledWith({
       name: 'Jane',
       email: 'jane@example.com',
-      company: 'Acme',
     });
   });
 
-  it('sends company as undefined when left blank', async () => {
+  it('sends name as undefined when left blank', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<ContactForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Name'), 'Solo');
     await user.type(screen.getByLabelText('Email'), 'solo@example.com');
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(onSubmit).toHaveBeenCalledWith({
-      name: 'Solo',
+      name: undefined,
       email: 'solo@example.com',
-      company: undefined,
     });
   });
 
@@ -82,11 +73,9 @@ describe('ContactForm', () => {
     render(<ContactForm onSubmit={vi.fn()} />);
     await user.type(screen.getByLabelText('Name'), 'Jane');
     await user.type(screen.getByLabelText('Email'), 'jane@example.com');
-    await user.type(screen.getByLabelText('Company'), 'Acme');
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(screen.getByLabelText('Name')).toHaveValue('Jane');
     expect(screen.getByLabelText('Email')).toHaveValue('jane@example.com');
-    expect(screen.getByLabelText('Company')).toHaveValue('Acme');
   });
 
   it('does not submit while the required fields fail browser validation', async () => {
@@ -95,7 +84,7 @@ describe('ContactForm', () => {
     render(<ContactForm onSubmit={onSubmit} />);
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(onSubmit).not.toHaveBeenCalled();
-    expect(screen.getByLabelText('Name')).toBeInvalid();
+    expect(screen.getByLabelText('Email')).toBeInvalid();
   });
 
   it('disables the submit button and shows saving text when saving', () => {
@@ -116,21 +105,6 @@ describe('ContactForm', () => {
     const { container } = render(<ContactForm onSubmit={onSubmit} />);
     expect(fireEvent.submit(container.querySelector('form') as HTMLFormElement)).toBe(false);
     expect(onSubmit).toHaveBeenCalledTimes(1);
-  });
-
-  it('treats a whitespace-only company as a truthy value', async () => {
-    const user = userEvent.setup();
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-    render(<ContactForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Name'), 'Blank Co');
-    await user.type(screen.getByLabelText('Email'), 'blank@example.com');
-    await user.type(screen.getByLabelText('Company'), '   ');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(onSubmit).toHaveBeenCalledWith({
-      name: 'Blank Co',
-      email: 'blank@example.com',
-      company: '   ',
-    });
   });
 
   it('stacks the fields vertically', () => {
@@ -186,7 +160,6 @@ describe('ContactForm', () => {
       expect(onSubmit).toHaveBeenCalledWith({
         name: 'Jane',
         email: 'jane@example.com',
-        company: undefined,
         customFields: { t_shirt_size: 'M', score: '42' },
       });
     });
@@ -204,7 +177,6 @@ describe('ContactForm', () => {
       expect(onSubmit).toHaveBeenCalledWith({
         name: 'Jane',
         email: 'jane@example.com',
-        company: undefined,
       });
     });
   });

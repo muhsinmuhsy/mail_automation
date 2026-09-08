@@ -22,7 +22,7 @@ describe.skipIf(!connectionString)('contact-fields serializable concurrency (rea
       await client.query(`SET LOCAL search_path TO "${schema}"`);
       await client.query(`CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'USER')`);
       await client.query(`CREATE TABLE users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), email varchar(255) UNIQUE NOT NULL, name varchar(255), role "UserRole" NOT NULL DEFAULT 'USER', is_active boolean NOT NULL DEFAULT true, daily_email_limit_override integer, created_at timestamptz NOT NULL DEFAULT now())`);
-      await client.query(`CREATE TABLE contacts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, name varchar(100) NOT NULL, email varchar(255) NOT NULL, company varchar(200), job_title varchar(200), notes text, import_session_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`);
+      await client.query(`CREATE TABLE contacts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, name varchar(100), email varchar(255) NOT NULL, import_session_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`);
       await client.query(migrationSql);
 
       const userId = randomUUID();
@@ -56,7 +56,7 @@ describe.skipIf(!connectionString)('contact-fields serializable concurrency (rea
       await client.query(`SET LOCAL search_path TO "${schema}"`);
       await client.query(`CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'USER')`);
       await client.query(`CREATE TABLE users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), email varchar(255) UNIQUE NOT NULL, name varchar(255), role "UserRole" NOT NULL DEFAULT 'USER', is_active boolean NOT NULL DEFAULT true, daily_email_limit_override integer, created_at timestamptz NOT NULL DEFAULT now())`);
-      await client.query(`CREATE TABLE contacts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, name varchar(100) NOT NULL, email varchar(255) NOT NULL, company varchar(200), job_title varchar(200), notes text, import_session_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`);
+      await client.query(`CREATE TABLE contacts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, name varchar(100), email varchar(255) NOT NULL, import_session_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`);
       await client.query(migrationSql);
 
       const userId = randomUUID();
@@ -88,7 +88,7 @@ describe.skipIf(!connectionString)('contact-fields serializable concurrency (rea
       await client.query(`SET LOCAL search_path TO "${schema}"`);
       await client.query(`CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'USER')`);
       await client.query(`CREATE TABLE users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), email varchar(255) UNIQUE NOT NULL, name varchar(255), role "UserRole" NOT NULL DEFAULT 'USER', is_active boolean NOT NULL DEFAULT true, daily_email_limit_override integer, created_at timestamptz NOT NULL DEFAULT now())`);
-      await client.query(`CREATE TABLE contacts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, name varchar(100) NOT NULL, email varchar(255) NOT NULL, company varchar(200), job_title varchar(200), notes text, import_session_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`);
+      await client.query(`CREATE TABLE contacts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, name varchar(100), email varchar(255) NOT NULL, import_session_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`);
       await client.query(migrationSql);
 
       const userId = randomUUID();
@@ -133,7 +133,7 @@ describe.skipIf(!connectionString)('contact-fields serializable concurrency (rea
       await clientA.query(`SET LOCAL search_path TO "${schema}"`);
       await clientA.query(`CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'USER')`);
       await clientA.query(`CREATE TABLE users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), email varchar(255) UNIQUE NOT NULL, name varchar(255), role "UserRole" NOT NULL DEFAULT 'USER', is_active boolean NOT NULL DEFAULT true, daily_email_limit_override integer, created_at timestamptz NOT NULL DEFAULT now())`);
-      await clientA.query(`CREATE TABLE contacts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, name varchar(100) NOT NULL, email varchar(255) NOT NULL, company varchar(200), job_title varchar(200), notes text, import_session_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`);
+      await clientA.query(`CREATE TABLE contacts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, name varchar(100), email varchar(255) NOT NULL, import_session_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`);
       await clientA.query(migrationSql);
 
       const userId = randomUUID();
@@ -179,7 +179,7 @@ describe.skipIf(!connectionString)('contact-fields serializable concurrency (rea
       await client.query(`SET LOCAL search_path TO "${schema}"`);
       await client.query(`CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'USER')`);
       await client.query(`CREATE TABLE users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), email varchar(255) UNIQUE NOT NULL, name varchar(255), role "UserRole" NOT NULL DEFAULT 'USER', is_active boolean NOT NULL DEFAULT true, daily_email_limit_override integer, created_at timestamptz NOT NULL DEFAULT now())`);
-      await client.query(`CREATE TABLE contacts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, name varchar(100) NOT NULL, email varchar(255) NOT NULL, company varchar(200), job_title varchar(200), notes text, import_session_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`);
+      await client.query(`CREATE TABLE contacts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, name varchar(100), email varchar(255) NOT NULL, import_session_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now())`);
       await client.query(migrationSql);
 
       const userId = randomUUID();

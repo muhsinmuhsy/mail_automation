@@ -136,8 +136,6 @@ beforeEach(() => {
       id: CONTACT_ID,
       name: 'Ada Lovelace',
       email: 'ada@example.com',
-      company: 'Analytical Engines',
-      job_title: 'Engineer',
     },
   ]);
   mockPrisma.contact.count.mockResolvedValue(1);
@@ -145,8 +143,6 @@ beforeEach(() => {
     id: CONTACT_ID,
     name: 'Ada Lovelace',
     email: 'ada@example.com',
-    company: 'Analytical Engines',
-    job_title: 'Engineer',
   });
   mockPrisma.contact.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.contact.deleteMany.mockResolvedValue({ count: 1 });
@@ -226,9 +222,6 @@ describe('POST /api/contacts', () => {
   const validBody = {
     name: 'Ada Lovelace',
     email: 'ada@example.com',
-    company: 'Analytical Engines',
-    job_title: 'Engineer',
-    notes: 'Met at a conference',
   };
 
   it('creates a contact and returns 201', async () => {
@@ -243,11 +236,8 @@ describe('POST /api/contacts', () => {
         user_id: 'user-1',
         name: 'Ada Lovelace',
         email: 'ada@example.com',
-        company: 'Analytical Engines',
-        job_title: 'Engineer',
-        notes: 'Met at a conference',
       },
-      select: { id: true, name: true, email: true, company: true, job_title: true },
+      select: { id: true, name: true, email: true },
     });
   });
 
@@ -323,8 +313,6 @@ describe('POST /api/contacts', () => {
       id: CONTACT_ID,
       name: 'Ada',
       email: 'ada@example.com',
-      company: null,
-      job_title: null,
     });
 
     const response = await createContact(jsonRequest({
@@ -387,7 +375,7 @@ describe('PATCH /api/contacts/[id]', () => {
 
   it('updates the contact and returns a confirmation', async () => {
     const response = await patchContact(
-      jsonRequest({ name: 'Ada L.', company: null }, 'PATCH', url),
+      jsonRequest({ name: 'Ada L.' }, 'PATCH', url),
       { params: Promise.resolve({ id: CONTACT_ID }) }
     );
     const body = (await response.json()) as ApiBody;
@@ -397,7 +385,7 @@ describe('PATCH /api/contacts/[id]', () => {
     expect(body.message).toBe('Contact updated.');
     expect(mockPrisma.contact.updateMany).toHaveBeenCalledWith({
       where: { id: CONTACT_ID, user_id: 'user-1' },
-      data: { name: 'Ada L.', company: null },
+      data: { name: 'Ada L.' },
     });
   });
 

@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react';
 import { ContactList } from '@/components/contacts/ContactList';
 
 const contacts = [
-  { id: 'k1', name: 'Ann', email: 'ann@example.com', company: 'Acme' },
+  { id: 'k1', name: 'Ann', email: 'ann@example.com' },
   { id: 'k2', name: 'Ben', email: 'ben@example.com' },
-  { id: 'k3', name: 'Cara', email: 'cara@example.com', company: 'Globex' },
+  { id: 'k3', name: 'Cara', email: 'cara@example.com' },
 ];
 
 function rows(container: HTMLElement): HTMLElement[] {
@@ -26,12 +26,6 @@ describe('ContactList', () => {
     expect(screen.getByText('ben@example.com')).toBeInTheDocument();
     expect(screen.getByText('Cara')).toBeInTheDocument();
     expect(screen.getByText('cara@example.com')).toBeInTheDocument();
-  });
-
-  it('does not render company values', () => {
-    render(<ContactList contacts={contacts} />);
-    expect(screen.queryByText('Acme')).not.toBeInTheDocument();
-    expect(screen.queryByText('Globex')).not.toBeInTheDocument();
   });
 
   it('renders an empty container for an empty list', () => {

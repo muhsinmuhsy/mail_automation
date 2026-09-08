@@ -4,7 +4,6 @@ interface Contact {
   id: string;
   name: string;
   email: string;
-  company?: string;
 }
 
 export function ContactList({ contacts }: { contacts: Contact[] }) {

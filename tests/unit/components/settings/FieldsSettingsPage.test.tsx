@@ -25,14 +25,11 @@ describe('FieldsSettingsPage', () => {
     expect(screen.getByText(/Define custom merge fields/)).toBeInTheDocument();
   });
 
-  it('renders all five built-in locked fields', async () => {
+  it('renders the two built-in locked fields', async () => {
     render(<FieldsSettingsPage />);
     await waitFor(() => expect(screen.getByText('Name')).toBeInTheDocument());
     expect(screen.getByText('Email')).toBeInTheDocument();
-    expect(screen.getByText('Company')).toBeInTheDocument();
-    expect(screen.getByText('Job Title')).toBeInTheDocument();
-    expect(screen.getByText('Notes')).toBeInTheDocument();
-    expect(screen.getAllByText('Locked')).toHaveLength(5);
+    expect(screen.getAllByText('Locked')).toHaveLength(2);
   });
 
   it('shows empty state when no custom fields exist', async () => {

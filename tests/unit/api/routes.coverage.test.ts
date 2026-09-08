@@ -206,7 +206,7 @@ describe('app/api route handlers (unit coverage)', () => {
     prismaMock.template.findFirst.mockResolvedValue({ id: UUID, subject: 'Hello {{name}}', body: 'Hi {{name}}' });
     prismaMock.contact.count.mockResolvedValue(2);
     prismaMock.campaign.create.mockResolvedValue({ id: 'c1', name: 'n', status: 'DRAFT' });
-    prismaMock.contact.findMany.mockResolvedValue([{ id: UUID, email: 'a@b.com', name: null, company: null, job_title: null, contact_field_values: [] }]);
+    prismaMock.contact.findMany.mockResolvedValue([{ id: UUID, email: 'a@b.com', name: null, contact_field_values: [] }]);
     prismaMock.contactField.findMany.mockResolvedValue([]);
     prismaMock.template.findUnique.mockResolvedValue({ id: UUID, subject: 's', body: 'b' });
     prismaMock.emailJob.createMany.mockResolvedValue({ count: 1 });

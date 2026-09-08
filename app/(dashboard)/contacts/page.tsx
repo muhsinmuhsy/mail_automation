@@ -19,7 +19,7 @@ interface PaginationMeta {
 }
 
 type ApiResponse<T> = { data: T; message?: string; pagination?: PaginationMeta };
-type Contact = { id: string; name: string; email: string; company?: string; custom_fields?: Record<string, string | null> };
+type Contact = { id: string; name: string; email: string; custom_fields?: Record<string, string | null> };
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -87,15 +87,15 @@ export default function ContactsPage() {
     return () => clearTimeout(timer);
   }, [loadFields]);
 
-  const handleSubmit = async (data: { name: string; email: string; company?: string; customFields?: Record<string, string> }) => {
+  const handleSubmit = async (data: { name?: string; email: string; customFields?: Record<string, string> }) => {
     setSaving(true);
     setFormError(null);
     try {
-      const body: Record<string, unknown> = { name: data.name, email: data.email };
-      if (data.company) body.company = data.company;
+      const body: Record<string, unknown> = { email: data.email };
+      if (data.name) body.name = data.name;
       if (data.customFields) Object.assign(body, data.customFields);
       const response = await fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const payload = (await response.json()) as ApiResponse<{ id: string; name: string; email: string; company?: string }>;
+      const payload = (await response.json()) as ApiResponse<{ id: string; name: string; email: string }>;
       if (!response.ok) { const message = payload.message || 'Unable to save contact.'; setFormError(message); return; }
       setShowAddContact(false);
       setPage(1);

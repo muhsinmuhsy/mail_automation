@@ -48,8 +48,6 @@ export async function generateCampaignJobs(
       {
         name: contact.name,
         email: contact.email,
-        company: contact.company,
-        job_title: contact.job_title,
       },
       contact.contact_field_values as ContactFieldValueRow[],
       fieldDefinitions

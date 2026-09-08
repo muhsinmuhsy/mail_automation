@@ -29,9 +29,6 @@ export type ContactMinAggregateOutputType = {
   user_id: string | null
   name: string | null
   email: string | null
-  company: string | null
-  job_title: string | null
-  notes: string | null
   import_session_id: string | null
   created_at: Date | null
   updated_at: Date | null
@@ -42,9 +39,6 @@ export type ContactMaxAggregateOutputType = {
   user_id: string | null
   name: string | null
   email: string | null
-  company: string | null
-  job_title: string | null
-  notes: string | null
   import_session_id: string | null
   created_at: Date | null
   updated_at: Date | null
@@ -55,9 +49,6 @@ export type ContactCountAggregateOutputType = {
   user_id: number
   name: number
   email: number
-  company: number
-  job_title: number
-  notes: number
   import_session_id: number
   created_at: number
   updated_at: number
@@ -70,9 +61,6 @@ export type ContactMinAggregateInputType = {
   user_id?: true
   name?: true
   email?: true
-  company?: true
-  job_title?: true
-  notes?: true
   import_session_id?: true
   created_at?: true
   updated_at?: true
@@ -83,9 +71,6 @@ export type ContactMaxAggregateInputType = {
   user_id?: true
   name?: true
   email?: true
-  company?: true
-  job_title?: true
-  notes?: true
   import_session_id?: true
   created_at?: true
   updated_at?: true
@@ -96,9 +81,6 @@ export type ContactCountAggregateInputType = {
   user_id?: true
   name?: true
   email?: true
-  company?: true
-  job_title?: true
-  notes?: true
   import_session_id?: true
   created_at?: true
   updated_at?: true
@@ -180,11 +162,8 @@ export type ContactGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 export type ContactGroupByOutputType = {
   id: string
   user_id: string
-  name: string
+  name: string | null
   email: string
-  company: string | null
-  job_title: string | null
-  notes: string | null
   import_session_id: string | null
   created_at: Date
   updated_at: Date
@@ -214,11 +193,8 @@ export type ContactWhereInput = {
   NOT?: Prisma.ContactWhereInput | Prisma.ContactWhereInput[]
   id?: Prisma.UuidFilter<"Contact"> | string
   user_id?: Prisma.UuidFilter<"Contact"> | string
-  name?: Prisma.StringFilter<"Contact"> | string
+  name?: Prisma.StringNullableFilter<"Contact"> | string | null
   email?: Prisma.StringFilter<"Contact"> | string
-  company?: Prisma.StringNullableFilter<"Contact"> | string | null
-  job_title?: Prisma.StringNullableFilter<"Contact"> | string | null
-  notes?: Prisma.StringNullableFilter<"Contact"> | string | null
   import_session_id?: Prisma.UuidNullableFilter<"Contact"> | string | null
   created_at?: Prisma.DateTimeFilter<"Contact"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Contact"> | Date | string
@@ -230,11 +206,8 @@ export type ContactWhereInput = {
 export type ContactOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  name?: Prisma.SortOrder
+  name?: Prisma.SortOrderInput | Prisma.SortOrder
   email?: Prisma.SortOrder
-  company?: Prisma.SortOrderInput | Prisma.SortOrder
-  job_title?: Prisma.SortOrderInput | Prisma.SortOrder
-  notes?: Prisma.SortOrderInput | Prisma.SortOrder
   import_session_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -249,11 +222,8 @@ export type ContactWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.ContactWhereInput[]
   NOT?: Prisma.ContactWhereInput | Prisma.ContactWhereInput[]
   user_id?: Prisma.UuidFilter<"Contact"> | string
-  name?: Prisma.StringFilter<"Contact"> | string
+  name?: Prisma.StringNullableFilter<"Contact"> | string | null
   email?: Prisma.StringFilter<"Contact"> | string
-  company?: Prisma.StringNullableFilter<"Contact"> | string | null
-  job_title?: Prisma.StringNullableFilter<"Contact"> | string | null
-  notes?: Prisma.StringNullableFilter<"Contact"> | string | null
   import_session_id?: Prisma.UuidNullableFilter<"Contact"> | string | null
   created_at?: Prisma.DateTimeFilter<"Contact"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Contact"> | Date | string
@@ -265,11 +235,8 @@ export type ContactWhereUniqueInput = Prisma.AtLeast<{
 export type ContactOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  name?: Prisma.SortOrder
+  name?: Prisma.SortOrderInput | Prisma.SortOrder
   email?: Prisma.SortOrder
-  company?: Prisma.SortOrderInput | Prisma.SortOrder
-  job_title?: Prisma.SortOrderInput | Prisma.SortOrder
-  notes?: Prisma.SortOrderInput | Prisma.SortOrder
   import_session_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -284,11 +251,8 @@ export type ContactScalarWhereWithAggregatesInput = {
   NOT?: Prisma.ContactScalarWhereWithAggregatesInput | Prisma.ContactScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"Contact"> | string
   user_id?: Prisma.UuidWithAggregatesFilter<"Contact"> | string
-  name?: Prisma.StringWithAggregatesFilter<"Contact"> | string
+  name?: Prisma.StringNullableWithAggregatesFilter<"Contact"> | string | null
   email?: Prisma.StringWithAggregatesFilter<"Contact"> | string
-  company?: Prisma.StringNullableWithAggregatesFilter<"Contact"> | string | null
-  job_title?: Prisma.StringNullableWithAggregatesFilter<"Contact"> | string | null
-  notes?: Prisma.StringNullableWithAggregatesFilter<"Contact"> | string | null
   import_session_id?: Prisma.UuidNullableWithAggregatesFilter<"Contact"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"Contact"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"Contact"> | Date | string
@@ -296,11 +260,8 @@ export type ContactScalarWhereWithAggregatesInput = {
 
 export type ContactCreateInput = {
   id?: string
-  name: string
+  name?: string | null
   email: string
-  company?: string | null
-  job_title?: string | null
-  notes?: string | null
   import_session_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -312,11 +273,8 @@ export type ContactCreateInput = {
 export type ContactUncheckedCreateInput = {
   id?: string
   user_id: string
-  name: string
+  name?: string | null
   email: string
-  company?: string | null
-  job_title?: string | null
-  notes?: string | null
   import_session_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -326,11 +284,8 @@ export type ContactUncheckedCreateInput = {
 
 export type ContactUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  job_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   import_session_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -342,11 +297,8 @@ export type ContactUpdateInput = {
 export type ContactUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  job_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   import_session_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -357,11 +309,8 @@ export type ContactUncheckedUpdateInput = {
 export type ContactCreateManyInput = {
   id?: string
   user_id: string
-  name: string
+  name?: string | null
   email: string
-  company?: string | null
-  job_title?: string | null
-  notes?: string | null
   import_session_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -369,11 +318,8 @@ export type ContactCreateManyInput = {
 
 export type ContactUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  job_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   import_session_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -382,11 +328,8 @@ export type ContactUpdateManyMutationInput = {
 export type ContactUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  job_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   import_session_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -407,9 +350,6 @@ export type ContactCountOrderByAggregateInput = {
   user_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   email?: Prisma.SortOrder
-  company?: Prisma.SortOrder
-  job_title?: Prisma.SortOrder
-  notes?: Prisma.SortOrder
   import_session_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -420,9 +360,6 @@ export type ContactMaxOrderByAggregateInput = {
   user_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   email?: Prisma.SortOrder
-  company?: Prisma.SortOrder
-  job_title?: Prisma.SortOrder
-  notes?: Prisma.SortOrder
   import_session_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -433,9 +370,6 @@ export type ContactMinOrderByAggregateInput = {
   user_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   email?: Prisma.SortOrder
-  company?: Prisma.SortOrder
-  job_title?: Prisma.SortOrder
-  notes?: Prisma.SortOrder
   import_session_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -518,11 +452,8 @@ export type ContactUpdateOneRequiredWithoutEmail_jobsNestedInput = {
 
 export type ContactCreateWithoutUserInput = {
   id?: string
-  name: string
+  name?: string | null
   email: string
-  company?: string | null
-  job_title?: string | null
-  notes?: string | null
   import_session_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -532,11 +463,8 @@ export type ContactCreateWithoutUserInput = {
 
 export type ContactUncheckedCreateWithoutUserInput = {
   id?: string
-  name: string
+  name?: string | null
   email: string
-  company?: string | null
-  job_title?: string | null
-  notes?: string | null
   import_session_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -576,11 +504,8 @@ export type ContactScalarWhereInput = {
   NOT?: Prisma.ContactScalarWhereInput | Prisma.ContactScalarWhereInput[]
   id?: Prisma.UuidFilter<"Contact"> | string
   user_id?: Prisma.UuidFilter<"Contact"> | string
-  name?: Prisma.StringFilter<"Contact"> | string
+  name?: Prisma.StringNullableFilter<"Contact"> | string | null
   email?: Prisma.StringFilter<"Contact"> | string
-  company?: Prisma.StringNullableFilter<"Contact"> | string | null
-  job_title?: Prisma.StringNullableFilter<"Contact"> | string | null
-  notes?: Prisma.StringNullableFilter<"Contact"> | string | null
   import_session_id?: Prisma.UuidNullableFilter<"Contact"> | string | null
   created_at?: Prisma.DateTimeFilter<"Contact"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Contact"> | Date | string
@@ -588,11 +513,8 @@ export type ContactScalarWhereInput = {
 
 export type ContactCreateWithoutContact_field_valuesInput = {
   id?: string
-  name: string
+  name?: string | null
   email: string
-  company?: string | null
-  job_title?: string | null
-  notes?: string | null
   import_session_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -603,11 +525,8 @@ export type ContactCreateWithoutContact_field_valuesInput = {
 export type ContactUncheckedCreateWithoutContact_field_valuesInput = {
   id?: string
   user_id: string
-  name: string
+  name?: string | null
   email: string
-  company?: string | null
-  job_title?: string | null
-  notes?: string | null
   import_session_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -632,11 +551,8 @@ export type ContactUpdateToOneWithWhereWithoutContact_field_valuesInput = {
 
 export type ContactUpdateWithoutContact_field_valuesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  job_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   import_session_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -647,11 +563,8 @@ export type ContactUpdateWithoutContact_field_valuesInput = {
 export type ContactUncheckedUpdateWithoutContact_field_valuesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  job_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   import_session_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -660,11 +573,8 @@ export type ContactUncheckedUpdateWithoutContact_field_valuesInput = {
 
 export type ContactCreateWithoutEmail_jobsInput = {
   id?: string
-  name: string
+  name?: string | null
   email: string
-  company?: string | null
-  job_title?: string | null
-  notes?: string | null
   import_session_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -675,11 +585,8 @@ export type ContactCreateWithoutEmail_jobsInput = {
 export type ContactUncheckedCreateWithoutEmail_jobsInput = {
   id?: string
   user_id: string
-  name: string
+  name?: string | null
   email: string
-  company?: string | null
-  job_title?: string | null
-  notes?: string | null
   import_session_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -704,11 +611,8 @@ export type ContactUpdateToOneWithWhereWithoutEmail_jobsInput = {
 
 export type ContactUpdateWithoutEmail_jobsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  job_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   import_session_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -719,11 +623,8 @@ export type ContactUpdateWithoutEmail_jobsInput = {
 export type ContactUncheckedUpdateWithoutEmail_jobsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  job_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   import_session_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -732,11 +633,8 @@ export type ContactUncheckedUpdateWithoutEmail_jobsInput = {
 
 export type ContactCreateManyUserInput = {
   id?: string
-  name: string
+  name?: string | null
   email: string
-  company?: string | null
-  job_title?: string | null
-  notes?: string | null
   import_session_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -744,11 +642,8 @@ export type ContactCreateManyUserInput = {
 
 export type ContactUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  job_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   import_session_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -758,11 +653,8 @@ export type ContactUpdateWithoutUserInput = {
 
 export type ContactUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  job_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   import_session_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -772,11 +664,8 @@ export type ContactUncheckedUpdateWithoutUserInput = {
 
 export type ContactUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
-  company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  job_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   import_session_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -827,9 +716,6 @@ export type ContactSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   user_id?: boolean
   name?: boolean
   email?: boolean
-  company?: boolean
-  job_title?: boolean
-  notes?: boolean
   import_session_id?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -844,9 +730,6 @@ export type ContactSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   user_id?: boolean
   name?: boolean
   email?: boolean
-  company?: boolean
-  job_title?: boolean
-  notes?: boolean
   import_session_id?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -858,9 +741,6 @@ export type ContactSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   user_id?: boolean
   name?: boolean
   email?: boolean
-  company?: boolean
-  job_title?: boolean
-  notes?: boolean
   import_session_id?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -872,15 +752,12 @@ export type ContactSelectScalar = {
   user_id?: boolean
   name?: boolean
   email?: boolean
-  company?: boolean
-  job_title?: boolean
-  notes?: boolean
   import_session_id?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type ContactOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "name" | "email" | "company" | "job_title" | "notes" | "import_session_id" | "created_at" | "updated_at", ExtArgs["result"]["contact"]>
+export type ContactOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "name" | "email" | "import_session_id" | "created_at" | "updated_at", ExtArgs["result"]["contact"]>
 export type ContactInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   email_jobs?: boolean | Prisma.Contact$email_jobsArgs<ExtArgs>
@@ -904,11 +781,8 @@ export type $ContactPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     user_id: string
-    name: string
+    name: string | null
     email: string
-    company: string | null
-    job_title: string | null
-    notes: string | null
     /**
      * Set only during CSV imports for idempotent retry (see §11.27). Nullable;
      * existing contacts have null and require no backfill.
@@ -1346,9 +1220,6 @@ export interface ContactFieldRefs {
   readonly user_id: Prisma.FieldRef<"Contact", 'String'>
   readonly name: Prisma.FieldRef<"Contact", 'String'>
   readonly email: Prisma.FieldRef<"Contact", 'String'>
-  readonly company: Prisma.FieldRef<"Contact", 'String'>
-  readonly job_title: Prisma.FieldRef<"Contact", 'String'>
-  readonly notes: Prisma.FieldRef<"Contact", 'String'>
   readonly import_session_id: Prisma.FieldRef<"Contact", 'String'>
   readonly created_at: Prisma.FieldRef<"Contact", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"Contact", 'DateTime'>

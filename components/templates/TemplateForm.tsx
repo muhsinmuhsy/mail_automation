@@ -19,8 +19,6 @@ interface TemplateFormProps {
 const BUILTIN_TAGS: MergeTag[] = [
   { label: 'Name', token: 'name' },
   { label: 'Email', token: 'email' },
-  { label: 'Company', token: 'company' },
-  { label: 'Job Title', token: 'job_title' },
   { label: 'First Name', token: 'first_name' },
 ];
 

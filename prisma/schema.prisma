@@ -142,11 +142,8 @@ model Contact {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id    String   @db.Uuid
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  name       String   @db.VarChar(100)
+  name       String?  @db.VarChar(100)
   email      String   @db.VarChar(255)
-  company    String?  @db.VarChar(200)
-  job_title  String?  @db.VarChar(200)
-  notes      String?  @db.Text
   /// Set only during CSV imports for idempotent retry (see §11.27). Nullable;
   /// existing contacts have null and require no backfill.
   import_session_id String? @db.Uuid

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { nonEmptyString } from './common';
 import { LIMITS } from './merge-field-names';
 import { isValidCalendarDate, INVALID_CALENDAR_DATE_MESSAGE } from './calendar-date';
 
@@ -9,19 +8,13 @@ import { isValidCalendarDate, INVALID_CALENDAR_DATE_MESSAGE } from './calendar-d
  * yet know about custom fields.
  */
 export const createContactSchema = z.object({
-  name: nonEmptyString.max(100),
+  name: z.string().max(100).optional(),
   email: z.string().email().max(255),
-  company: z.string().max(200).optional(),
-  job_title: z.string().max(200).optional(),
-  notes: z.string().max(5000).optional(),
 });
 
 export const updateContactSchema = z.object({
-  name: nonEmptyString.max(100).optional(),
+  name: z.string().max(100).optional().nullable(),
   email: z.string().email().max(255).optional(),
-  company: z.string().max(200).optional().nullable(),
-  job_title: z.string().max(200).optional().nullable(),
-  notes: z.string().max(5000).optional().nullable(),
 });
 
 export const importCsvSchema = z.object({
@@ -84,11 +77,8 @@ export function buildCreateContactSchema(
   customFields: ContactFieldDefinition[]
 ): z.ZodObject<z.ZodRawShape> {
   const shape: z.ZodRawShape = {
-    name: nonEmptyString.max(100),
+    name: z.string().max(100).optional(),
     email: z.string().email().max(255),
-    company: z.string().max(200).optional(),
-    job_title: z.string().max(200).optional(),
-    notes: z.string().max(5000).optional(),
   };
   for (const field of customFields) {
     shape[field.name] = fieldSchema(field);
@@ -106,11 +96,8 @@ export function buildUpdateContactSchema(
   customFields: ContactFieldDefinition[]
 ): z.ZodObject<z.ZodRawShape> {
   const shape: z.ZodRawShape = {
-    name: nonEmptyString.max(100).optional(),
+    name: z.string().max(100).optional().nullable(),
     email: z.string().email().max(255).optional(),
-    company: z.string().max(200).optional().nullable(),
-    job_title: z.string().max(200).optional().nullable(),
-    notes: z.string().max(5000).optional().nullable(),
   };
   for (const field of customFields) {
     // PATCH: all custom fields are optional in the payload; required-ness is
@@ -129,7 +116,7 @@ export function splitContactPayload(
   payload: Record<string, unknown>,
   customFields: ContactFieldDefinition[]
 ): { builtins: Record<string, unknown>; custom: Record<string, unknown> } {
-  const builtinKeys = new Set(['name', 'email', 'company', 'job_title', 'notes']);
+  const builtinKeys = new Set(['name', 'email']);
   const customKeys = new Set(customFields.map((f) => f.name));
 
   const builtins: Record<string, unknown> = {};

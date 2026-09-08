@@ -18,14 +18,12 @@ describe('lib/email/template-contact', () => {
   describe('buildTemplateContact', () => {
     it('flattens built-in fields into the result', () => {
       const result = buildTemplateContact(
-        { name: 'Jane', email: 'jane@example.com', company: 'Acme', job_title: 'Eng' },
+        { name: 'Jane', email: 'jane@example.com' },
         [],
         []
       );
       expect(result.name).toBe('Jane');
       expect(result.email).toBe('jane@example.com');
-      expect(result.company).toBe('Acme');
-      expect(result.job_title).toBe('Eng');
     });
 
     it('flattens custom field values keyed by their token name', () => {
@@ -92,7 +90,7 @@ describe('lib/email/template-contact', () => {
         { field_id: 'field-plan', value: 'Pro' },
       ];
       const templateContact = buildTemplateContact(
-        { name: 'Jane', email: 'jane@example.com', company: 'Acme' },
+        { name: 'Jane', email: 'jane@example.com' },
         values,
         fieldDefinitions
       );

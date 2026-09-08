@@ -4,7 +4,7 @@ import { generateCampaignJobs } from '@/lib/jobs/scheduler';
 
 describe('lib/campaigns/scheduler', () => {
   it('persists long-interval jobs in order without overlapping daily batches', async () => {
-    const contacts = Array.from({ length: 21 }, (_, i) => ({ id: `c${i}`, email: `${i}@example.com`, user_id: 'user', name: null, company: null, job_title: null, contact_field_values: [] }));
+    const contacts = Array.from({ length: 21 }, (_, i) => ({ id: `c${i}`, email: `${i}@example.com`, user_id: 'user', name: null, contact_field_values: [] }));
     const createMany = vi.fn().mockResolvedValue({ count: contacts.length });
     const prisma = { contact: { findMany: vi.fn().mockResolvedValue(contacts) }, contactField: { findMany: vi.fn().mockResolvedValue([]) }, template: { findUnique: vi.fn().mockResolvedValue({ subject: 'Hello', body: 'Body' }) }, emailJob: { createMany } } as unknown as PrismaClient;
     await generateCampaignJobs(prisma, { id: 'campaign', user_id: 'user', start_at: new Date('2030-01-01T09:00:00Z'), timezone: 'UTC', interval_minutes: 120, daily_limit: 20, email_account_id: 'account', template_id: 'template' }, contacts.map(c => c.id));
@@ -13,7 +13,7 @@ describe('lib/campaigns/scheduler', () => {
     expect(jobs[20].scheduled_at.toISOString()).toBe('2030-01-03T01:00:00.000Z');
   });
   it('should generate jobs with correct scheduled_at in UTC', async () => {
-    const mockContact = { id: 'contact-1', email: 'test@example.com', user_id: 'user-1', name: null, company: null, job_title: null, contact_field_values: [] };
+    const mockContact = { id: 'contact-1', email: 'test@example.com', user_id: 'user-1', name: null, contact_field_values: [] };
     const createMany = vi.fn().mockResolvedValue({ count: 1 });
     const prisma = {
       contact: { findMany: vi.fn().mockResolvedValue([mockContact]) },
@@ -63,8 +63,6 @@ describe('lib/campaigns/scheduler', () => {
       email: `test${i}@example.com`,
       user_id: 'user-1',
       name: null,
-      company: null,
-      job_title: null,
       contact_field_values: [],
     }));
 
@@ -100,7 +98,7 @@ describe('lib/campaigns/scheduler', () => {
   });
 
   it('preserves the UTC instant without applying the timezone twice', async () => {
-    const mockContact = { id: 'contact-1', email: 'test@example.com', user_id: 'user-1', name: null, company: null, job_title: null, contact_field_values: [] };
+    const mockContact = { id: 'contact-1', email: 'test@example.com', user_id: 'user-1', name: null, contact_field_values: [] };
     const createMany = vi.fn().mockResolvedValue({ count: 1 });
     const prisma = {
       contact: { findMany: vi.fn().mockResolvedValue([mockContact]) },

@@ -53,14 +53,14 @@ describe('integration/worker (scheduler, no real DB)', () => {
 
     const prisma = createMockPrisma() as any;
     prisma.contact.findMany.mockResolvedValue([
-      { id: 'contact-1', name: 'Jane Doe', first_name: 'Jane', email: 'jane@example.com', company: 'Acme', job_title: null, contact_field_values: [] },
-      { id: 'contact-2', name: 'John Roe', first_name: 'John', email: 'john@example.com', company: 'Globex', job_title: null, contact_field_values: [] },
+      { id: 'contact-1', name: 'Jane Doe', first_name: 'Jane', email: 'jane@example.com', contact_field_values: [] },
+      { id: 'contact-2', name: 'John Roe', first_name: 'John', email: 'john@example.com', contact_field_values: [] },
     ]);
     prisma.contactField.findMany.mockResolvedValue([]);
     prisma.template.findUnique.mockResolvedValue({
       id: 'template-1',
       subject: 'Hi {{name}}',
-      body: 'Hello {{first_name}} at {{company}}',
+      body: 'Hello {{first_name}}',
     });
     prisma.emailJob.createMany.mockResolvedValue({ count: 2 });
 
@@ -85,12 +85,12 @@ describe('integration/worker (scheduler, no real DB)', () => {
           expect.objectContaining({
             to_email: 'jane@example.com',
             subject: 'Hi Jane Doe',
-            body: 'Hello Jane at Acme',
+            body: 'Hello Jane',
           }),
           expect.objectContaining({
             to_email: 'john@example.com',
             subject: 'Hi John Roe',
-            body: 'Hello John at Globex',
+            body: 'Hello John',
           }),
         ]),
       }),
@@ -118,7 +118,7 @@ describe('integration/worker (scheduler, no real DB)', () => {
   it('generateCampaignJobs throws when the template is missing', async () => {
 
     const prisma = createMockPrisma() as any;
-    prisma.contact.findMany.mockResolvedValue([{ id: 'c1', email: 'a@b.c', name: null, company: null, job_title: null, contact_field_values: [] }]);
+    prisma.contact.findMany.mockResolvedValue([{ id: 'c1', email: 'a@b.c', name: null, contact_field_values: [] }]);
     prisma.contactField.findMany.mockResolvedValue([]);
     prisma.template.findUnique.mockResolvedValue(null);
     await expect(

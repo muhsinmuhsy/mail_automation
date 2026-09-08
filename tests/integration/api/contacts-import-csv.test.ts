@@ -46,7 +46,7 @@ describe('contacts/import-csv POST', () => {
     mockPrisma.contact.findFirst.mockResolvedValue(null);
     mockPrisma.contact.create.mockResolvedValue({});
 
-    const csvContent = 'name,email,company,job_title,notes\nJohn Doe,john@example.com,Acme,Engineer,Met at conference\nJane Doe,jane@example.com,Acme,Designer,\ninvalid-email,,,,\n';
+    const csvContent = 'name,email\nJohn Doe,john@example.com\nJane Doe,jane@example.com\ninvalid-email,\n';
     const formData = new FormData();
     formData.append('csv', new File([csvContent], 'contacts.csv', { type: 'text/csv' }));
 

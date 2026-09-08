@@ -1719,9 +1719,6 @@ export const ContactScalarFieldEnum = {
   user_id: 'user_id',
   name: 'name',
   email: 'email',
-  company: 'company',
-  job_title: 'job_title',
-  notes: 'notes',
   import_session_id: 'import_session_id',
   created_at: 'created_at',
   updated_at: 'updated_at'

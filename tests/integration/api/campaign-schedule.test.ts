@@ -115,8 +115,8 @@ beforeEach(() => {
   mockPrisma.attachment.findFirst.mockResolvedValue(null);
   mockPrisma.contact.count.mockResolvedValue(2);
   mockPrisma.contact.findMany.mockResolvedValue([
-    { id: CONTACT_ID_A, name: 'Ada', email: 'ada@example.com', company: 'Analytical Engines', job_title: 'Engineer' },
-    { id: CONTACT_ID_B, name: 'Grace', email: 'grace@example.com', company: null, job_title: null },
+    { id: CONTACT_ID_A, name: 'Ada', email: 'ada@example.com' },
+    { id: CONTACT_ID_B, name: 'Grace', email: 'grace@example.com' },
   ]);
   mockPrisma.contactField.findMany.mockResolvedValue([]);
   mockPrisma.contactFieldValue.findMany.mockResolvedValue([]);
@@ -142,26 +142,6 @@ describe('POST /api/campaigns/pre-check', () => {
       affectedContactCount: 0,
       totalContactCount: 2,
     });
-  });
-
-  it('detects missing built-in company values', async () => {
-    mockPrisma.template.findFirst.mockResolvedValue({
-      id: TEMPLATE_ID, subject: 'Hello {{name}}', body: 'Company: {{company}}',
-    });
-
-    const response = await preCheck(jsonRequest({
-      templateId: TEMPLATE_ID,
-      contactIds: [CONTACT_ID_A, CONTACT_ID_B],
-    }, 'http://localhost/api/campaigns/pre-check'));
-    const body = (await response.json()) as ApiBody;
-
-    expect(response.status).toBe(200);
-    const data = body.data as { missingValues: Array<{ token: string; contactCount: number; contactIds: string[] }>; affectedContactCount: number };
-    expect(data.missingValues).toHaveLength(1);
-    expect(data.missingValues[0].token).toBe('company');
-    expect(data.missingValues[0].contactCount).toBe(1);
-    expect(data.missingValues[0].contactIds).toEqual([CONTACT_ID_B]);
-    expect(data.affectedContactCount).toBe(1);
   });
 
   it('detects missing custom field values', async () => {
@@ -207,9 +187,15 @@ describe('POST /api/campaigns/pre-check', () => {
 
   it('scans both subject and body for tokens', async () => {
     mockPrisma.template.findFirst.mockResolvedValue({
-      id: TEMPLATE_ID, subject: 'Company: {{company}}', body: 'Hi {{name}}',
+      id: TEMPLATE_ID, subject: 'Size: {{t_shirt_size}}', body: 'Hi {{name}}',
     });
     mockPrisma.contact.count.mockResolvedValue(1);
+    mockPrisma.contactField.findMany.mockResolvedValue([
+      { id: FIELD_ID_SIZE, name: 't_shirt_size', label: 'T-shirt size' },
+    ]);
+    mockPrisma.contactFieldValue.findMany.mockResolvedValue([
+      { contact_id: CONTACT_ID_A, field_id: FIELD_ID_SIZE, value: 'M' },
+    ]);
 
     const response = await preCheck(jsonRequest({
       templateId: TEMPLATE_ID,
@@ -220,7 +206,7 @@ describe('POST /api/campaigns/pre-check', () => {
     expect(response.status).toBe(200);
     const data = body.data as { missingValues: Array<{ token: string }> };
     expect(data.missingValues).toHaveLength(1);
-    expect(data.missingValues[0].token).toBe('company');
+    expect(data.missingValues[0].token).toBe('t_shirt_size');
   });
 
   it('returns 403 when the template does not belong to the user', async () => {
@@ -254,8 +240,14 @@ describe('POST /api/campaigns/pre-check', () => {
 describe('POST /api/campaigns — missingValueAction recheck', () => {
   it('returns 400 with pre-check result when missing values exist and action is absent', async () => {
     mockPrisma.template.findFirst.mockResolvedValue({
-      id: TEMPLATE_ID, subject: 'Hello {{name}}', body: 'Company: {{company}}',
+      id: TEMPLATE_ID, subject: 'Hello {{name}}', body: 'Size: {{t_shirt_size}}',
     });
+    mockPrisma.contactField.findMany.mockResolvedValue([
+      { id: FIELD_ID_SIZE, name: 't_shirt_size', label: 'T-shirt size' },
+    ]);
+    mockPrisma.contactFieldValue.findMany.mockResolvedValue([
+      { contact_id: CONTACT_ID_A, field_id: FIELD_ID_SIZE, value: 'M' },
+    ]);
 
     const response = await createCampaign(jsonRequest(validCreateBody()));
     const body = (await response.json()) as ApiBody;
@@ -268,8 +260,14 @@ describe('POST /api/campaigns — missingValueAction recheck', () => {
 
   it('proceeds when missingValueAction is "continue"', async () => {
     mockPrisma.template.findFirst.mockResolvedValue({
-      id: TEMPLATE_ID, subject: 'Hello {{name}}', body: 'Company: {{company}}',
+      id: TEMPLATE_ID, subject: 'Hello {{name}}', body: 'Size: {{t_shirt_size}}',
     });
+    mockPrisma.contactField.findMany.mockResolvedValue([
+      { id: FIELD_ID_SIZE, name: 't_shirt_size', label: 'T-shirt size' },
+    ]);
+    mockPrisma.contactFieldValue.findMany.mockResolvedValue([
+      { contact_id: CONTACT_ID_A, field_id: FIELD_ID_SIZE, value: 'M' },
+    ]);
 
     const response = await createCampaign(jsonRequest(validCreateBody({ missing_value_action: 'continue' })));
     const body = (await response.json()) as ApiBody;
@@ -282,8 +280,14 @@ describe('POST /api/campaigns — missingValueAction recheck', () => {
 
   it('proceeds when missingValueAction is "exclude" and contacts are filtered', async () => {
     mockPrisma.template.findFirst.mockResolvedValue({
-      id: TEMPLATE_ID, subject: 'Hello {{name}}', body: 'Company: {{company}}',
+      id: TEMPLATE_ID, subject: 'Hello {{name}}', body: 'Size: {{t_shirt_size}}',
     });
+    mockPrisma.contactField.findMany.mockResolvedValue([
+      { id: FIELD_ID_SIZE, name: 't_shirt_size', label: 'T-shirt size' },
+    ]);
+    mockPrisma.contactFieldValue.findMany.mockResolvedValue([
+      { contact_id: CONTACT_ID_A, field_id: FIELD_ID_SIZE, value: 'M' },
+    ]);
     mockPrisma.contact.count.mockResolvedValue(1);
 
     const response = await createCampaign(jsonRequest(validCreateBody({
@@ -298,8 +302,14 @@ describe('POST /api/campaigns — missingValueAction recheck', () => {
 
   it('returns 400 when "exclude" is submitted but unfiltered contacts remain', async () => {
     mockPrisma.template.findFirst.mockResolvedValue({
-      id: TEMPLATE_ID, subject: 'Hello {{name}}', body: 'Company: {{company}}',
+      id: TEMPLATE_ID, subject: 'Hello {{name}}', body: 'Size: {{t_shirt_size}}',
     });
+    mockPrisma.contactField.findMany.mockResolvedValue([
+      { id: FIELD_ID_SIZE, name: 't_shirt_size', label: 'T-shirt size' },
+    ]);
+    mockPrisma.contactFieldValue.findMany.mockResolvedValue([
+      { contact_id: CONTACT_ID_A, field_id: FIELD_ID_SIZE, value: 'M' },
+    ]);
 
     const response = await createCampaign(jsonRequest(validCreateBody({
       contact_ids: [CONTACT_ID_A, CONTACT_ID_B],
@@ -315,8 +325,14 @@ describe('POST /api/campaigns — missingValueAction recheck', () => {
 
   it('returns 400 when "exclude" filters all contacts (zero-recipient guard)', async () => {
     mockPrisma.template.findFirst.mockResolvedValue({
-      id: TEMPLATE_ID, subject: 'Hello {{name}}', body: 'Company: {{company}}',
+      id: TEMPLATE_ID, subject: 'Hello {{name}}', body: 'Size: {{t_shirt_size}}',
     });
+    mockPrisma.contactField.findMany.mockResolvedValue([
+      { id: FIELD_ID_SIZE, name: 't_shirt_size', label: 'T-shirt size' },
+    ]);
+    mockPrisma.contactFieldValue.findMany.mockResolvedValue([
+      { contact_id: CONTACT_ID_A, field_id: FIELD_ID_SIZE, value: 'M' },
+    ]);
     mockPrisma.contact.count.mockResolvedValue(1);
 
     const response = await createCampaign(jsonRequest(validCreateBody({
