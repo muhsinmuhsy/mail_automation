@@ -62,6 +62,12 @@ const mockPrisma = {
     findMany: vi.fn(),
     count: vi.fn(),
   },
+  contactField: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
+  contactFieldValue: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
   $disconnect: vi.fn(),
 };
 mockPrisma.campaign.findUnique = mockPrisma.campaign.findFirst;
@@ -174,7 +180,7 @@ beforeEach(() => {
   mockPrisma.emailJob.updateMany.mockResolvedValue({ count: 3 });
   mockPrisma.emailAccount.findFirst.mockResolvedValue({ id: EMAIL_ACCOUNT_ID, user_id: 'user-1', provider: 'gmail' });
   mockPrisma.attachment.findFirst.mockResolvedValue({ id: ATTACHMENT_ID, user_id: 'user-1' });
-  mockPrisma.template.findFirst.mockResolvedValue({ id: TEMPLATE_ID, user_id: 'user-1' });
+  mockPrisma.template.findFirst.mockResolvedValue({ id: TEMPLATE_ID, user_id: 'user-1', subject: 'Hello {{name}}', body: 'Hi {{name}}' });
   mockPrisma.contact.count.mockResolvedValue(1);
 });
 

@@ -231,6 +231,7 @@ export default function CampaignsPage() {
         timezone: data.timezone,
         interval_minutes: data.intervalMinutes,
         daily_limit: data.dailyLimit,
+        ...(data.missingValueAction ? { missing_value_action: data.missingValueAction } : {}),
       }),
     });
 

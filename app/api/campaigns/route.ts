@@ -5,7 +5,8 @@ import { respondError, respondOk, respondList } from '@/lib/api/respond';
 import { parseListQuery } from '@/lib/api/list';
 import { createCampaignSchema } from '@/lib/validation/campaign';
 import { generateCampaignJobs } from '@/lib/jobs/scheduler';
-import { ValidationError, ForbiddenError } from '@/lib/errors';
+import { ValidationError, ForbiddenError, AppError } from '@/lib/errors';
+import { runMissingValueCheck, contactsMissingValues } from '@/lib/campaigns/missing-values';
 
 import { attachmentSelectionError } from '@/lib/email/attachment-limits';
 
@@ -90,6 +91,50 @@ const _POST = defineRoute(async (req, ctx) => {
   if (contactCount !== parsed.data.contact_ids.length) {
     return respondError(
       new ForbiddenError('One or more contacts do not belong to you.'),
+      ctx.requestId
+    );
+  }
+
+  const missingValueResult = await runMissingValueCheck(
+    getPrisma(),
+    ctx.user.id,
+    template.subject,
+    template.body,
+    parsed.data.contact_ids
+  );
+
+  const hasMissingValues = missingValueResult.missingValues.length > 0;
+  const action = parsed.data.missing_value_action;
+
+  if (hasMissingValues && action === 'exclude') {
+    const missingIds = contactsMissingValues(missingValueResult);
+    const remaining = parsed.data.contact_ids.filter((id) => !missingIds.has(id));
+    if (remaining.length === 0) {
+      return respondError(
+        new AppError(
+          'No recipients remaining after excluding contacts with missing values. Cannot create an empty campaign.',
+          400,
+          'VALIDATION_ERROR'
+        ),
+        ctx.requestId
+      );
+    }
+    const unfiltered = parsed.data.contact_ids.filter((id) => missingIds.has(id));
+    if (unfiltered.length > 0) {
+      return respondError(
+        new ValidationError(
+          `Exclude action submitted, but ${unfiltered.length} contact(s) still have missing values. Please filter them out.`,
+          missingValueResult
+        ),
+        ctx.requestId
+      );
+    }
+  } else if (hasMissingValues && action === undefined) {
+    return respondError(
+      new ValidationError(
+        'Some contacts are missing values for fields used in the template. Choose to exclude affected contacts or continue anyway.',
+        missingValueResult
+      ),
       ctx.requestId
     );
   }

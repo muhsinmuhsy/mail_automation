@@ -1,7 +1,17 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CampaignForm } from '@/components/campaigns/CampaignForm';
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      success: true,
+      data: { missingValues: [], unknownTokens: [], affectedContactCount: 0, totalContactCount: 0 },
+    }),
+  }));
+});
 
 const options = {
   emailAccounts: [{ id: 'account-1', provider: 'gmail', label: 'sender@example.com (gmail)' }],

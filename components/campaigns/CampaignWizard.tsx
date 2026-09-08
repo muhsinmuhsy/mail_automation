@@ -8,6 +8,7 @@ import { useMemo, useState } from 'react';
 import { localDateTimeInZone, zonedDateTimeToIso, formatScheduledTime } from '@/lib/scheduling/time';
 import { Button } from '@/components/ui/Button';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 
@@ -31,6 +32,21 @@ export interface CampaignSubmitData {
   timezone: string;
   intervalMinutes: number;
   dailyLimit: number | null;
+  missingValueAction?: 'exclude' | 'continue';
+}
+
+interface MissingValueEntry {
+  token: string;
+  label: string;
+  contactCount: number;
+  contactIds: string[];
+}
+
+interface PreCheckResult {
+  missingValues: MissingValueEntry[];
+  unknownTokens: string[];
+  affectedContactCount: number;
+  totalContactCount: number;
 }
 
 interface CampaignWizardProps {
@@ -81,6 +97,8 @@ export function CampaignWizard({
   const [intervalMinutes, setIntervalMinutes] = useState('5');
   const [dailyLimit, setDailyLimit] = useState('20');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [preCheckResult, setPreCheckResult] = useState<PreCheckResult | null>(null);
+  const [preChecking, setPreChecking] = useState(false);
 
   const effectiveEmailAccountId = emailAccountId || emailAccounts[0]?.id || '';
   const selectedAttachments = attachments.filter(item => attachmentIds.includes(item.id));
@@ -150,8 +168,26 @@ export function CampaignWizard({
     setStep((current) => Math.min(steps.length - 1, current + 1));
   };
 
+  const buildSubmitData = (overrides: Partial<CampaignSubmitData> = {}): CampaignSubmitData => ({
+    name: name.trim(),
+    emailAccountId: effectiveEmailAccountId,
+    attachmentIds,
+    templateId: effectiveTemplateId,
+    contactIds,
+    startAt: zonedDateTimeToIso(startAt, timezone.trim()),
+    timezone: timezone.trim(),
+    intervalMinutes: singleRecipient ? 5 : Number(intervalMinutes),
+    dailyLimit: singleRecipient ? null : (dailyLimit.trim() ? Number(dailyLimit) : null),
+    ...overrides,
+  });
+
+  const doSubmit = async (data: CampaignSubmitData) => {
+    setSubmitting(true);
+    try { await onSubmit(data); } finally { setSubmitting(false); }
+  };
+
   const submit = async () => {
-    if (submitting) return;
+    if (submitting || preChecking) return;
     const originalStep = step;
     for (let index = 0; index < steps.length - 1; index += 1) {
       if (!validateStep(index)) {
@@ -160,18 +196,54 @@ export function CampaignWizard({
       }
     }
     setStep(originalStep);
-    setSubmitting(true);
-    try { await onSubmit({
-      name: name.trim(),
-      emailAccountId: effectiveEmailAccountId,
-      attachmentIds,
-      templateId: effectiveTemplateId,
-      contactIds,
-      startAt: zonedDateTimeToIso(startAt, timezone.trim()),
-      timezone: timezone.trim(),
-      intervalMinutes: singleRecipient ? 5 : Number(intervalMinutes),
-      dailyLimit: singleRecipient ? null : (dailyLimit.trim() ? Number(dailyLimit) : null),
-    }); } finally { setSubmitting(false); }
+
+    setPreChecking(true);
+    try {
+      const response = await fetch('/api/campaigns/pre-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ templateId: effectiveTemplateId, contactIds }),
+      });
+      const body = await response.json() as { success: boolean; data?: PreCheckResult; error?: { message?: string } };
+      if (!response.ok || !body.success) {
+        setErrors({ contactIds: body?.error?.message ?? 'Could not verify contact values. Please try again.' });
+        return;
+      }
+      const result = body.data as PreCheckResult;
+      if (result.missingValues.length > 0 || result.unknownTokens.length > 0) {
+        setPreCheckResult(result);
+        return;
+      }
+    } catch {
+      setErrors({ contactIds: 'Could not verify contact values. Please try again.' });
+      return;
+    } finally {
+      setPreChecking(false);
+    }
+
+    await doSubmit(buildSubmitData());
+  };
+
+  const confirmExclude = async () => {
+    if (!preCheckResult) return;
+    const missingIds = new Set<string>();
+    for (const mv of preCheckResult.missingValues) {
+      for (const id of mv.contactIds) missingIds.add(id);
+    }
+    const filtered = contactIds.filter((id) => !missingIds.has(id));
+    setPreCheckResult(null);
+    if (filtered.length === 0) {
+      setErrors({ contactIds: 'No recipients remaining after excluding contacts with missing values.' });
+      return;
+    }
+    setContactIds(filtered);
+    await doSubmit(buildSubmitData({ contactIds: filtered, missingValueAction: 'exclude' }));
+  };
+
+  const confirmContinue = async () => {
+    setPreCheckResult(null);
+    await doSubmit(buildSubmitData({ missingValueAction: 'continue' }));
   };
 
   const toggleContact = (id: string) => {
@@ -321,6 +393,7 @@ export function CampaignWizard({
             <p id="daily-help" className="text-sm text-text-secondary">Send up to this many emails in each daily batch. Leave blank to keep sending without a campaign cap.</p>
             <Button variant="secondary" size="sm" onClick={() => setDailyLimit('')} disabled={!dailyLimit}>Use no daily cap</Button></div></>}
             <div className="md:col-span-2"><SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={contactIds.length} /></div>
+            <p className="md:col-span-2 text-sm text-text-secondary">Personalization values are captured when the campaign is scheduled. Editing contacts afterward will not affect already-scheduled emails.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -366,12 +439,12 @@ export function CampaignWizard({
       </div>
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        <Button variant="secondary" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0 || submitting}>
+        <Button variant="secondary" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0 || submitting || preChecking}>
           Back
         </Button>
         {step === steps.length - 1 ? (
-          <Button onClick={submit} disabled={!canSubmit || loading || submitting}>
-            {submitting ? 'Scheduling?' : 'Start campaign'}
+          <Button onClick={submit} disabled={!canSubmit || loading || submitting || preChecking}>
+            {preChecking ? 'Checking?' : submitting ? 'Scheduling?' : 'Start campaign'}
           </Button>
         ) : (
           <Button onClick={goNext} disabled={loading && step > 0 && emailAccounts.length === 0}>
@@ -379,6 +452,37 @@ export function CampaignWizard({
           </Button>
         )}
       </div>
+
+      {preCheckResult && (
+        <Dialog
+          open={preCheckResult !== null}
+          onOpenChange={(open) => { if (!open) setPreCheckResult(null); }}
+          title="Missing personalization values"
+          description={`${preCheckResult.affectedContactCount} of ${preCheckResult.totalContactCount} contacts are missing values for fields used in this template. Emails to these contacts will contain the literal {{token}} text.`}
+        >
+          {preCheckResult.unknownTokens.length > 0 && (
+            <p className="mt-3 text-sm text-error">
+              Unknown tokens: {preCheckResult.unknownTokens.join(', ')}
+            </p>
+          )}
+          <ul className="mt-3 space-y-1 text-sm text-text-secondary">
+            {preCheckResult.missingValues.map((mv) => (
+              <li key={mv.token}>{mv.label} ({`{{${mv.token}}}`}): {mv.contactCount} contact(s)</li>
+            ))}
+          </ul>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button variant="secondary" onClick={() => setPreCheckResult(null)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button variant="secondary" onClick={confirmContinue} loading={submitting} disabled={submitting}>
+              Continue anyway
+            </Button>
+            <Button variant="primary" onClick={confirmExclude} loading={submitting} disabled={submitting}>
+              Exclude affected contacts
+            </Button>
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }

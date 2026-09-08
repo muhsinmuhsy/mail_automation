@@ -1,7 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TemplateForm } from '@/components/templates/TemplateForm';
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ success: true, data: [] }),
+  }));
+});
 
 describe('TemplateForm', () => {
   it('renders the name, subject and body fields with labels', () => {
@@ -119,5 +126,58 @@ describe('TemplateForm', () => {
   it('renders an error message when provided', () => {
     render(<TemplateForm onSubmit={vi.fn()} error="Something went wrong" />);
     expect(screen.getByRole('alert')).toHaveTextContent('Something went wrong');
+  });
+
+  describe('merge-tag picker', () => {
+    it('renders Insert merge tag buttons for subject and body', () => {
+      render(<TemplateForm onSubmit={vi.fn()} />);
+      const buttons = screen.getAllByRole('button', { name: 'Insert merge tag' });
+      expect(buttons).toHaveLength(2);
+    });
+
+    it('lists built-in tokens when the picker is opened', async () => {
+      const user = userEvent.setup();
+      render(<TemplateForm onSubmit={vi.fn()} />);
+      await user.click(screen.getAllByRole('button', { name: 'Insert merge tag' })[0]);
+      expect(screen.getByText(/\{\{name\}\}/)).toBeInTheDocument();
+      expect(screen.getByText(/\{\{email\}\}/)).toBeInTheDocument();
+      expect(screen.getByText(/\{\{company\}\}/)).toBeInTheDocument();
+      expect(screen.getByText(/\{\{job_title\}\}/)).toBeInTheDocument();
+      expect(screen.getByText(/\{\{first_name\}\}/)).toBeInTheDocument();
+    });
+
+    it('inserts a token into the subject when clicked from the subject picker', async () => {
+      const user = userEvent.setup();
+      render(<TemplateForm onSubmit={vi.fn()} />);
+      await user.click(screen.getAllByRole('button', { name: 'Insert merge tag' })[0]);
+      const nameButton = screen.getAllByRole('button').find(b => b.textContent?.includes('{{name}}'));
+      expect(nameButton).toBeDefined();
+      await user.click(nameButton!);
+      expect(screen.getByLabelText('Subject')).toHaveValue('{{name}}');
+    });
+
+    it('inserts a token into the body when clicked from the body picker', async () => {
+      const user = userEvent.setup();
+      render(<TemplateForm onSubmit={vi.fn()} />);
+      await user.click(screen.getAllByRole('button', { name: 'Insert merge tag' })[1]);
+      const nameButton = screen.getAllByRole('button').find(b => b.textContent?.includes('{{email}}'));
+      expect(nameButton).toBeDefined();
+      await user.click(nameButton!);
+      expect(screen.getByLabelText('Body')).toHaveValue('{{email}}');
+    });
+
+    it('fetches custom fields on mount and includes them in the picker', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: [{ label: 'T-shirt size', name: 't_shirt_size' }],
+        }),
+      }));
+      const user = userEvent.setup();
+      render(<TemplateForm onSubmit={vi.fn()} />);
+      await user.click(screen.getAllByRole('button', { name: 'Insert merge tag' })[0]);
+      expect(screen.getByText(/\{\{t_shirt_size\}\}/)).toBeInTheDocument();
+    });
   });
 });

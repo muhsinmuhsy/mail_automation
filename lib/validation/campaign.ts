@@ -14,6 +14,10 @@ export const createCampaignSchema = z.object({
   timezone: z.string().trim().max(64).refine(isValidTimezone, 'Choose a valid IANA timezone.').default('UTC'),
   interval_minutes: z.coerce.number().int().positive().default(5),
   daily_limit: z.coerce.number().int().positive().nullable().optional(),
+  /// Missing-value action (§11.25): "exclude" filters out contacts with missing
+  /// values; "continue" proceeds with literal {{token}} in the email. Absent
+  /// forces the server to return 400 if any missing values are detected.
+  missing_value_action: z.enum(['exclude', 'continue']).optional(),
 }).refine(data => !(data.attachment_id && data.attachment_ids !== undefined), { message: 'Use attachment_ids only.', path: ['attachment_ids'] });
 
 export type CreateCampaignInput = z.infer<typeof createCampaignSchema>;

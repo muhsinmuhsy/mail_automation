@@ -1,7 +1,17 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CampaignWizard, type CampaignSelectOption } from '@/components/campaigns/CampaignWizard';
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      success: true,
+      data: { missingValues: [], unknownTokens: [], affectedContactCount: 0, totalContactCount: 0 },
+    }),
+  }));
+});
 
 const options = {
   emailAccounts: [

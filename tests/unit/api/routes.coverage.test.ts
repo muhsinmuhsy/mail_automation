@@ -203,7 +203,7 @@ describe('app/api route handlers (unit coverage)', () => {
   it('campaigns POST creates a campaign and schedules jobs', async () => {
     prismaMock.emailAccount.findFirst.mockResolvedValue({ id: UUID, provider: 'gmail' });
     prismaMock.attachment.findFirst.mockResolvedValue({ id: UUID });
-    prismaMock.template.findFirst.mockResolvedValue({ id: UUID });
+    prismaMock.template.findFirst.mockResolvedValue({ id: UUID, subject: 'Hello {{name}}', body: 'Hi {{name}}' });
     prismaMock.contact.count.mockResolvedValue(2);
     prismaMock.campaign.create.mockResolvedValue({ id: 'c1', name: 'n', status: 'DRAFT' });
     prismaMock.contact.findMany.mockResolvedValue([{ id: UUID, email: 'a@b.com', name: null, company: null, job_title: null, contact_field_values: [] }]);

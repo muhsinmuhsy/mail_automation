@@ -81,4 +81,45 @@ describe('ContactCard', () => {
       expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
     });
   });
+
+  describe('custom fields', () => {
+    it('renders custom field label/value pairs', () => {
+      render(
+        <ContactCard
+          contact={{ id: 'k1', name: 'Jane', email: 'jane@example.com', custom_fields: { t_shirt_size: 'M', score: '42' } }}
+          fieldLabels={{ t_shirt_size: 'T-shirt size', score: 'Score' }}
+        />
+      );
+      expect(screen.getByText('T-shirt size:')).toBeInTheDocument();
+      expect(screen.getByText('M')).toBeInTheDocument();
+      expect(screen.getByText('Score:')).toBeInTheDocument();
+      expect(screen.getByText('42')).toBeInTheDocument();
+    });
+
+    it('filters out null and empty custom field values', () => {
+      render(
+        <ContactCard
+          contact={{ id: 'k1', name: 'Jane', email: 'jane@example.com', custom_fields: { size: 'M', empty: '', nullable: null } }}
+          fieldLabels={{ size: 'Size', empty: 'Empty', nullable: 'Nullable' }}
+        />
+      );
+      expect(screen.getByText('Size:')).toBeInTheDocument();
+      expect(screen.queryByText('Empty:')).not.toBeInTheDocument();
+      expect(screen.queryByText('Nullable:')).not.toBeInTheDocument();
+    });
+
+    it('shows raw token as label when fieldLabels is not provided', () => {
+      render(
+        <ContactCard
+          contact={{ id: 'k1', name: 'Jane', email: 'jane@example.com', custom_fields: { t_shirt_size: 'M' } }}
+        />
+      );
+      expect(screen.getByText('t_shirt_size:')).toBeInTheDocument();
+    });
+
+    it('does not render custom fields section when custom_fields is undefined', () => {
+      const { container } = render(<ContactCard contact={{ id: 'k1', name: 'Jane', email: 'jane@example.com' }} />);
+      expect(container.querySelector('dl')).not.toBeInTheDocument();
+    });
+  });
 });
