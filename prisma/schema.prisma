@@ -53,6 +53,14 @@ enum ReservationStatus {
   UNKNOWN
 }
 
+/// User-defined custom merge field types. See docs/CUSTOM_MERGE_FIELDS.md §11.3.
+enum FieldType {
+  text
+  number
+  date
+  boolean
+}
+
 model User {
   id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email                     String   @unique @db.VarChar(255)
@@ -70,6 +78,7 @@ model User {
   email_jobs        EmailJob[]
   email_usage_daily EmailUsageDaily[]
   reservations      EmailSendReservation[]
+  contact_fields    ContactField[]
 
   @@map("users")
 }
@@ -138,13 +147,67 @@ model Contact {
   company    String?  @db.VarChar(200)
   job_title  String?  @db.VarChar(200)
   notes      String?  @db.Text
+  /// Set only during CSV imports for idempotent retry (see §11.27). Nullable;
+  /// existing contacts have null and require no backfill.
+  import_session_id String? @db.Uuid
   created_at DateTime @default(now()) @db.Timestamptz
   updated_at DateTime @updatedAt @default(now()) @db.Timestamptz
 
-  email_jobs EmailJob[]
+  email_jobs         EmailJob[]
+  contact_field_values ContactFieldValue[]
 
   @@index([user_id, email], map: "idx_contacts_user_id_email")
+  @@index([user_id, import_session_id], map: "idx_contacts_user_id_import_session_id")
   @@map("contacts")
+}
+
+/// User-defined custom merge field definition (Path C hybrid model).
+/// See docs/CUSTOM_MERGE_FIELDS.md §3.1 and Phase 1.
+model ContactField {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  /// The merge token, e.g. `size`. Lowercase, alphanumeric + underscore.
+  /// Unique per user. Must not collide with reserved tokens (§11.2).
+  /// Immutable after creation because templates reference it.
+  name       String   @db.VarChar(50)
+  /// Display label, e.g. "T-shirt size". Mutable.
+  label      String   @db.VarChar(100)
+  field_type FieldType @default(text)
+  sort_order Int      @default(0)
+  is_required Boolean @default(false)
+  /// Reserved for future seeded defaults; not used in the hybrid model.
+  is_default Boolean  @default(false)
+  /// Optimistic concurrency control (§11.24). Incremented on every PATCH.
+  /// Checked (not incremented) on DELETE.
+  version    Int      @default(0)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @default(now()) @db.Timestamptz
+
+  contact_field_values ContactFieldValue[]
+
+  @@unique([user_id, name], map: "unique_contact_fields_user_id_name")
+  @@index([user_id], map: "idx_contact_fields_user_id")
+  @@map("contact_fields")
+}
+
+/// Per-contact value for a user-defined custom merge field.
+/// `value` is stored as text; interpretation depends on the parent field's
+/// `field_type`. Nullable for optional fields. See §11.18 for value limits.
+model ContactFieldValue {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contact_id String   @db.Uuid
+  contact    Contact  @relation(fields: [contact_id], references: [id], onDelete: Cascade)
+  field_id   String   @db.Uuid
+  field      ContactField @relation(fields: [field_id], references: [id], onDelete: Cascade)
+  /// Stored as text. The 10,000-char limit (§11.14) is enforced in validation.
+  value      String?  @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @default(now()) @db.Timestamptz
+
+  @@unique([contact_id, field_id], map: "unique_contact_field_values_contact_id_field_id")
+  @@index([field_id], map: "idx_contact_field_values_field_id")
+  @@map("contact_field_values")
 }
 
 model Template {

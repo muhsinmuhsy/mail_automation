@@ -64,6 +64,19 @@ export type Attachment = Prisma.AttachmentModel
  */
 export type Contact = Prisma.ContactModel
 /**
+ * Model ContactField
+ * User-defined custom merge field definition (Path C hybrid model).
+ * See docs/CUSTOM_MERGE_FIELDS.md §3.1 and Phase 1.
+ */
+export type ContactField = Prisma.ContactFieldModel
+/**
+ * Model ContactFieldValue
+ * Per-contact value for a user-defined custom merge field.
+ * `value` is stored as text; interpretation depends on the parent field's
+ * `field_type`. Nullable for optional fields. See §11.18 for value limits.
+ */
+export type ContactFieldValue = Prisma.ContactFieldValueModel
+/**
  * Model Template
  * 
  */

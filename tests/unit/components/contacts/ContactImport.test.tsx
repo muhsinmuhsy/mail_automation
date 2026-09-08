@@ -14,7 +14,7 @@ describe('ContactImport', () => {
     render(<ContactImport onImport={vi.fn()} />);
     expect(
       screen.getByText(
-        'Import contacts from a CSV file. The file should contain name, email, and company columns.'
+        /Import contacts from a CSV file\. The file should contain name, email, and any custom field columns by their token name/
       )
     ).toBeInTheDocument();
   });

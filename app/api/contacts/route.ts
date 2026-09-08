@@ -3,8 +3,22 @@ import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk, respondList } from '@/lib/api/respond';
 import { parseListQuery } from '@/lib/api/list';
-import { createContactSchema } from '@/lib/validation/contact';
+import {
+  buildCreateContactSchema,
+  splitContactPayload,
+  type ContactFieldDefinition,
+} from '@/lib/validation/contact';
 import { ConflictError, ValidationError, fromPrismaError } from '@/lib/errors';
+
+/**
+ * Contacts API (Path C, Phase 4).
+ * See docs/CUSTOM_MERGE_FIELDS.md §4 Phase 4.
+ *
+ * - GET uses the 3-query pattern (field defs once → contacts → values by
+ *   contact IDs) to avoid N+1 on large lists.
+ * - POST fetches the user's ContactField rows, builds a dynamic schema, parses,
+ *   then creates the Contact + custom field values in a transaction.
+ */
 
 const _GET = defineRoute(async (req, ctx) => {
   const { page, limit, search } = parseListQuery(req, { search: true });
@@ -21,7 +35,13 @@ const _GET = defineRoute(async (req, ctx) => {
       : {}),
   };
 
-  const [contacts, total] = await Promise.all([
+  // 3-query pattern (§8 item 5): field defs once → contacts → values.
+  const [fieldDefs, contacts, total] = await Promise.all([
+    getPrisma().contactField.findMany({
+      where: { user_id: ctx.user.id },
+      orderBy: { sort_order: 'asc' },
+      select: { id: true, name: true, label: true, field_type: true, is_required: true },
+    }),
     getPrisma().contact.findMany({
       where,
       select: { id: true, name: true, email: true, company: true, job_title: true },
@@ -32,12 +52,48 @@ const _GET = defineRoute(async (req, ctx) => {
     getPrisma().contact.count({ where }),
   ]);
 
-  return respondList(contacts, total, page, limit, ctx.requestId);
+  // Fetch all custom values for the page of contacts in one query.
+  const contactIds = contacts.map((c) => c.id);
+  const fieldValues = contactIds.length > 0
+    ? await getPrisma().contactFieldValue.findMany({
+        where: { contact_id: { in: contactIds } },
+        select: { contact_id: true, field_id: true, value: true },
+      })
+    : [];
+
+  // Index field definitions by id for O(1) lookup.
+  const fieldDefById = new Map(fieldDefs.map((f) => [f.id, f]));
+  // Group values by contact_id.
+  const valuesByContact = new Map<string, Array<{ name: string; value: string | null }>>();
+  for (const v of fieldValues) {
+    const def = fieldDefById.get(v.field_id);
+    if (!def) continue;
+    const arr = valuesByContact.get(v.contact_id) ?? [];
+    arr.push({ name: def.name, value: v.value });
+    valuesByContact.set(v.contact_id, arr);
+  }
+
+  // Join values onto contacts.
+  const data = contacts.map((c) => ({
+    ...c,
+    custom_fields: Object.fromEntries(
+      (valuesByContact.get(c.id) ?? []).map(({ name, value }) => [name, value])
+    ),
+  }));
+
+  return respondList(data, total, page, limit, ctx.requestId);
 }, { auth: 'user' });
 
 const _POST = defineRoute(async (req, ctx) => {
   const body = await req.json();
-  const parsed = createContactSchema.safeParse(body);
+
+  // Fetch the user's field definitions to build the dynamic schema.
+  const fieldDefs = await getPrisma().contactField.findMany({
+    where: { user_id: ctx.user.id },
+    select: { id: true, name: true, field_type: true, is_required: true },
+  });
+  const schema = buildCreateContactSchema(fieldDefs as ContactFieldDefinition[]);
+  const parsed = schema.safeParse(body);
   if (!parsed.success) {
     return respondError(
       new ValidationError(
@@ -48,17 +104,41 @@ const _POST = defineRoute(async (req, ctx) => {
     );
   }
 
+  const { builtins, custom } = splitContactPayload(
+    parsed.data as Record<string, unknown>,
+    fieldDefs as ContactFieldDefinition[]
+  );
+  const customEntries = Object.entries(custom);
+  const fieldByName = new Map(fieldDefs.map((f) => [f.name, f]));
+
   try {
-    const contact = await getPrisma().contact.create({
-      data: {
-        user_id: ctx.user.id,
-        name: parsed.data.name,
-        email: parsed.data.email,
-        company: parsed.data.company,
-        job_title: parsed.data.job_title,
-        notes: parsed.data.notes,
-      },
-      select: { id: true, name: true, email: true, company: true, job_title: true },
+    const contact = await getPrisma().$transaction(async (tx) => {
+      const created = await tx.contact.create({
+        data: {
+          user_id: ctx.user.id,
+          name: builtins.name as string,
+          email: builtins.email as string,
+          company: (builtins.company as string | undefined) ?? null,
+          job_title: (builtins.job_title as string | undefined) ?? null,
+          notes: (builtins.notes as string | undefined) ?? null,
+        },
+        select: { id: true, name: true, email: true, company: true, job_title: true },
+      });
+
+      if (customEntries.length > 0) {
+        const valueRows = customEntries
+          .filter(([, value]) => value !== undefined && value !== null)
+          .map(([token, value]) => ({
+            contact_id: created.id,
+            field_id: fieldByName.get(token)!.id,
+            value: String(value),
+          }));
+        if (valueRows.length > 0) {
+          await tx.contactFieldValue.createMany({ data: valueRows });
+        }
+      }
+
+      return created;
     });
 
     return respondOk(contact, ctx.requestId, 'Contact added successfully.', 201);

@@ -26,6 +26,11 @@ const mockListResponse = (templates: ReturnType<typeof mockTemplate>[], total?: 
   }),
 }) as Response;
 
+const mockFieldsResponse = () => ({
+  ok: true,
+  json: async () => ({ success: true, data: [] }),
+}) as Response;
+
 describe('TemplatesPage', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -96,6 +101,8 @@ describe('TemplatesPage', () => {
       mockListResponse([mockTemplate('t1', 'Existing', 'Subject')])
     );
 
+    fetchMock.mockResolvedValueOnce(mockFieldsResponse());
+
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -145,6 +152,7 @@ describe('TemplatesPage', () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(mockListResponse([]))
+      .mockResolvedValueOnce(mockFieldsResponse())
       .mockResolvedValueOnce({
         ok: false,
         json: async () => ({ success: false, error: { message: 'Save failed' } }),

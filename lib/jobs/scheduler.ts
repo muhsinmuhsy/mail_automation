@@ -1,6 +1,7 @@
 import { campaignEmailTime } from '@/lib/scheduling/campaign';
 import { PrismaClient, Prisma } from '../generated/prisma/client';
 import { replaceTemplateVariables } from '@/lib/email/template';
+import { buildTemplateContact, type ContactFieldDefinition, type ContactFieldValueRow } from '@/lib/email/template-contact';
 
 export async function generateCampaignJobs(
   prisma: PrismaClient,
@@ -18,9 +19,16 @@ export async function generateCampaignJobs(
   },
   contactIds: string[]
 ): Promise<void> {
-  const contacts = await prisma.contact.findMany({
-    where: { id: { in: contactIds }, user_id: campaign.user_id },
-  });
+  const [contacts, fieldDefs] = await Promise.all([
+    prisma.contact.findMany({
+      where: { id: { in: contactIds }, user_id: campaign.user_id },
+      include: { contact_field_values: { select: { field_id: true, value: true } } },
+    }),
+    prisma.contactField.findMany({
+      where: { user_id: campaign.user_id },
+      select: { id: true, name: true, field_type: true },
+    }),
+  ]);
 
   if (contacts.length === 0) return;
 
@@ -31,8 +39,21 @@ export async function generateCampaignJobs(
     throw new Error(`Template ${campaign.template_id} not found for campaign ${campaign.id}`);
   }
 
+  const fieldDefinitions = fieldDefs as ContactFieldDefinition[];
+
   const jobs = contacts.map((contact, index) => {
     const scheduledAt = campaignEmailTime(new Date(campaign.start_at), index, campaign.interval_minutes, campaign.daily_limit ?? null);
+
+    const templateContact = buildTemplateContact(
+      {
+        name: contact.name,
+        email: contact.email,
+        company: contact.company,
+        job_title: contact.job_title,
+      },
+      contact.contact_field_values as ContactFieldValueRow[],
+      fieldDefinitions
+    );
 
     return {
       user_id: campaign.user_id,
@@ -43,8 +64,8 @@ export async function generateCampaignJobs(
       attachment_ids: campaign.attachment_ids ?? (campaign.attachment_id ? [campaign.attachment_id] : []),
       template_id: campaign.template_id,
       to_email: contact.email,
-      subject: replaceTemplateVariables(template.subject, contact),
-      body: replaceTemplateVariables(template.body, contact),
+      subject: replaceTemplateVariables(template.subject, templateContact),
+      body: replaceTemplateVariables(template.body, templateContact),
       scheduled_at: scheduledAt,
       status: 'SCHEDULED' as const,
       attempt_count: 0,

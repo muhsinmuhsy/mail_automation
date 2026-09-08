@@ -10,6 +10,12 @@ const mockPrisma = {
     findMany: vi.fn(),
     count: vi.fn(),
   },
+  contactField: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
+  contactFieldValue: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
   campaign: {
     findMany: vi.fn(),
     count: vi.fn(),

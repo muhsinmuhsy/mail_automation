@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   replaceTemplateVariables,
   SUPPORTED_TEMPLATE_VARIABLES,
+  VARIABLE_PATTERN,
 } from '@/lib/email/template';
 
 describe('lib/email/template', () => {
@@ -45,5 +46,86 @@ describe('lib/email/template', () => {
   it('exposes the supported variable list', () => {
     expect(SUPPORTED_TEMPLATE_VARIABLES).toContain('name');
     expect(SUPPORTED_TEMPLATE_VARIABLES).toContain('first_name');
+  });
+
+  describe('custom merge tokens (Path C)', () => {
+    const customContact = {
+      name: 'Jane',
+      email: 'jane@example.com',
+      company: null,
+      job_title: null,
+      size: 'M',
+      plan: 'Pro',
+    };
+
+    it('substitutes custom tokens defined on the contact map', () => {
+      expect(replaceTemplateVariables('Size {{size}}', customContact)).toBe('Size M');
+      expect(replaceTemplateVariables('{{plan}} plan', customContact)).toBe('Pro plan');
+    });
+
+    it('substitutes adjacent tokens', () => {
+      expect(replaceTemplateVariables('{{name}}{{size}}', customContact)).toBe('JaneM');
+    });
+
+    it('is case-insensitive on custom tokens', () => {
+      expect(replaceTemplateVariables('{{SIZE}}', customContact)).toBe('M');
+      expect(replaceTemplateVariables('{{ Size }}', customContact)).toBe('M');
+    });
+
+    it('leaves unknown custom tokens as literals', () => {
+      expect(replaceTemplateVariables('{{unknown}}', customContact)).toBe('{{unknown}}');
+    });
+  });
+
+  describe('prototype-pollution safeguard (§11.26)', () => {
+    const plainContact = { name: 'Jane', size: 'M' };
+
+    it('leaves {{constructor}} as a literal token', () => {
+      expect(replaceTemplateVariables('{{constructor}}', plainContact)).toBe('{{constructor}}');
+    });
+
+    it('leaves {{__proto__}} as a literal token', () => {
+      expect(replaceTemplateVariables('{{__proto__}}', plainContact)).toBe('{{__proto__}}');
+    });
+
+    it('leaves {{toString}} as a literal token', () => {
+      expect(replaceTemplateVariables('{{toString}}', plainContact)).toBe('{{toString}}');
+    });
+
+    it('leaves {{valueOf}} as a literal token', () => {
+      expect(replaceTemplateVariables('{{valueOf}}', plainContact)).toBe('{{valueOf}}');
+    });
+
+    it('leaves {{hasOwnProperty}} as a literal token', () => {
+      expect(replaceTemplateVariables('{{hasOwnProperty}}', plainContact)).toBe('{{hasOwnProperty}}');
+    });
+
+    it('still resolves real own properties', () => {
+      expect(replaceTemplateVariables('{{name}}', plainContact)).toBe('Jane');
+      expect(replaceTemplateVariables('{{size}}', plainContact)).toBe('M');
+    });
+  });
+
+  describe('non-recursive resolution (§11.13)', () => {
+    it('does not recursively resolve {{token}} inside a value', () => {
+      const contactWithTokenValue = { name: 'Jane', size: '{{plan}}', plan: 'Pro' };
+      expect(replaceTemplateVariables('{{size}}', contactWithTokenValue)).toBe('{{plan}}');
+    });
+
+    it('passes HTML/script values through as literal strings', () => {
+      const xssContact = { name: 'Jane', size: '<script>alert(1)</script>' };
+      expect(replaceTemplateVariables('{{size}}', xssContact)).toBe('<script>alert(1)</script>');
+    });
+  });
+
+  describe('VARIABLE_PATTERN export (§11.19)', () => {
+    it('matches {{token}}', () => {
+      const matches = [...'Hi {{name}} and {{ size }}'.matchAll(VARIABLE_PATTERN)];
+      expect(matches.map((m) => m[1])).toEqual(['name', 'size']);
+    });
+
+    it('is global (required for matchAll and String.replace)', () => {
+      expect(VARIABLE_PATTERN.global).toBe(true);
+    });
   });
 });

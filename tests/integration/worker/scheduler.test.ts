@@ -53,9 +53,10 @@ describe('integration/worker (scheduler, no real DB)', () => {
 
     const prisma = createMockPrisma() as any;
     prisma.contact.findMany.mockResolvedValue([
-      { id: 'contact-1', name: 'Jane Doe', first_name: 'Jane', email: 'jane@example.com', company: 'Acme' },
-      { id: 'contact-2', name: 'John Roe', first_name: 'John', email: 'john@example.com', company: 'Globex' },
+      { id: 'contact-1', name: 'Jane Doe', first_name: 'Jane', email: 'jane@example.com', company: 'Acme', job_title: null, contact_field_values: [] },
+      { id: 'contact-2', name: 'John Roe', first_name: 'John', email: 'john@example.com', company: 'Globex', job_title: null, contact_field_values: [] },
     ]);
+    prisma.contactField.findMany.mockResolvedValue([]);
     prisma.template.findUnique.mockResolvedValue({
       id: 'template-1',
       subject: 'Hi {{name}}',
@@ -100,6 +101,7 @@ describe('integration/worker (scheduler, no real DB)', () => {
 
     const prisma = createMockPrisma() as any;
     prisma.contact.findMany.mockResolvedValue([]);
+    prisma.contactField.findMany.mockResolvedValue([]);
     await generateCampaignJobs(prisma, {
       id: 'campaign-1',
       user_id: 'user-1',
@@ -116,7 +118,8 @@ describe('integration/worker (scheduler, no real DB)', () => {
   it('generateCampaignJobs throws when the template is missing', async () => {
 
     const prisma = createMockPrisma() as any;
-    prisma.contact.findMany.mockResolvedValue([{ id: 'c1', email: 'a@b.c' }]);
+    prisma.contact.findMany.mockResolvedValue([{ id: 'c1', email: 'a@b.c', name: null, company: null, job_title: null, contact_field_values: [] }]);
+    prisma.contactField.findMany.mockResolvedValue([]);
     prisma.template.findUnique.mockResolvedValue(null);
     await expect(
       generateCampaignJobs(prisma, {

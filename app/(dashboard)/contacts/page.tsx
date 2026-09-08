@@ -1,7 +1,7 @@
 'use client';
 
 import { ContactCard } from '@/components/contacts/ContactCard';
-import { ContactForm } from '@/components/contacts/ContactForm';
+import { ContactForm, type ContactFieldDef } from '@/components/contacts/ContactForm';
 import { ContactImport } from '@/components/contacts/ContactImport';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -19,7 +19,7 @@ interface PaginationMeta {
 }
 
 type ApiResponse<T> = { data: T; message?: string; pagination?: PaginationMeta };
-type Contact = { id: string; name: string; email: string; company?: string };
+type Contact = { id: string; name: string; email: string; company?: string; custom_fields?: Record<string, string | null> };
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -31,6 +31,35 @@ export default function ContactsPage() {
   const [showImport, setShowImport] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const [fieldDefs, setFieldDefs] = useState<ContactFieldDef[]>([]);
+  const [unknownColumns, setUnknownColumns] = useState<string[] | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
+  const [importSessionId, setImportSessionId] = useState<string | null>(null);
+
+  const loadFields = useCallback(async () => {
+    try {
+      const response = await fetch('/api/contact-fields');
+      const payload = (await response.json()) as {
+        success: boolean;
+        data?: Array<{ id: string; name: string; label: string; field_type: string; is_required: boolean }>;
+      };
+      if (payload.success && Array.isArray(payload.data)) {
+        setFieldDefs(
+          payload.data.map((f) => ({
+            id: f.id,
+            name: f.name,
+            label: f.label,
+            field_type: f.field_type as ContactFieldDef['field_type'],
+            is_required: f.is_required,
+          }))
+        );
+      }
+    } catch {
+      // Non-fatal — the form just won't show custom fields.
+    }
+  }, []);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
@@ -53,11 +82,19 @@ export default function ContactsPage() {
     return () => clearTimeout(timer);
   }, [load]);
 
-  const handleSubmit = async (data: { name: string; email: string; company?: string }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => void loadFields(), 0);
+    return () => clearTimeout(timer);
+  }, [loadFields]);
+
+  const handleSubmit = async (data: { name: string; email: string; company?: string; customFields?: Record<string, string> }) => {
     setSaving(true);
     setFormError(null);
     try {
-      const response = await fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      const body: Record<string, unknown> = { name: data.name, email: data.email };
+      if (data.company) body.company = data.company;
+      if (data.customFields) Object.assign(body, data.customFields);
+      const response = await fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const payload = (await response.json()) as ApiResponse<{ id: string; name: string; email: string; company?: string }>;
       if (!response.ok) { const message = payload.message || 'Unable to save contact.'; setFormError(message); return; }
       setShowAddContact(false);
@@ -67,6 +104,42 @@ export default function ContactsPage() {
       setFormError('Unable to save contact.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleImport = async (file: File, createUnknown = false) => {
+    setImporting(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('csv', file);
+      if (createUnknown) formData.append('create_unknown_fields', 'true');
+      if (importSessionId) formData.append('import_session_id', importSessionId);
+      const response = await fetch('/api/contacts/import-csv', { method: 'POST', body: formData });
+      const payload = (await response.json()) as ApiResponse<{
+        imported: number;
+        unknownColumns?: string[];
+        requiresConfirmation?: boolean;
+        import_session_id?: string;
+      }>;
+      if (!response.ok) { setError(payload.message || 'Unable to import contacts.'); return; }
+      if (payload.data.requiresConfirmation && payload.data.unknownColumns) {
+        setUnknownColumns(payload.data.unknownColumns);
+        setPendingImportFile(file);
+        if (payload.data.import_session_id) setImportSessionId(payload.data.import_session_id);
+        return;
+      }
+      setUnknownColumns(null);
+      setPendingImportFile(null);
+      setImportSessionId(null);
+      setShowImport(false);
+      setPage(1);
+      await load();
+      await loadFields();
+    } catch {
+      setError('Unable to import contacts.');
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -89,6 +162,8 @@ export default function ContactsPage() {
       setDeleting(false);
     }
   };
+
+  const fieldLabels = Object.fromEntries(fieldDefs.map((f) => [f.name, f.label]));
 
   return (
     <div className="flex flex-col gap-8">
@@ -116,16 +191,26 @@ export default function ContactsPage() {
       {showAddContact && (
         <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
           <h2 className="text-lg font-semibold text-text-primary">Add contact</h2>
-          <ContactForm onSubmit={handleSubmit} saving={saving} error={formError} />
+          <ContactForm onSubmit={handleSubmit} saving={saving} error={formError} fields={fieldDefs} />
         </div>
       )}
 
       {showImport && (
         <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
           <h2 className="text-lg font-semibold text-text-primary">Import contacts</h2>
-          <ContactImport onImport={(file) => {
-            console.log('Importing', file.name);
-          }} />
+          <ContactImport
+            onImport={(file) => void handleImport(file)}
+            unknownColumns={unknownColumns ?? undefined}
+            onCreateUnknown={() => {
+              if (pendingImportFile) void handleImport(pendingImportFile, true);
+            }}
+            onCancelUnknown={() => {
+              setUnknownColumns(null);
+              setPendingImportFile(null);
+              setImportSessionId(null);
+            }}
+            importing={importing}
+          />
         </div>
       )}
 
@@ -149,6 +234,7 @@ export default function ContactsPage() {
                 contact={contact}
                 onDelete={(id) => setDeleteTarget(contacts.find((c) => c.id === id) ?? null)}
                 deleting={deleting && deleteTarget?.id === contact.id}
+                fieldLabels={fieldLabels}
               />
             ))}
           </div>

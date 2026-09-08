@@ -3,8 +3,18 @@ import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
-import { updateContactSchema } from '@/lib/validation/contact';
-import { NotFoundError, ValidationError } from '@/lib/errors';
+import {
+  buildUpdateContactSchema,
+  splitContactPayload,
+  type ContactFieldDefinition,
+} from '@/lib/validation/contact';
+import { NotFoundError, ValidationError, fromPrismaError } from '@/lib/errors';
+
+/**
+ * Per-contact operations (Path C, Phase 4).
+ * PATCH updates built-in columns and upserts/deletes custom field values in a
+ * transaction. DELETE removes the contact (cascade-deletes its custom values).
+ */
 
 const _PATCH = defineRoute(async (req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
@@ -13,7 +23,14 @@ const _PATCH = defineRoute(async (req, ctx) => {
   }
 
   const body = await req.json();
-  const updateParsed = updateContactSchema.safeParse(body);
+
+  // Fetch the user's field definitions to build the dynamic schema.
+  const fieldDefs = await getPrisma().contactField.findMany({
+    where: { user_id: ctx.user.id },
+    select: { id: true, name: true, field_type: true, is_required: true },
+  });
+  const schema = buildUpdateContactSchema(fieldDefs as ContactFieldDefinition[]);
+  const updateParsed = schema.safeParse(body);
   if (!updateParsed.success) {
     return respondError(
       new ValidationError(
@@ -24,16 +41,62 @@ const _PATCH = defineRoute(async (req, ctx) => {
     );
   }
 
-  const result = await getPrisma().contact.updateMany({
-    where: { id: parsed.data.id, user_id: ctx.user.id },
-    data: updateParsed.data,
-  });
+  const { builtins, custom } = splitContactPayload(
+    updateParsed.data as Record<string, unknown>,
+    fieldDefs as ContactFieldDefinition[]
+  );
+  const customEntries = Object.entries(custom);
+  const fieldByName = new Map(fieldDefs.map((f) => [f.name, f]));
+  const contactId = parsed.data.id;
 
-  if (result.count === 0) {
-    return respondError(new NotFoundError('Contact not found.'), ctx.requestId);
+  try {
+    const result = await getPrisma().$transaction(async (tx) => {
+      // Update built-in columns. updateMany returns { count }; 0 means not found.
+      const updateResult = await tx.contact.updateMany({
+        where: { id: contactId, user_id: ctx.user.id },
+        data: builtins,
+      });
+      if (updateResult.count === 0) {
+        throw new NotFoundError('Contact not found.');
+      }
+
+      // Upsert or delete custom field values.
+      for (const [token, value] of customEntries) {
+        const field = fieldByName.get(token);
+        if (!field) continue;
+        if (value === null || value === undefined) {
+          // Clear the value.
+          await tx.contactFieldValue.deleteMany({
+            where: { contact_id: contactId, field_id: field.id },
+          });
+        } else {
+          await tx.contactFieldValue.upsert({
+            where: {
+              contact_id_field_id: { contact_id: contactId, field_id: field.id },
+            },
+            create: {
+              contact_id: contactId,
+              field_id: field.id,
+              value: String(value),
+            },
+            update: { value: String(value) },
+          });
+        }
+      }
+      return updateResult;
+    });
+
+    if (result.count === 0) {
+      return respondError(new NotFoundError('Contact not found.'), ctx.requestId);
+    }
+
+    return respondOk(null, ctx.requestId, 'Contact updated.');
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return respondError(error, ctx.requestId);
+    }
+    throw fromPrismaError(error);
   }
-
-  return respondOk(null, ctx.requestId, 'Contact updated.');
 }, {
   auth: {
     ownership: async (params) => {

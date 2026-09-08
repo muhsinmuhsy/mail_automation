@@ -69,3 +69,13 @@ export const ReservationStatus = {
 } as const
 
 export type ReservationStatus = (typeof ReservationStatus)[keyof typeof ReservationStatus]
+
+
+export const FieldType = {
+  text: 'text',
+  number: 'number',
+  date: 'date',
+  boolean: 'boolean'
+} as const
+
+export type FieldType = (typeof FieldType)[keyof typeof FieldType]

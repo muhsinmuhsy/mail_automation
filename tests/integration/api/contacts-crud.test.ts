@@ -23,15 +23,39 @@ const mockPrisma = {
   contact: {
     findMany: vi.fn(),
     findUnique: vi.fn().mockResolvedValue({ user_id: 'user-1' }),
+    findFirst: vi.fn(),
     count: vi.fn(),
     create: vi.fn(),
     updateMany: vi.fn(),
     deleteMany: vi.fn(),
   },
+  contactField: {
+    findMany: vi.fn().mockResolvedValue([]),
+    count: vi.fn().mockResolvedValue(0),
+    create: vi.fn(),
+    update: vi.fn(),
+    updateMany: vi.fn(),
+    delete: vi.fn(),
+    deleteMany: vi.fn(),
+    findFirst: vi.fn(),
+    findUniqueOrThrow: vi.fn(),
+  },
+  contactFieldValue: {
+    findMany: vi.fn().mockResolvedValue([]),
+    createMany: vi.fn().mockResolvedValue({ count: 0 }),
+    update: vi.fn(),
+    upsert: vi.fn(),
+    deleteMany: vi.fn(),
+    count: vi.fn().mockResolvedValue(0),
+  },
+  template: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
   user: {
     findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
     upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
   },
+  $transaction: vi.fn(async (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma)),
   $disconnect: vi.fn(),
 };
 
@@ -377,7 +401,7 @@ describe('PATCH /api/contacts/[id]', () => {
     const body = (await response.json()) as ApiBody;
 
     expect(response.status).toBe(500);
-    expect(body.error?.type).toBe('INTERNAL_ERROR');
+    expect(body.error?.type).toBe('DATABASE_ERROR');
   });
 });
 

@@ -56,6 +56,8 @@ export const ModelName = {
   EmailOAuthAttempt: 'EmailOAuthAttempt',
   Attachment: 'Attachment',
   Contact: 'Contact',
+  ContactField: 'ContactField',
+  ContactFieldValue: 'ContactFieldValue',
   Template: 'Template',
   Campaign: 'Campaign',
   EmailJob: 'EmailJob',
@@ -150,11 +152,41 @@ export const ContactScalarFieldEnum = {
   company: 'company',
   job_title: 'job_title',
   notes: 'notes',
+  import_session_id: 'import_session_id',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
 
 export type ContactScalarFieldEnum = (typeof ContactScalarFieldEnum)[keyof typeof ContactScalarFieldEnum]
+
+
+export const ContactFieldScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  name: 'name',
+  label: 'label',
+  field_type: 'field_type',
+  sort_order: 'sort_order',
+  is_required: 'is_required',
+  is_default: 'is_default',
+  version: 'version',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type ContactFieldScalarFieldEnum = (typeof ContactFieldScalarFieldEnum)[keyof typeof ContactFieldScalarFieldEnum]
+
+
+export const ContactFieldValueScalarFieldEnum = {
+  id: 'id',
+  contact_id: 'contact_id',
+  field_id: 'field_id',
+  value: 'value',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type ContactFieldValueScalarFieldEnum = (typeof ContactFieldValueScalarFieldEnum)[keyof typeof ContactFieldValueScalarFieldEnum]
 
 
 export const TemplateScalarFieldEnum = {

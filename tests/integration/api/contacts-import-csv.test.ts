@@ -13,6 +13,14 @@ const mockPrisma = {
     findFirst: vi.fn(),
     create: vi.fn(),
   },
+  contactField: {
+    findMany: vi.fn().mockResolvedValue([]),
+    count: vi.fn().mockResolvedValue(0),
+    createMany: vi.fn().mockResolvedValue({ count: 0 }),
+  },
+  contactFieldValue: {
+    createMany: vi.fn().mockResolvedValue({ count: 0 }),
+  },
   user: {
     upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
   },

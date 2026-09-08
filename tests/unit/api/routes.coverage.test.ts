@@ -206,7 +206,8 @@ describe('app/api route handlers (unit coverage)', () => {
     prismaMock.template.findFirst.mockResolvedValue({ id: UUID });
     prismaMock.contact.count.mockResolvedValue(2);
     prismaMock.campaign.create.mockResolvedValue({ id: 'c1', name: 'n', status: 'DRAFT' });
-    prismaMock.contact.findMany.mockResolvedValue([{ id: UUID, email: 'a@b.com' }]);
+    prismaMock.contact.findMany.mockResolvedValue([{ id: UUID, email: 'a@b.com', name: null, company: null, job_title: null, contact_field_values: [] }]);
+    prismaMock.contactField.findMany.mockResolvedValue([]);
     prismaMock.template.findUnique.mockResolvedValue({ id: UUID, subject: 's', body: 'b' });
     prismaMock.emailJob.createMany.mockResolvedValue({ count: 1 });
     const body = {
@@ -259,12 +260,15 @@ describe('app/api route handlers (unit coverage)', () => {
   });
 
   it('contacts GET lists contacts', async () => {
+    prismaMock.contactField.findMany.mockResolvedValue([]);
+    prismaMock.contactFieldValue.findMany.mockResolvedValue([]);
     prismaMock.contact.findMany.mockResolvedValue([]);
     prismaMock.contact.count.mockResolvedValue(0);
     await ok((await (contacts as any).GET(makeReq(), CTX())));
   });
 
   it('contacts POST creates a contact', async () => {
+    prismaMock.contactField.findMany.mockResolvedValue([]);
     prismaMock.contact.create.mockResolvedValue({ id: 'c1' });
     const res = await (contacts as any).POST(
       makeReq({ json: { name: 'Jane', email: 'jane@example.com' } }),
@@ -274,16 +278,21 @@ describe('app/api route handlers (unit coverage)', () => {
   });
 
   it('contacts POST rejects invalid input', async () => {
+    prismaMock.contactField.findMany.mockResolvedValue([]);
     const res = await (contacts as any).POST(makeReq({ json: { name: '' } }), CTX());
     await fail(res);
   });
 
   it('contacts POST reports conflict on P2002', async () => {
+    prismaMock.contactField.findMany.mockResolvedValue([]);
+    prismaMock.$transaction.mockImplementation(async (cb: any) => cb(prismaMock));
     prismaMock.contact.create.mockRejectedValue({ code: 'P2002' });
     await fail((await (contacts as any).POST(makeReq({ json: { name: 'Jane', email: 'jane@example.com' } }), CTX())));
   });
 
   it('contacts/[id] PATCH updates a contact', async () => {
+    prismaMock.contactField.findMany.mockResolvedValue([]);
+    prismaMock.$transaction.mockImplementation(async (cb: any) => cb(prismaMock));
     prismaMock.contact.updateMany.mockResolvedValue({ count: 1 });
     await ok((await (contactById as any).PATCH(makeReq({ json: { name: 'Jane' } }), CTX({ id: UUID }))));
   });
@@ -303,6 +312,7 @@ describe('app/api route handlers (unit coverage)', () => {
     const file = new File([csv], 'c.csv', { type: 'text/csv' });
     const fd = new FormData();
     fd.append('csv', file);
+    prismaMock.contactField.findMany.mockResolvedValue([]);
     prismaMock.contact.findFirst.mockResolvedValue(null);
     prismaMock.contact.create.mockResolvedValue({ id: 'c1' });
     const res = await (contactsImport as any).POST(makeReq({ formData: fd }), CTX());

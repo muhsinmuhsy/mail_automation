@@ -11,6 +11,7 @@ const navItems = [
   { href: '/templates', label: 'Templates', icon: 'TP' },
   { href: '/campaigns', label: 'Campaigns', icon: 'CP' },
   { href: '/emails', label: 'Emails', icon: 'EM' },
+  { href: '/settings/fields', label: 'Settings', icon: 'ST' },
 ];
 
 export function DashboardSidebar() {

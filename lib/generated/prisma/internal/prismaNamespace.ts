@@ -402,6 +402,8 @@ export const ModelName = {
   EmailOAuthAttempt: 'EmailOAuthAttempt',
   Attachment: 'Attachment',
   Contact: 'Contact',
+  ContactField: 'ContactField',
+  ContactFieldValue: 'ContactFieldValue',
   Template: 'Template',
   Campaign: 'Campaign',
   EmailJob: 'EmailJob',
@@ -426,7 +428,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "emailAccount" | "emailOAuthAttempt" | "attachment" | "contact" | "template" | "campaign" | "emailJob" | "emailLog" | "systemSetting" | "emailUsageDaily" | "campaignUsageDaily" | "emailSendReservation" | "systemUsageDaily"
+    modelProps: "user" | "emailAccount" | "emailOAuthAttempt" | "attachment" | "contact" | "contactField" | "contactFieldValue" | "template" | "campaign" | "emailJob" | "emailLog" | "systemSetting" | "emailUsageDaily" | "campaignUsageDaily" | "emailSendReservation" | "systemUsageDaily"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -797,6 +799,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ContactCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ContactCountAggregateOutputType> | number
+        }
+      }
+    }
+    ContactField: {
+      payload: Prisma.$ContactFieldPayload<ExtArgs>
+      fields: Prisma.ContactFieldFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ContactFieldFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ContactFieldFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldPayload>
+        }
+        findFirst: {
+          args: Prisma.ContactFieldFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ContactFieldFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldPayload>
+        }
+        findMany: {
+          args: Prisma.ContactFieldFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldPayload>[]
+        }
+        create: {
+          args: Prisma.ContactFieldCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldPayload>
+        }
+        createMany: {
+          args: Prisma.ContactFieldCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ContactFieldCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldPayload>[]
+        }
+        delete: {
+          args: Prisma.ContactFieldDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldPayload>
+        }
+        update: {
+          args: Prisma.ContactFieldUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldPayload>
+        }
+        deleteMany: {
+          args: Prisma.ContactFieldDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ContactFieldUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ContactFieldUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldPayload>[]
+        }
+        upsert: {
+          args: Prisma.ContactFieldUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldPayload>
+        }
+        aggregate: {
+          args: Prisma.ContactFieldAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateContactField>
+        }
+        groupBy: {
+          args: Prisma.ContactFieldGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ContactFieldGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ContactFieldCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ContactFieldCountAggregateOutputType> | number
+        }
+      }
+    }
+    ContactFieldValue: {
+      payload: Prisma.$ContactFieldValuePayload<ExtArgs>
+      fields: Prisma.ContactFieldValueFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ContactFieldValueFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldValuePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ContactFieldValueFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldValuePayload>
+        }
+        findFirst: {
+          args: Prisma.ContactFieldValueFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldValuePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ContactFieldValueFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldValuePayload>
+        }
+        findMany: {
+          args: Prisma.ContactFieldValueFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldValuePayload>[]
+        }
+        create: {
+          args: Prisma.ContactFieldValueCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldValuePayload>
+        }
+        createMany: {
+          args: Prisma.ContactFieldValueCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ContactFieldValueCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldValuePayload>[]
+        }
+        delete: {
+          args: Prisma.ContactFieldValueDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldValuePayload>
+        }
+        update: {
+          args: Prisma.ContactFieldValueUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldValuePayload>
+        }
+        deleteMany: {
+          args: Prisma.ContactFieldValueDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ContactFieldValueUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ContactFieldValueUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldValuePayload>[]
+        }
+        upsert: {
+          args: Prisma.ContactFieldValueUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ContactFieldValuePayload>
+        }
+        aggregate: {
+          args: Prisma.ContactFieldValueAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateContactFieldValue>
+        }
+        groupBy: {
+          args: Prisma.ContactFieldValueGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ContactFieldValueGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ContactFieldValueCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ContactFieldValueCountAggregateOutputType> | number
         }
       }
     }
@@ -1572,11 +1722,41 @@ export const ContactScalarFieldEnum = {
   company: 'company',
   job_title: 'job_title',
   notes: 'notes',
+  import_session_id: 'import_session_id',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
 
 export type ContactScalarFieldEnum = (typeof ContactScalarFieldEnum)[keyof typeof ContactScalarFieldEnum]
+
+
+export const ContactFieldScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  name: 'name',
+  label: 'label',
+  field_type: 'field_type',
+  sort_order: 'sort_order',
+  is_required: 'is_required',
+  is_default: 'is_default',
+  version: 'version',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type ContactFieldScalarFieldEnum = (typeof ContactFieldScalarFieldEnum)[keyof typeof ContactFieldScalarFieldEnum]
+
+
+export const ContactFieldValueScalarFieldEnum = {
+  id: 'id',
+  contact_id: 'contact_id',
+  field_id: 'field_id',
+  value: 'value',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type ContactFieldValueScalarFieldEnum = (typeof ContactFieldValueScalarFieldEnum)[keyof typeof ContactFieldValueScalarFieldEnum]
 
 
 export const TemplateScalarFieldEnum = {
@@ -1827,6 +2007,20 @@ export type ListEnumAuthMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$P
 
 
 /**
+ * Reference to a field of type 'FieldType'
+ */
+export type EnumFieldTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FieldType'>
+    
+
+
+/**
+ * Reference to a field of type 'FieldType[]'
+ */
+export type ListEnumFieldTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FieldType[]'>
+    
+
+
+/**
  * Reference to a field of type 'CampaignStatus'
  */
 export type EnumCampaignStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CampaignStatus'>
@@ -2037,6 +2231,8 @@ export type GlobalOmitConfig = {
   emailOAuthAttempt?: Prisma.EmailOAuthAttemptOmit
   attachment?: Prisma.AttachmentOmit
   contact?: Prisma.ContactOmit
+  contactField?: Prisma.ContactFieldOmit
+  contactFieldValue?: Prisma.ContactFieldValueOmit
   template?: Prisma.TemplateOmit
   campaign?: Prisma.CampaignOmit
   emailJob?: Prisma.EmailJobOmit

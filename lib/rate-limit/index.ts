@@ -17,6 +17,10 @@ export const RATE_LIMITS: Record<string, RateLimitRule> = {
   'contacts:update': { limit: 30, windowSec: 60 },
   'contacts:delete': { limit: 30, windowSec: 60 },
 
+  'contact-field-create': { limit: 20, windowSec: 60 },
+  'contact-field-update': { limit: 20, windowSec: 60 },
+  'contact-field-delete': { limit: 20, windowSec: 60 },
+
   'campaigns:list': { limit: 60, windowSec: 60 },
   'campaigns:create': { limit: 10, windowSec: 60 },
   'campaigns:launch': { limit: 5, windowSec: 60 },

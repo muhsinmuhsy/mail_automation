@@ -26,6 +26,11 @@ const mockListResponse = (contacts: ReturnType<typeof mockContact>[], total?: nu
   }),
 }) as Response;
 
+const mockFieldsResponse = () => ({
+  ok: true,
+  json: async () => ({ success: true, data: [] }),
+}) as Response;
+
 describe('ContactsPage', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -96,6 +101,8 @@ describe('ContactsPage', () => {
       mockListResponse([mockContact('c1', 'Existing', 'existing@example.com')])
     );
 
+    fetchMock.mockResolvedValueOnce(mockFieldsResponse());
+
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -141,6 +148,7 @@ describe('ContactsPage', () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(mockListResponse([]))
+      .mockResolvedValueOnce(mockFieldsResponse())
       .mockResolvedValueOnce({
         ok: false,
         json: async () => ({ message: 'Save failed' }),
@@ -186,6 +194,8 @@ describe('ContactsPage', () => {
       ], 2)
     );
 
+    fetchMock.mockResolvedValueOnce(mockFieldsResponse());
+
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, data: null }),
@@ -223,6 +233,7 @@ describe('ContactsPage', () => {
       .mockResolvedValueOnce(
         mockListResponse([mockContact('c1', 'Alice', 'alice@example.com')], 1)
       )
+      .mockResolvedValueOnce(mockFieldsResponse())
       .mockResolvedValueOnce({
         ok: false,
         json: async () => ({ message: 'Delete failed' }),
@@ -258,7 +269,7 @@ describe('ContactsPage', () => {
     const dialog = screen.getByText('Delete contact').parentElement!;
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(screen.getByText('Alice')).toBeInTheDocument();
   });
 
@@ -325,6 +336,8 @@ describe('ContactsPage', () => {
         }),
       } as Response);
 
+      fetchMock.mockResolvedValueOnce(mockFieldsResponse());
+
       const page2Contacts = Array.from({ length: 5 }, (_, i) =>
         mockContact(`p2-${i}`, `Page2 ${i}`, `p2${i}@example.com`)
       );
@@ -369,6 +382,8 @@ describe('ContactsPage', () => {
           pagination: mockPagination(25, 1),
         }),
       } as Response);
+
+      fetchMock.mockResolvedValueOnce(mockFieldsResponse());
 
       fetchMock.mockResolvedValueOnce({
         ok: true,
