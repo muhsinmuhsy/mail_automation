@@ -1,6 +1,6 @@
 # Custom merge fields — implementation plan (Path C)
 
-> **Status:** PRODUCTION-READY (plan) — two reviews incorporated, awaiting implementation authorization.
+> **Status:** PRODUCTION-READY (plan) — five reviews incorporated, conflicts resolved, one clear set of requirements. Awaiting implementation authorization.
 > **Decision:** Path C (full Mailchimp-style user-defined custom merge fields), chosen because users have diverse and unpredictable goals; the field set cannot be hardcoded.
 > **Approach:** Hybrid model (recommended) — see "Architecture decision" below.
 > **Scope of this doc:** current system status, gap analysis, architecture decision, phased implementation plan, user journey, risks, verification gates, resolved decisions.
@@ -26,6 +26,40 @@ Second review classified the plan as architecture/database/compat/performance/CS
 5. **Resource limits** — cap custom fields per user, CSV columns, CSV rows, field name length, value length. Prevents a malicious/huge CSV from causing excessive DB work. See §11.14.
 
 Plus two strengthening notes: **reserved tokens as a single central function** (§11.2 updated) and **security + concurrency integration tests** added to §9.
+
+### Review 3 outcome (2026-09-07) — UX + correctness pass
+
+Third review flagged seven areas. All seven were **accepted** after verification (point 7 verified by running tests + build — all pass):
+
+1. **Field setup UX for nontechnical users** — auto-generate token from label, move up/down instead of sort-order number, merge-tag picker in subject AND body. See §11.15.
+2. **Missing-personalization pre-send warning** — before scheduling, warn "N contacts are missing Size." Let user exclude/continue/cancel. See §11.16.
+3. **Snapshot-at-scheduling-time behavior** — values are substituted when jobs are created, not when sent. Editing a contact after scheduling doesn't update already-scheduled emails. Must be documented. See §11.17.
+4. **Contradictory validation rules** — fix 200 vs 10,000 char conflict; date-only not datetime; distinguish blank vs missing; preserve `0` and `false`; define required-on-PATCH. See §11.18.
+5. **Approved-token boundary** — `buildTemplateContact` must expose ONLY approved tokens, not the raw Prisma contact object (which has `id`, `user_id`, `created_at`). Deletion usage check must use the same regex as the engine, not substring match. See §11.19.
+6. **Large-import + concurrency** — add CSV file-size limit + batch processing (don't hold one transaction for 5M inserts); concrete concurrency strategy for type changes. See §11.20.
+7. **Verification section update** — campaign tests now pass (39/39, verified 2026-09-07); `next build` now succeeds. Remove the stale exceptions. See §11.21.
+
+### Review 4 outcome (2026-09-07) — correctness hardening
+
+Fourth review flagged five remaining correctness gaps plus documentation inconsistencies. All **accepted**:
+
+1. **Date validation contradiction** — §11.18 says date-only but Phase 3/§11.12 still reference datetime; regex accepts impossible dates like `2026-02-31`. Fix: use calendar-validating check everywhere. See §11.22.
+2. **CSV partial-failure policy** — batching commits independent transactions; need to define what happens if batch 3 fails after 1-2 succeed, plus retry-without-duplicates. See §11.23.
+3. **Concurrency strategy incomplete** — re-reading in a transaction doesn't prevent concurrent changes; need version-based optimistic concurrency; deleted-field update must return conflict, not silent no-op. See §11.24.
+4. **Missing-value API contract** — define how Exclude/Continue are submitted, rechecked, and handle zero-recipient edge case. See §11.25.
+5. **Prototype-pollution safeguard** — `{{constructor}}`, `{{__proto__}}` could resolve inherited properties. Use `Object.create(null)` + `hasOwnProperty` check. See §11.26.
+
+Plus doc fixes: §6 user journey updated to label-first; "send time" references corrected to "scheduling time."
+
+### Review 5 outcome (2026-09-07) — final correctness hardening
+
+Fifth review flagged three remaining correctness gaps plus five consistency fixes. All **accepted**:
+
+1. **CSV retry not duplicate-free** — `findFirst` + `create` has a TOCTOU race; two concurrent retries can both find nothing and create duplicates. Fix: import session ID for idempotent retry (no unique constraint, no dedup, no overwrite). See §11.27.
+2. **Field versions must protect contact-value writes** — a contact update could save a value validated against an old field type while a concurrent request changes the type. Contact writes must re-validate inside the transaction. See §11.28.
+3. **Exclude vs Continue indistinguishable** — both send `acknowledgeMissingValues: true`; server can't tell them apart. Add `missingValueAction: "exclude" | "continue"`. See §11.29.
+
+Consistency fixes: Phase 1 adds `version` column; §11.12 date coercion fixed; Phase 4 old no-op wording replaced; §6 token made consistent (`t_shirt_size` throughout); DELETE checks version but doesn't increment (row is gone).
 
 ---
 
@@ -89,7 +123,7 @@ The scheduler already calls the substitution function per-recipient at job-gener
 | Capability | Status |
 |---|---|
 | Fixed set of 5 contact fields | ✅ Working |
-| `{{token}}` substitution at send time | ✅ Working |
+| `{{token}}` substitution at scheduling time | ✅ Working |
 | Per-recipient personalization in campaigns | ✅ Working |
 | Company field collected and stored | ✅ Working |
 | Company field displayed on contact card | ❌ Not shown (ContactCard renders only name + email) |
@@ -101,10 +135,13 @@ The scheduler already calls the substitution function per-recipient at job-gener
 | Segmentation by company / custom fields | ❌ Not supported (search is name + email only) |
 | Onboarding / audience-field setup wizard | ❌ Does not exist |
 
-### 1.3 Pre-existing test status (for verification context)
+### 1.3 Pre-existing test status (verified 2026-09-07)
 
-- `CampaignDetails` and `CampaignWizard` tests fail on the unmodified codebase — confirmed pre-existing via `git stash` on 2026-09-07, not regressions from this work.
-- `next build` fails environmentally (PostCSS sandbox issue). Use `npx tsc --noEmit` + `npx eslint .` + `npm test` as verification gates instead.
+- `npx vitest run tests/unit/components/campaigns` — **39/39 pass** (all CampaignDetails, CampaignWizard, CampaignsPage, CampaignForm, CampaignCard, CampaignList, SchedulePreview).
+- `npx tsc --noEmit` — clean.
+- `npx eslint .` — clean.
+- `npm run build` — **succeeds** (full route map generated).
+- All four gates pass on the unmodified codebase as of 2026-09-07. Previous notes about pre-existing campaign failures and build sandbox issues were stale and have been removed.
 
 ---
 
@@ -152,6 +189,7 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
     - `sort_order Int @default(0)`
     - `is_required Boolean @default(false)`
     - `is_default Boolean @default(false)` — reserved for future seeded defaults; not used in hybrid model.
+    - `version Int @default(0)` — optimistic concurrency control. Incremented on every PATCH. Checked (not incremented) on DELETE. See §11.24.
     - `created_at`, `updated_at` timestamps.
   - `ContactFieldValue`:
     - `id String @id @default(...) @db.Uuid`
@@ -161,6 +199,7 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
     - `created_at`, `updated_at` timestamps.
     - Unique on `(contact_id, field_id)`.
 - Add `contact_fields ContactField[]` and `contact_field_values ContactFieldValue[]` relations to `Contact` and `User`.
+- Add `import_session_id String? @db.Uuid` to `Contact` (nullable, set only during CSV imports; used for idempotent retry — see §11.27). Existing contacts have `null`; no backfill needed.
 - New Prisma migration under `prisma/migrations/` following the existing `YYYYMMDD_description` naming convention.
 
 **Seed:** None. The side table starts empty. Built-in fields stay as columns; users add custom fields via the UI.
@@ -176,10 +215,12 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
 
 **Files:**
 - `lib/email/template.ts` — keep `SUPPORTED_TEMPLATE_VARIABLES` and `replaceTemplateVariables` unchanged in signature. The 5 built-ins continue to resolve from the contact object.
-- New `lib/email/template-contact.ts` — `buildTemplateContact(contact, fieldValues): TemplateContact`:
+- New `lib/email/template-contact.ts` — `buildTemplateContact(contact, fieldValues, userFieldDefinitions): TemplateContact`:
   - Flattens built-in fields (`name, email, company, job_title`) from the contact.
   - Flattens custom field values into top-level keys by their `name` token (e.g. `{ size: "M", plan: "Pro" }`).
-  - Returns a single object the existing `replaceTemplateVariables` can consume without modification.
+  - **Returns a flat map containing ONLY approved tokens** (built-ins + the user's defined custom field names) — NOT the raw Prisma contact object. This prevents `{{id}}`, `{{user_id}}`, `{{created_at}}`, `{{updated_at}}` from resolving. See §11.19.
+  - **Prototype-pollution safeguard (see §11.26):** the returned map must be created with `Object.create(null)` (no prototype chain), so `{{constructor}}`, `{{__proto__}}`, `{{toString}}`, `{{valueOf}}` resolve to undefined and are left as literal tokens. Additionally, `replaceTemplateVariables` must use `Object.prototype.hasOwnProperty.call(contact, varName)` before accessing the value — defense in depth.
+  - The `userFieldDefinitions` parameter is the list of the user's `ContactField` names — only tokens in this list + the built-in list are included in the returned object.
 
 **Why this shape:** keeps `replaceTemplateVariables` pure and unchanged. The merge logic lives in one testable helper. The scheduler call site changes minimally.
 
@@ -187,6 +228,7 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
 
 **Email/HTML injection safety tests (mandatory — see §11.13):** custom field values enter outgoing emails. Add explicit test cases:
 - Token variants: `{{size}}`, `{{ size }}`, `{{SIZE}}` (case-insensitivity), `{{unknown}}` (passthrough), `{{name}}{{size}}` (adjacent tokens).
+- **Prototype pollution (see §11.26):** `{{constructor}}`, `{{__proto__}}`, `{{toString}}`, `{{valueOf}}` — all must return the literal token, NOT the inherited property. Test explicitly.
 - Value containing a token: `contact.size = "{{plan}}"` — must NOT recursively resolve; the literal `{{plan}}` goes into the email, not the plan value. (Current engine is non-recursive by design — verify with a test.)
 - Value containing HTML/script: `contact.size = "<script>alert(1)</script>"` — the substituted email body contains the literal string; it must NOT become executable HTML/JS. The correct mitigation depends on how the email body is rendered/sanitized downstream (MIME generation in `lib/email/mime.ts`). At minimum, document the substitution engine's behavior and add a test asserting no recursive resolution.
 
@@ -202,16 +244,17 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
   - `buildUpdateContactSchema(customFields: ContactField[]): z.ZodObject`
   - Base schema stays the same (name, email, company, job_title, notes).
   - For each custom field, add a key typed by `field_type`:
-    - `text` → `z.string().max(200).optional()` (or `.nonempty()` if `is_required`)
-    - `number` → `z.coerce.number().optional()` (or required)
-    - `date` → `z.string().datetime().optional()` (ISO 8601)
-    - `boolean` → `z.boolean().optional()`
+    - `text` → `z.string().max(MAX_FIELD_VALUE_LENGTH).optional()` (or `.nonempty()` if `is_required`). **Note:** custom field values use `MAX_FIELD_VALUE_LENGTH` (10,000 chars per §11.14), NOT the 200-char limit that applies to built-in `company`/`job_title` columns.
+    - `number` → `z.coerce.number().optional()` (or required). **`0` is a legitimate value**, not "missing" — do not use `.nonempty()` or truthiness checks.
+    - `date` → `z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((val) => { const d = new Date(val + 'T00:00:00Z'); return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === val; }, 'Invalid calendar date').optional()` (date-only, YYYY-MM-DD, rejects impossible dates like `2026-02-31`). NOT datetime. See §11.22.
+    - `boolean` → `z.boolean().optional()`. **`false` is a legitimate value**, not "missing" — do not use truthiness checks.
+  - **PATCH semantics (see §11.18):** distinguish "field not provided" (omit key → no change) from "field cleared" (key present, value null/empty → set to null). Required-ness is only validated for keys present in the payload; a PATCH that omits a required field does not trigger validation. A PATCH that explicitly sets a required field to null/empty is rejected.
 - Keep `importCsvSchema` as-is for now; CSV mapping changes in Phase 5.
 - Preserve `CreateContactInput` / `UpdateContactInput` type exports — they become the base inputs; a separate `CustomFieldValues` type covers the dynamic part.
 
 **Explicit type-coercion rules (mandatory — see §11.12):** when `field_type` is changed on an existing field, coercion must use explicit, testable rules — NOT JS loose coercion (`Number()`, `Boolean()`) because values are user-controlled:
 - `text → number`: `"123"` ✅, `"12.5"` ✅, `""` ✅ (→ null), `"abc"` ❌ reject. Use `z.coerce.number()` or a regex `/^-?\d+(\.\d+)?$/`.
-- `text → date`: `"2026-09-07"` ✅, `"2026-09-07T10:00:00Z"` ✅, `"hello"` ❌ reject. Use `z.string().datetime()` or `Date.parse()` with NaN check.
+- `text → date`: `"2026-09-07"` ✅, `"2026-02-31"` ❌ reject (impossible calendar date), `"2026-09-07T10:00:00Z"` ❌ reject (not date-only), `"hello"` ❌ reject. Use the same calendar-validating check as Phase 3: regex `/^\d{4}-\d{2}-\d{2}$/` + round-trip `new Date(val + 'T00:00:00Z')` check. See §11.22.
 - `text → boolean`: `"true"` ✅, `"false"` ✅ (case-insensitive), `"1"`/`"0"` ✅, `"maybe"` ❌ reject. Explicit allowlist, not `Boolean(value)`.
 - `number → text`: always ✅ (toString).
 - `date → text`: always ✅ (toISOString).
@@ -252,7 +295,7 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
     });
     ```
     Before the transaction, return usage counts for the confirmation dialog:
-    - `template_usage_count` — number of templates whose `subject` or `body` contains `{{token}}` (substring match).
+    - `template_usage_count` — number of templates whose `subject` or `body` contains the token, matched using the **same `VARIABLE_PATTERN` regex** as the substitution engine (`/\{\{\s*(\w+)\s*\}\}/g` with case-insensitive comparison), NOT a naive substring match. This ensures `{{size}}`, `{{ size }}`, and `{{SIZE}}` are all recognized consistently. See §11.19.
     - `contact_value_count` — number of `ContactFieldValue` rows for this field.
     - `affected_template_names` — names of the templates above (for display; cap at ~10, then "… and N more").
     The client `ConfirmDialog` shows: "This field is used by N templates. Deleting it will remove its values from M contacts. Templates will no longer resolve `{{token}}`." On confirm, run the transaction above.
@@ -287,6 +330,8 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
     - Any field name exceeds `MAX_FIELD_NAME_LENGTH` (50 chars).
     - Any value exceeds `MAX_FIELD_VALUE_LENGTH` (e.g. 10,000 chars).
     Return a clear error listing which limit was hit. This prevents a malicious or accidentally huge CSV from causing excessive database work.
+  - **File-size limit + batch processing (see §11.20):** reject the upload if the file exceeds `MAX_CSV_FILE_SIZE` (e.g. 10MB) before parsing. For large imports, process in **batches of ~1,000 rows** with a `createMany` per batch, NOT one giant transaction for all rows. Hold a transaction only for the field-definition creation (if "Create & Import") + the first batch; subsequent batches are independent `createMany` calls. This avoids holding a long-running transaction for 5M+ inserts. Report progress to the client if the import exceeds a threshold (e.g. >5,000 rows).
+  - **Concurrency strategy (see §11.20, §11.24):** version-based optimistic locking on `ContactField` — every PATCH/DELETE includes `version: expectedVersion` in the `where` clause; mismatch → 409 Conflict. For simultaneous same-token creation, the DB unique constraint on `(user_id, name)` produces P2002 — handle as a clean 409 Conflict. For delete-during-contact-update, the contact-value write checks the field still exists; if deleted, return 409 Conflict "Field was deleted" — NOT a silent no-op. Contact-value writes re-validate against the field's current type inside the transaction (see §11.28).
 
 **Verification gate:** existing `tests/integration/api/contacts-crud.test.ts` and `contacts-import-csv.test.ts` still pass unchanged (backward compat). New integration tests for the `contact-fields` routes (create, list, update, delete, token-collision rejection, type-change rejection). **Security tests (mandatory — see §9):** cross-user authorization tests (User A cannot read/update/delete User B's fields or write values into them). **Concurrency tests:** simultaneous creation of the same token (expect clean P2002 conflict handling), simultaneous update of the same field, delete while a contact update is in flight.
 
@@ -299,7 +344,10 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
 **New page:** `app/(dashboard)/settings/fields/page.tsx`
 - Lists the user's `ContactField` definitions in a card grid or table (match existing list-page pattern).
 - "Add field" button toggles an inline form (match the `showAddContact` pattern in `contacts/page.tsx`).
-- Per-field actions: edit label, reorder, toggle required, delete (via `ConfirmDialog` showing template-usage count + contact-value count + affected template names per Phase 4 `DELETE`).
+- **Field form UX (see §11.15):**
+  - Primary input is **"Field label"** (e.g. "T-shirt size"). The token is **auto-generated** from the label (`t_shirt_size`) and shown as read-only below. An "Edit token" toggle reveals an advanced input for users who want to override. This makes field creation accessible to nontechnical users.
+  - **Move up / move down buttons** replace the sort-order number input. Users don't think in ordinal numbers. The API receives the new position via a reorder endpoint or via `sort_order` computed from the new list position.
+- Per-field actions: edit label, move up, move down, toggle required, delete (via `ConfirmDialog` showing template-usage count + contact-value count + affected template names per Phase 4 `DELETE`).
 - Built-in fields (name, email, company, job_title, notes) shown as locked/non-editable rows for clarity.
 
 **Modified components:**
@@ -314,7 +362,7 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
   - Update helper text on line 18: "CSV should contain name, email, and any custom field columns by their token name (e.g. `size`, `plan`). Unknown columns will prompt you to create them as fields before importing."
   - On import, if the API returns unknown columns, show a confirmation dialog listing them with "Create & Import" / "Cancel" actions (match existing `ConfirmDialog` pattern).
 - `components/templates/TemplateForm.tsx`
-  - Add a merge-tag picker (small dropdown or popover button) above the `Body` textarea.
+  - Add a merge-tag picker (small dropdown or popover button) above **both** the `Subject` input AND the `Body` textarea. Merge tags are used in subject lines too (the scheduler substitutes both `template.subject` and `template.body` at `scheduler.ts:46-47`). See §11.15.
   - Lists built-in tokens (`{{name}}`, `{{email}}`, `{{company}}`, `{{job_title}}`, `{{first_name}}`) + the user's custom field tokens (`{{size}}`, `{{plan}}`, …).
   - Each entry shows **label + token**, e.g. "Size ({{size}})" — helps authors who know the field by its display label. Built-ins show their natural name, e.g. "Company ({{company}})".
   - Clicking a token inserts it at the cursor position in the textarea.
@@ -325,18 +373,23 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
 
 ---
 
-### Phase 6 — Scheduler (send-time wiring)
+### Phase 6 — Scheduler (scheduling-time wiring)
 
 **Files:**
 - `lib/jobs/scheduler.ts`
   - Line 21-23: change `prisma.contact.findMany` to `include: { contact_field_values: { include: { field: true } } } }`.
-  - Before calling `replaceTemplateVariables` on lines 46-47, call `buildTemplateContact(contact, contact.contact_field_values)` from Phase 2.
+  - Before calling `replaceTemplateVariables` on lines 46-47, call `buildTemplateContact(contact, contact.contact_field_values, userFieldDefinitions)` from Phase 2.
   - The substitution call sites stay otherwise identical:
     ```ts
-    const templateContact = buildTemplateContact(contact, contact.contact_field_values);
+    const templateContact = buildTemplateContact(contact, contact.contact_field_values, userFieldDefinitions);
     subject: replaceTemplateVariables(template.subject, templateContact),
     body:    replaceTemplateVariables(template.body, templateContact),
     ```
+
+**Snapshot-at-scheduling-time behavior (must document — see §11.17):** substitution happens in `generateCampaignJobs`, which creates `EmailJob` rows with the **already-substituted** `subject` and `body` (final text, not template + contact references). This means:
+- Editing a contact **after** jobs are generated but **before** they are sent does NOT update the scheduled email — the job already contains the snapshot of the values at generation time.
+- Editing a template after jobs are generated has the same non-effect.
+- This is intentional (it prevents last-minute contact edits from changing emails mid-send) but must be documented in the UI (e.g., a note on the campaign schedule step: "Personalization values are captured when the campaign is scheduled. Editing contacts afterward will not affect already-scheduled emails.") and in the plan.
 
 **Verification gate:** new unit test for `generateCampaignJobs` with a contact that has custom field values, asserting the scheduled `subject` and `body` contain the substituted custom values.
 
@@ -346,8 +399,8 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
 
 - `npx tsc --noEmit` — typecheck clean.
 - `npx eslint .` — lint clean.
-- `npm test` — all green except the known pre-existing campaign failures (`CampaignDetails`, `CampaignWizard` — see §1.3).
-- Do NOT use `next build` as a gate (environmental sandbox failure — see §1.3).
+- `npm test` — all tests green (full suite passes as of 2026-09-07).
+- `npm run build` — production build succeeds.
 - Manual smoke test:
   1. Create a custom field "Size" (token `size`, type `text`) via `/settings/fields`.
   2. Add a contact with `size = "M"`.
@@ -385,24 +438,23 @@ This is what an end user does after Path C ships. **No developer, no migration, 
 
 1. User opens `/settings/fields` (the new audience-fields page).
 2. Clicks "Add field". Form appears:
-   - Field name (token): `size` — lowercase, alphanumeric + underscore, must not collide with built-ins.
-   - Display label: `Size` — mutable later without breaking templates.
-   - Field type: `text` (or `number`).
+   - Field label: `T-shirt size` — the primary input. Token `t_shirt_size` is auto-generated below (read-only, with an "Edit token" toggle for advanced users).
+   - Field type: `text` (or `number`, `date`, `boolean`).
    - Required: No.
-   - Sort order: `5`.
+   - Position: determined by move up / move down buttons (not a numeric sort order).
 3. Saves. POST to `/api/contact-fields` creates one `ContactField` row.
 4. **Automatically, with no further user action:**
-   - `/contacts` "Add contact" form now shows a "Size" input below Company.
-   - `/contacts` contact cards show "Size: M" for contacts that have a value.
-   - `/contacts` CSV import accepts a `size` column header and maps it.
-   - `/templates` merge-tag picker lists `{{size}}` alongside the built-ins.
-   - `POST /api/contacts` validation accepts a `size` key in the body.
-   - At campaign send time, `{{size}}` in any template is replaced per-recipient.
-5. User adds a contact with `size = "M"`.
-6. User writes a template `Available in size {{size}}`.
+   - `/contacts` "Add contact" form now shows a "T-shirt size" input below Company.
+   - `/contacts` contact cards show "T-shirt size: M" for contacts that have a value.
+   - `/contacts` CSV import accepts a `t_shirt_size` column header and maps it.
+   - `/templates` merge-tag picker lists `{{t_shirt_size}}` alongside the built-ins.
+   - `POST /api/contacts` validation accepts a `t_shirt_size` key in the body.
+   - At campaign scheduling time, `{{t_shirt_size}}` in any template is replaced per-recipient. (Note: substitution happens at job-creation time, not at send time — see §11.17.)
+5. User adds a contact with `t_shirt_size = "M"`.
+6. User writes a template `Available in size {{t_shirt_size}}`.
 7. User sends a campaign; the email goes out as "Available in size M".
 
-**Later, the user can:** rename the label ("Size" → "T-shirt Size"), reorder it, make it required (only enforced on new/updated contacts), change type (only if existing values are coercible), or delete it (cascades to all values; templates containing `{{size}}` will then leave the literal `{{size}}` in sent emails).
+**Later, the user can:** rename the label ("T-shirt size" → "Shirt Size"), reorder it, make it required (only enforced on new/updated contacts), change type (only if existing values are coercible), or delete it (cascades to all values; templates containing `{{t_shirt_size}}` will then leave the literal `{{t_shirt_size}}` in sent emails).
 
 ---
 
@@ -445,10 +497,10 @@ With Path C, the user does step 2 in §6 above and everything else is automatic.
 ## 9. Verification gates (per standing expectation)
 
 Every phase must pass before moving on:
-- `npx tsc --noEmit` — typecheck.
-- `npx eslint .` — lint.
-- `npm test` — unit + integration tests. Pre-existing campaign failures (§1.3) are acceptable; any new failure is a regression and blocks.
-- `next build` is NOT a gate (environmental failure — §1.3).
+- `npx tsc --noEmit` — typecheck clean.
+- `npx eslint .` — lint clean.
+- `npm test` — all tests green. As of 2026-09-07, the full suite passes (including campaign tests). Any failure is a regression and blocks.
+- `npm run build` — production build succeeds. As of 2026-09-07, this passes. Any failure blocks.
 - New code must have corresponding tests. Modified code must have updated tests.
 - UI changes must pass the UI-consistency audit (§8, item 8).
 - **Security tests (mandatory for Phase 4):** integration tests asserting cross-user isolation — User A cannot GET/PATCH/DELETE User B's `ContactField`, cannot write `ContactFieldValue` into User B's field, and cannot import into User B's field definitions. These follow the existing integration-test pattern in `tests/integration/api/`.
@@ -578,7 +630,7 @@ This applies to: `GET /api/contact-fields`, `POST /api/contact-fields`, `PATCH /
 
 **Rules (in Phase 3):**
 - `text → number`: regex `/^-?\d+(\.\d+)?$/`; `""` → null; else reject.
-- `text → date`: `z.string().datetime()` or `Date.parse()` with NaN check; else reject.
+- `text → date`: regex `/^\d{4}-\d{2}-\d{2}$/` + round-trip `new Date(val + 'T00:00:00Z')` check (rejects `2026-02-31` and datetime strings); else reject. See §11.22.
 - `text → boolean`: allowlist `["true", "false", "1", "0"]` (case-insensitive); else reject.
 - `number → text`, `date → text`, `boolean → text`: always allowed (toString).
 - If ANY existing value fails, reject the type change with a clear error listing up to ~5 offending values.
@@ -612,16 +664,300 @@ This applies to: `GET /api/contact-fields`, `POST /api/contact-fields`, `PATCH /
 
 **Why:** without limits, a malicious or accidentally huge CSV (10,000 columns, 1M rows, 1MB values) can cause excessive database work, OOM, or denial of service. Limits are checked before processing begins, not mid-import. Return a clear error naming the limit that was hit.
 
+### 11.15 Field setup UX for nontechnical users → auto-token, move up/down, picker in subject + body
+
+**Decision:**
+- **Auto-generate token from label:** the "Add field" form's primary input is "Field label" (e.g. "T-shirt size"). The token (`t_shirt_size`) is auto-generated by lowercasing, replacing spaces/non-alphanumeric with underscores, and truncating to 50 chars. Shown as read-only with an "Edit token" toggle for advanced users. If the generated token collides with a reserved token or an existing field, append `_2`, `_3`, etc.
+- **Move up / move down buttons** replace the sort-order number input. The API receives the new position; `sort_order` is recomputed from the list position.
+- **Merge-tag picker in subject AND body:** the picker appears above both the Subject input and the Body textarea in `TemplateForm.tsx`. The scheduler substitutes both `template.subject` and `template.body` (`scheduler.ts:46-47`), so authors need token insertion in both places.
+
+**Why:** nontechnical users think in labels, not tokens. Forcing them to invent a lowercase-alphanumeric token is friction. Sort-order numbers are developer UX, not user UX. Subject-line personalization is common ("Hi {{first_name}}, your {{plan}} plan…") and the picker must support it.
+
+### 11.16 Missing-personalization pre-send warning → warn at scheduling time
+
+**Decision:** When a user schedules a campaign, before generating jobs, scan the selected contacts for missing values in fields the template references. If any contacts are missing values:
+- Show a warning: "N contacts are missing values for: Size, Plan. Emails to these contacts will contain the literal `{{size}}`, `{{plan}}` in the body."
+- Offer three actions: **[Exclude affected contacts]**, **[Continue anyway]**, **[Cancel]**.
+- The chosen action is submitted as `missingValueAction: "exclude" | "continue"` (see §11.29). The server enforces each differently. `acknowledgeMissingValues: true` is NOT used — the explicit enum replaces it.
+
+**Why:** sending "Hello {{size}}" looks broken to the recipient and damages sender reputation. This is a pre-send check, not fallback syntax — it doesn't require Path B's `{{x:default}}`. It surfaces the problem at the right moment (when the user can still act) without blocking the feature.
+
+**Implementation note:** this check runs in the campaign scheduling API, not in the scheduler. It scans the template for `{{token}}` patterns, maps them to custom fields, queries the selected contacts for missing values, and returns the counts. The UI shows the warning before the user confirms scheduling.
+
+**API contract (see §11.25):**
+- **Pre-check:** `POST /api/campaigns/[id]/pre-check` with `{ templateId, contactIds }` returns:
+  ```json
+  {
+    "missingValues": [
+      { "token": "size", "label": "Size", "contactCount": 12, "contactIds": ["..."] },
+      { "token": "company", "label": "Company", "contactCount": 3, "contactIds": ["..."] }
+    ],
+    "unknownTokens": ["{{deleted_field}}"],
+    "affectedContactCount": 15,
+    "totalContactCount": 100
+  }
+  ```
+  Scans **both** `template.subject` and `template.body` for tokens. Includes missing **built-in** fields (e.g. `{{company}}` on a contact with no company). Reports **unknown/deleted** tokens (template references a field that no longer exists).
+- **Submit — Exclude:** `POST /api/campaigns/[id]/schedule` with `{ contactIds: [...filtered], missingValueAction: "exclude" }`. Server re-checks; if remaining contacts still have missing values, returns 400. If filtered list is empty, returns 400 "No recipients remaining after excluding contacts with missing values. Cannot create an empty campaign."
+- **Submit — Continue:** `POST /api/campaigns/[id]/schedule` with `{ contactIds: [...all], missingValueAction: "continue" }`. Server proceeds; missing values leave literal `{{token}}` in the email.
+- **Submit — Cancel:** client does not submit; returns to campaign editor.
+- **Recheck:** the scheduling API always re-runs the pre-check. If `missingValueAction` is absent and there are missing values, returns 400 with the pre-check result. This prevents bypassing the check.
+
+### 11.17 Snapshot-at-scheduling-time → document explicitly
+
+**Decision:** Document in the plan and in the campaign UI that personalization values are captured when jobs are generated (`generateCampaignJobs` in `lib/jobs/scheduler.ts`), not when the worker sends them. `EmailJob` rows store the already-substituted `subject` and `body` (final text). Editing a contact or template after scheduling does not affect already-scheduled emails.
+
+**Why:** this is the existing design (the scheduler at lines 46-47 already substitutes at job-creation time), and it's intentional — it prevents last-minute edits from changing emails mid-send. But it's non-obvious and must be communicated to users so they don't expect editing a contact to update a scheduled email. Add a note on the campaign schedule step: "Personalization values are captured when the campaign is scheduled."
+
+### 11.18 Validation rule consistency → fix contradictions
+
+**Decision:**
+- **Value length:** custom field values use `MAX_FIELD_VALUE_LENGTH` (10,000 chars, per §11.14). The 200-char limit applies only to built-in `company` and `job_title` columns (`VarChar(200)` in the schema). `ContactFieldValue.value` should be `@db.Text` (PostgreSQL `text`, effectively unbounded at the DB level) with the 10,000-char limit enforced in validation.
+- **Date fields:** `field_type: date` validates as date-only `YYYY-MM-DD` with **calendar-validity check** (rejects `2026-02-31`), NOT ISO 8601 datetime with time. Store as string. Use `z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine()` with a `new Date(val + 'T00:00:00Z')` round-trip check. See §11.22. If datetime is needed later, add a separate `datetime` field type.
+- **Blank vs missing (PATCH semantics):** a key absent from the PATCH payload means "no change." A key present with `null` or empty string means "clear the value" (set to null). These are distinct operations.
+- **`0` and `false` are legitimate values:** for `number` fields, `0` is a valid value, not "missing." For `boolean` fields, `false` is a valid value, not "missing." Validation must not use truthiness checks or `.nonempty()` for these types.
+- **Required on PATCH:** required-ness is only validated for keys present in the payload. A PATCH that omits a required field does not trigger validation (partial update). A PATCH that explicitly sets a required field to null/empty is rejected.
+
+**Why:** the previous plan had contradictory limits (200 vs 10,000), mixed date and datetime, and didn't distinguish blank from missing. These are correctness issues, not just polish.
+
+### 11.19 Approved-token boundary → expose only approved tokens, consistent usage check
+
+**Decision:**
+- `buildTemplateContact` must return a **flat map of only approved tokens** (the 5 built-ins + the user's defined custom field names), NOT the raw Prisma `Contact` object. The raw object has `id`, `user_id`, `created_at`, `updated_at`, and relation fields — none of these should be resolvable via `{{id}}` etc. This is a security boundary, not just a convenience.
+- The deletion usage check (`template_usage_count` in Phase 4 `DELETE`) must use the **same `VARIABLE_PATTERN` regex** as the substitution engine (`/\{\{\s*(\w+)\s*\}\}/g` with case-insensitive token comparison), NOT a naive substring match. This ensures `{{size}}`, `{{ size }}`, and `{{SIZE}}` are all recognized as usage of the `size` field.
+
+**Why:** the current `replaceTemplateVariables` reads `contact[varName]` for any `varName` — if the contact object exposes `user_id`, then `{{user_id}}` resolves to it. Reserving names at field-creation time is insufficient; the rendering boundary must also be enforced. Inconsistent usage detection (substring vs regex) would either over-count or under-count affected templates on delete.
+
+### 11.20 Large-import + concurrency → file-size limit, batch processing, optimistic concurrency
+
+**Decision:**
+- **CSV file-size limit:** reject uploads exceeding `MAX_CSV_FILE_SIZE` (default 10MB) before parsing.
+- **Batch processing:** for imports exceeding ~1,000 rows, process in batches of ~1,000. Each batch is a transaction containing the contact + its custom field values together (atomic per batch). This avoids holding a long-running transaction for 5M+ inserts. Report progress to the client for imports >5,000 rows.
+- **Partial-failure policy (see §11.23):** if batch N fails after batches 1..N-1 succeed, the successful batches remain committed. Return a structured response: `{ imported: N, failed: M, failedRows: [{ row: R, email: "...", errors: ["..."] }] }`. The client shows "N imported, M failed" and offers "Retry failed rows" which re-submits only the failed rows. Retry is idempotent via import session ID (see §11.27) — no duplicates, no overwrites, no unique constraint needed.
+- **Concurrency — version-based optimistic locking (see §11.24):** `version Int @default(0)` on `ContactField`. PATCH checks + increments version; DELETE checks but does NOT increment (row is gone). Mismatch → 409 Conflict.
+- **Concurrency — contact-value writes (see §11.28):** use Serializable transaction isolation with bounded retries (3). On serialization failure (P2034), re-read field types, re-validate values, retry. If validation fails after retry, return 409.
+- **Concurrency — same-token creation:** the DB unique constraint on `(user_id, name)` produces P2002. Handle as a clean 409 Conflict with message "A field with this token already exists."
+
+**Why:** 100 fields × 50,000 rows = 5M `ContactFieldValue` rows in one import — too many for a single transaction. Without a file-size limit, a 1GB CSV could OOM the parser. Without batch processing, the transaction would hold locks for minutes. Without version-based concurrency + Serializable isolation, type changes could corrupt values being written concurrently. Without import session ID, retries could create duplicates.
+
+### 11.21 Verification section → remove stale exceptions, require full suite + build
+
+**Decision:** Remove the exceptions for pre-existing campaign test failures and `next build` sandbox failures. As of 2026-09-07 (verified by running all four gates), the full test suite passes (39/39 campaign tests + all others), `tsc` is clean, `eslint` is clean, and `npm run build` succeeds. All four are mandatory gates; any failure is a regression.
+
+**Why:** the pre-existing-failure notes were accurate when written but became stale. Historical exceptions must not become permanent acceptance criteria — they hide real regressions. Re-verify at the start of each phase; if a gate breaks, fix it or investigate before proceeding.
+
+### 11.22 Date validation → calendar-validating, date-only, consistent everywhere
+
+**Decision:** All date validation (Phase 3 field validation, §11.12 coercion rules, §11.18 validation consistency) uses **one** rule: date-only `YYYY-MM-DD` with calendar-validity check. NOT datetime. NOT regex-only (which accepts `2026-02-31`).
+
+**Implementation:** `z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((val) => { const d = new Date(val + 'T00:00:00Z'); return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === val; }, 'Invalid calendar date')`. The round-trip check rejects impossible dates because `new Date('2026-02-31T00:00:00Z')` rolls over to March 3, and the round-trip doesn't match.
+
+**Why:** the previous plan contradicted itself — §11.18 said date-only but Phase 3/§11.12 still accepted datetime, and the regex-only check accepted `2026-02-31`. One consistent, calendar-validating rule everywhere.
+
+### 11.23 CSV partial-failure policy → per-batch transactions, structured response, idempotent retry
+
+**Decision:**
+- Each batch is a transaction containing the contact + its custom field values together (atomic per batch). If batch N fails, batches 1..N-1 remain committed.
+- Response: `{ imported: N, failed: M, failedRows: [{ row: R, email: "...", errors: ["..."] }] }`.
+- Client shows "N imported, M failed" with a "Retry failed rows" action.
+- **Idempotent retry (see §11.27):** retry re-submits only the failed rows with the same `import_session_id` as the original import. The server checks whether a contact with that email was already imported in this session (by `import_session_id`) — if yes, skip; if no, create. This prevents duplicates without requiring a DB unique constraint, without overwriting existing contacts, and without destructive deduplication.
+
+**Why:** without a partial-failure policy, a single bad row in batch 3 of 50 would roll back batches 1-2 (hundreds of successfully imported contacts) — unacceptable UX. Without idempotent retry, retrying would create duplicate contacts. The import session ID approach is safe, non-destructive, and doesn't require schema constraints beyond a nullable column.
+
+### 11.24 Concurrency → version-based optimistic locking on ContactField
+
+**Decision:**
+- Add a `version Int @default(0)` column to `ContactField` (Phase 1 schema).
+- Every `PATCH /api/contact-fields/[id]` includes the client's last-known version. The server's `where` clause includes `version: expectedVersion`. If the version doesn't match, the update affects 0 rows → return 409 Conflict "This field was modified by another request. Please refresh and retry." On success, increment the version.
+- `DELETE /api/contact-fields/[id]` checks the version in the `where` clause (same 409 on mismatch) but does NOT increment — the row is being deleted, so incrementing is unnecessary.
+- **Deleted-field update:** when writing `ContactFieldValue`, if the `ContactField` was deleted between read and write, return 409 Conflict "Field '{{token}}' was deleted. Please refresh and retry." — NOT a silent no-op.
+
+**Why:** re-reading values inside a transaction doesn't prevent another request from changing them afterward — the transaction only provides atomicity, not isolation against concurrent writes. Version-based optimistic locking is the standard pattern. A silent no-op on deleted-field update would hide the problem and leave the user thinking their update succeeded.
+
+### 11.25 Missing-value API contract → pre-check endpoint, submit flow, zero-recipient guard
+
+**Decision:** The missing-value check (§11.16) has a concrete API contract:
+
+**Pre-check:** `POST /api/campaigns/[id]/pre-check` with `{ templateId, contactIds }` returns `{ missingValues: [{ token, label, contactCount, contactIds }], unknownTokens: [...], affectedContactCount, totalContactCount }`.
+- Scans **both** `template.subject` and `template.body` for tokens using the `VARIABLE_PATTERN` regex.
+- Includes missing **built-in** fields (e.g. `{{company}}` on a contact with no company), not just custom fields.
+- Reports **unknown/deleted** tokens separately.
+
+**Submit flow:**
+- **Exclude:** `POST /api/campaigns/[id]/schedule` with `{ contactIds: [...filtered], missingValueAction: "exclude" }`. Server re-checks; if remaining contacts still have missing values, returns 400. If filtered list is empty, returns 400 "No recipients remaining after excluding contacts with missing values. Cannot create an empty campaign."
+- **Continue:** same endpoint with `{ contactIds: [...all], missingValueAction: "continue" }`. Server proceeds; missing values leave literal `{{token}}`.
+- **Cancel:** client does not submit; returns to campaign editor.
+
+**Recheck:** the scheduling API **always** validates ownership, recipients, and template, and **always runs the pre-check** to detect missing values. `missingValueAction` controls the response: `"exclude"` + missing values → 400; `"continue"` + missing values → proceed (explicitly permitted); absent + missing values → 400 (force user to choose). Prevents bypassing the check via direct API call.
+
+**Why:** without a defined API contract, client and server could disagree on what "exclude" means, the zero-recipient edge case could create an empty campaign, and a direct API call could bypass the check.
+
+### 11.26 Prototype-pollution safeguard → Object.create(null) + hasOwnProperty check
+
+**Decision:**
+- `buildTemplateContact` returns `Object.create(null)` — a map with no prototype chain. `{{constructor}}`, `{{__proto__}}`, `{{toString}}`, `{{valueOf}}` resolve to `undefined` and are left as literal tokens.
+- `replaceTemplateVariables` uses `Object.prototype.hasOwnProperty.call(contact, varName)` before accessing the value — defense in depth.
+- **Tests:** explicitly test `{{constructor}}`, `{{__proto__}}`, `{{toString}}`, `{{valueOf}}`, `{{hasOwnProperty}}` — all must return the literal token, NOT the inherited property.
+
+**Why:** a plain `{ size: "M" }` has `obj.constructor === Object` (the constructor function). `{{constructor}}` would produce `"function Object() { [native code] }"` in the email. `Object.create(null)` + `hasOwnProperty` is the standard safeguard. Critical because custom field values are user-controlled and enter outgoing emails.
+
+### 11.27 CSV retry idempotency → import session ID, no unique constraint, no dedup, no overwrite
+
+**Decision:**
+- **Add `import_session_id String? @db.Uuid` to `Contact`** (Phase 1, nullable, set only during CSV imports). Existing contacts have `null`; no backfill needed.
+- **Each import** gets a unique session ID (UUID). All contacts created during the import are tagged with `import_session_id = sessionId`.
+- **Retry** re-submits only the failed rows with the **same** session ID. The session lookup and contact creation must happen **inside the same Serializable transaction** (see §11.28) — `findFirst({ where: { user_id, email, import_session_id: sessionId } })` + `create` in one atomic operation. If found, **skip** (already imported in this session — don't create, don't overwrite). If not found, create with the session ID. On serialization failure (P2034), retry. This prevents two concurrent retry requests from both finding nothing and both creating duplicates.
+- **Concurrent-retry test (mandatory):** add an integration test that submits the same import session concurrently (two parallel requests with the same `import_session_id` and overlapping rows) and verifies each intended contact is created exactly once.
+- **No `@@unique([user_id, email])` constraint** is added. No deduplication of existing data. No deletion of "duplicate" contacts. No overwriting of existing contacts. The import session ID provides idempotency within a single import session without touching contact uniqueness.
+- **Non-destructive:** if a contact was manually edited after the initial import, the retry won't touch it — it's already tagged with the session ID, so the retry skips it. If a contact exists with the same email but a different session ID (from a previous import), the retry creates a new contact — this is the same behavior as the initial import and is not a duplicate within the session.
+
+**Why:** the previous approach (add `@@unique([user_id, email])` + dedup existing data + upsert on retry) was destructive — "keep the newest contact and delete the rest" could discard differing contact information, cascade-delete `EmailJob`/`EmailLog` references, and lose user data. The import session ID approach is safe: it provides idempotent retry within a session without changing contact uniqueness, without deleting anything, and without overwriting existing contacts. The only cost is a nullable column on `Contact`.
+
+### 11.28 Field version protects contact-value writes → Serializable transactions with bounded retries
+
+**Decision:** All operations that read a field's type and then write contact values (or mutate the field definition) must use **Serializable transaction isolation** with **bounded retries (3)**:
+
+```ts
+for (let attempt = 0; attempt < 3; attempt++) {
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Re-read field types inside the transaction
+      const fields = await tx.contactField.findMany({ where: { user_id }, select: { id: true, name: true, field_type: true, version: true } });
+      // Re-validate values against CURRENT types
+      for (const [token, value] of Object.entries(customValues)) {
+        const field = fields.find(f => f.name === token);
+        if (!field) throw new ConflictError(`Field '{{${token}}}' was deleted. Please refresh and retry.`);
+        if (!validateValue(value, field.field_type)) throw new ConflictError(`Field '{{${token}}}' type changed. Value '${value}' is invalid. Please refresh and retry.`);
+      }
+      // Write — safe because Serializable prevents concurrent type changes from committing
+      await tx.contactFieldValue.upsert(...);
+    }, { isolationLevel: 'Serializable' });
+    break; // success
+  } catch (e) {
+    if (e.code === 'P2034' && attempt < 2) continue; // serialization failure → retry
+    throw e; // exhausted retries or different error
+  }
+}
+```
+
+This applies to: `POST /api/contacts`, `PATCH /api/contacts/[id]`, CSV import batches, `PATCH /api/contact-fields/[id]` (type changes), and `DELETE /api/contact-fields/[id]`.
+
+**Why:** re-reading + re-validating inside a READ COMMITTED transaction leaves a window for the field type to change between the read and the write. Serializable isolation closes this window — if a concurrent field-type change commits, the contact-value write transaction fails with P2034 (serialization failure) and retries. On retry, it re-reads the (now changed) field type, re-validates, and either succeeds (if the value is still valid) or returns 409 (if not). Simply reading the version doesn't enforce this — the version check on `ContactField` protects competing field-definition edits, but not the read-validate-write cycle on contact values. Serializable + retries is the standard pattern for this class of concurrency.
+
+### 11.29 Missing-value action → explicit `missingValueAction` parameter
+
+**Decision:** The campaign schedule request includes an explicit `missingValueAction: "exclude" | "continue"` parameter (not just `acknowledgeMissingValues: true`):
+
+```json
+POST /api/campaigns/[id]/schedule
+{
+  "contactIds": ["..."],
+  "templateId": "...",
+  "missingValueAction": "exclude" | "continue"
+}
+```
+
+**Server enforcement:** the server **always** validates ownership (user owns the campaign), recipients (contact IDs are valid and owned), template (exists and owned), and **always runs the pre-check** to detect missing values. The `missingValueAction` parameter controls the **response** to missing values, not whether the check runs:
+- **`"exclude"`:** if any submitted contacts have missing values, return 400 "Exclude action submitted, but N contacts still have missing values. Please filter them out." This catches a client bug where the client said "exclude" but didn't filter.
+- **`"continue"`:** missing values are explicitly permitted — proceed with literal `{{token}}` in the email body. The pre-check ran (to detect the situation), but the action allows proceeding.
+- **Absent:** if there are missing values, return 400 with the pre-check result (force the user to choose). If there are no missing values, proceed (no action needed).
+- **Zero-recipient guard:** if `"exclude"` and the filtered list is empty, return 400 "No recipients remaining after excluding contacts with missing values. Cannot create an empty campaign."
+
+**Why:** with only `acknowledgeMissingValues: true`, the server can't distinguish "exclude" from "continue" — both send the same flag. An explicit action parameter lets the server enforce the client's intent and catch bugs.
+
 ---
 
-## 12. Sign-off
+## 12. Testing plan
+
+All tests follow existing codebase conventions: `vitest` (`describe`, `it`, `expect`, `vi`), `@testing-library/react` for components, `vi.mock` for auth/Prisma/rate-limit in integration tests. Every new file mirrors the naming and structure of an existing neighbor. **Every phase must land its tests before the next phase begins.**
+
+### 12.1 Unit tests — `tests/unit/`
+
+| File | Status | Phase | Covers |
+|---|---|---|---|
+| `email/template.test.ts` | MODIFY | 2 | Custom tokens, prototype pollution (`{{constructor}}` etc. → literal), non-recursive resolution, HTML/script passthrough, `Object.create(null)` + `hasOwnProperty` |
+| `email/template-contact.test.ts` | NEW | 2 | `buildTemplateContact`: flattens built-ins + custom into `Object.create(null)`, excludes raw Prisma fields, only approved tokens |
+| `validation/contact.test.ts` | NEW | 3 | `buildCreateContactSchema`/`buildUpdateContactSchema`: each field type, required/optional, `0` and `false` preserved, date calendar validation (rejects `2026-02-31`), PATCH blank-vs-missing, 10K char limit |
+| `validation/merge-field-names.test.ts` | NEW | 3 | `isReservedMergeFieldName`: built-ins, system tokens, `_` prefix, allowed names |
+| `validation/contact-coercion.test.ts` | NEW | 3 | Coercion rules: `text→number` (`"abc"` ❌), `text→date` (`"2026-02-31"` ❌), `text→boolean` (`"maybe"` ❌), all valid conversions, rejects on any failure |
+| `campaigns/scheduler.test.ts` | MODIFY | 6 | `generateCampaignJobs` with custom field values, snapshot-at-scheduling-time behavior, `buildTemplateContact` integration |
+| `components/contacts/ContactForm.test.tsx` | MODIFY | 5 | Dynamic field rendering from `fields` prop, required validation per field, input types (text/number/date/boolean), submit body includes custom values |
+| `components/contacts/ContactCard.test.tsx` | MODIFY | 5 | Custom field label/value display for non-empty values, no display for empty values |
+| `components/contacts/ContactImport.test.tsx` | MODIFY | 5 | Unknown-columns prompt dialog, "Create & Import" / "Cancel" actions, updated helper text |
+| `components/templates/TemplateForm.test.tsx` | MODIFY | 5 | Merge-tag picker renders label + token, inserts at cursor, appears above Subject AND Body |
+| `components/settings/FieldsPage.test.tsx` | NEW | 5 | Field list, add-field form (label-first, auto-token, edit-token toggle), move up/down, delete dialog with template/contact counts |
+
+### 12.2 Integration tests — `tests/integration/`
+
+| File | Status | Phase | Covers |
+|---|---|---|---|
+| `api/contact-fields-crud.test.ts` | NEW | 4 | GET/POST/PATCH/DELETE for contact-fields, token collision rejection, type change with coercion, version conflict (409), ownership scoping (`user_id` in every `where`), rate limiting |
+| `api/contact-fields-security.test.ts` | NEW | 4 | Cross-user: User A cannot GET/PATCH/DELETE User B's fields, cannot write values into User B's fields, cannot import into User B's field definitions |
+| `api/contact-fields-concurrency.test.ts` | NEW | 4 | **Mock-based** (verifies app handles error codes): same-token race (P2002 → 409), version conflict (stale version → 409), delete-during-contact-update (→ 409, not no-op), P2034 retry logic. **Does NOT prove Serializable isolation** — see §12.3 for real-DB tests. |
+| `api/contacts-crud.test.ts` | MODIFY | 4 | Custom field values in create/update, dynamic validation, 3-query list pattern (field defs + contacts + values), `import_session_id` tagging |
+| `api/contacts-import-csv.test.ts` | MODIFY | 4 | Custom column mapping, unknown-column prompt flow, import session ID idempotency, partial-failure response (`imported`/`failed`/`failedRows`), retry without duplicates, resource limits (column/row/file-size rejection) |
+| `api/campaign-schedule.test.ts` | NEW | 4 | Pre-check endpoint (missing values + unknown tokens + both subject and body), `missingValueAction: "exclude"` (400 if unfiltered), `"continue"` (proceeds with literals), absent (400 to force choice), zero-recipient guard |
+
+### 12.3 Real-DB concurrency tests — `tests/integration/db/`
+
+These tests connect to a real PostgreSQL database (via `@neondatabase/serverless` `Pool`) to verify that Serializable isolation and constraints actually fire at the database level. They follow the existing pattern in `tests/integration/db/gmail-oauth-migration.test.ts`: `describe.skipIf(!connectionString)` gate, `BEGIN`/`ROLLBACK` isolation, per-test schema via `randomUUID()`.
+
+| File | Status | Phase | Covers |
+|---|---|---|---|
+| `contact-fields-serializable.test.ts` | NEW | 4 | **Real DB** (proves what mocks cannot): two concurrent transactions both try to create the same token → exactly one succeeds, one gets P2002; Serializable transaction aborts on interleaved write (P2034) and retry succeeds; unique constraint on `(user_id, token)` fires; foreign key on `ContactFieldValue.contact_field_id` blocks orphan writes; `version` column optimistic-lock conflict produces stale-version error |
+
+### 12.4 E2E browser journey — `tests/e2e/`
+
+Playwright browser test that exercises the full user journey through the real UI. Follows the existing pattern in `tests/e2e/smoke/app.spec.ts`: `@playwright/test` with `page.goto`, `getByRole`/`getByLabel` selectors, `expect(...).toBeVisible()`.
+
+| File | Status | Phase | Covers |
+|---|---|---|---|
+| `custom-fields-journey.spec.ts` | NEW | 7 | **Browser journey:** (1) navigate to Settings → Fields, (2) create a "T-shirt size" field with auto-generated token, (3) add a contact with a custom field value, (4) create a template using the `{{t_shirt_size}}` merge tag via the picker, (5) schedule a campaign, (6) verify the generated email body contains the substituted value. Uses authenticated session fixture. |
+
+### 12.5 Worker tests — `tests/worker/`
+
+| File | Status | Phase | Covers |
+|---|---|---|---|
+| `scheduler.test.ts` | MODIFY | 6 | Scheduler fetches `contact_field_values` with field includes, calls `buildTemplateContact` before substitution, custom values appear in generated job `subject`/`body` |
+
+### 12.6 Test counts (estimated)
+
+| Level | New files | Modified files | Total |
+|---|---|---|---|
+| Unit | 5 | 6 | 11 |
+| Integration (mock) | 4 | 2 | 6 |
+| Integration (real-DB) | 1 | 0 | 1 |
+| E2E | 1 | 0 | 1 |
+| Worker | 0 | 1 | 1 |
+| **Total** | **11** | **9** | **20** |
+
+### 12.7 Test execution
+
+- **Per-phase:** run `npm test` after each phase; all tests must pass before the next phase begins.
+- **Full suite:** `npm test` runs all unit + integration + worker tests. Must be green at Phase 7.
+- **Real-DB tests:** `OAUTH_MIGRATION_TEST_DATABASE_URL` (or equivalent `CONTACT_FIELDS_TEST_DATABASE_URL`) env var must be set; tests are skipped via `describe.skipIf` when absent.
+- **E2E tests:** `npx playwright test` — run after Phase 7; requires `npm run dev` server.
+- **Typecheck:** `npx tsc --noEmit` — clean at every phase.
+- **Lint:** `npx eslint .` — clean at every phase.
+- **Build:** `npm run build` — succeeds at Phase 7.
+- **Manual smoke:** Phase 7 §7 step-by-step verification.
+
+---
+
+## 13. Sign-off
 
 - [x] User has reviewed §1 (current system status) and confirmed accuracy.
 - [x] User has approved §3 (hybrid architecture decision).
-- [x] User has answered §11 (open questions → resolved decisions, §11.1–§11.14).
+- [x] User has answered §11 (open questions → resolved decisions, §11.1–§11.29).
 - [x] User has approved scope (Path C in, Path B out per §10).
 - [x] Review 1 incorporated (CSV prompt, reserved tokens, delete counts, 3-query pattern).
 - [x] Review 2 incorporated (authorization, transactional delete, coercion rules, email safety, resource limits, central reserved-token function, security + concurrency tests).
+- [x] Review 3 incorporated (field-setup UX, missing-value warning, snapshot behavior, validation consistency, approved-token boundary, large-import batching, verification gates updated).
+- [x] Review 4 incorporated (date calendar validation, CSV partial-failure policy, version-based concurrency, missing-value API contract, prototype-pollution safeguard, doc fixes).
+- [x] Review 5 incorporated (CSV duplicate-free guarantee, field-version protects contact writes, explicit missingValueAction, 5 consistency fixes).
+- [x] Review 6 incorporated (testing plan §12 added: 18 test files mapped to phases, organized by unit/integration/worker levels).
+- [x] Review 7 incorporated (real-DB concurrency tests §12.3, E2E browser journey §12.4, test counts updated to 20 files).
+- [x] Verification gates re-confirmed 2026-09-07: tests 39/39 ✅, tsc ✅, eslint ✅, build ✅.
 - [ ] User has authorized Phase 1 to begin.
 
 **Next action:** Awaiting user authorization to start Phase 1 (schema + migration). No code will be written until then.
