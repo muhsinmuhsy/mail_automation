@@ -1,6 +1,6 @@
 # Custom merge fields — implementation plan (Path C)
 
-> **Status:** PRODUCTION-READY (plan) — five reviews incorporated, conflicts resolved, one clear set of requirements. Awaiting implementation authorization.
+> **Status:** IMPLEMENTED. All 7 phases complete. Built-in fields were subsequently simplified (2026-09-09): `company`, `job_title`, `notes` removed; `name` made optional. Only `name` (optional) and `email` (required) remain as built-in columns. This document has been updated to reflect the simplified field set.
 > **Decision:** Path C (full Mailchimp-style user-defined custom merge fields), chosen because users have diverse and unpredictable goals; the field set cannot be hardcoded.
 > **Approach:** Hybrid model (recommended) — see "Architecture decision" below.
 > **Scope of this doc:** current system status, gap analysis, architecture decision, phased implementation plan, user journey, risks, verification gates, resolved decisions.
@@ -74,22 +74,19 @@ The contacts ↔ templates ↔ send-time substitution pipeline is already wired 
 model Contact {
   id         String   @id @default(...)
   user_id    String   @db.Uuid
-  name       String   @db.VarChar(100)
+  name       String?  @db.VarChar(100)   // optional
   email      String   @db.VarChar(255)
-  company    String?  @db.VarChar(200)   // optional
-  job_title  String?  @db.VarChar(200)   // optional
-  notes      String?  @db.Text           // optional
   ...
 }
 ```
-Five built-in fields, all hardcoded columns. No user-extensible field mechanism.
+Two built-in fields (`name` optional, `email` required). No user-extensible field mechanism.
 
 **Validation** — `lib/validation/contact.ts`
-- `createContactSchema` and `updateContactSchema` are static Zod objects. They accept `name, email, company, job_title, notes` only. No dynamic field support.
+- `createContactSchema` and `updateContactSchema` are static Zod objects. They accept `name` (optional) and `email` only. No dynamic field support.
 
 **Substitution engine** — `lib/email/template.ts`
-- `SUPPORTED_TEMPLATE_VARIABLES = ['name', 'email', 'company', 'job_title', 'first_name']` (line 10) — hardcoded const.
-- `replaceTemplateVariables(text, contact)` (line 27) — pure function, regex-based, resolves `{{token}}` against the contact object. Idempotent. Missing values are left as the literal `{{token}}` (no fallback syntax).
+- `SUPPORTED_TEMPLATE_VARIABLES = ['name', 'email', 'first_name']` (line 27) — hardcoded const.
+- `replaceTemplateVariables(text, contact)` (line 49) — pure function, regex-based, resolves `{{token}}` against the contact object. Idempotent. Missing values are left as the literal `{{token}}` (no fallback syntax).
 - `first_name` is derived from `name` (split on whitespace).
 
 **Send-time wiring** — `lib/jobs/scheduler.ts:46-47`
@@ -100,39 +97,36 @@ body:    replaceTemplateVariables(template.body, contact),
 The scheduler already calls the substitution function per-recipient at job-generation time. This is the single integration point — extending it does not require new plumbing.
 
 **Contacts UI**
-- `app/(dashboard)/contacts/page.tsx` — list page with search, pagination, add/import toggles. `Contact` type on line 22 includes `company?: string`.
-- `components/contacts/ContactForm.tsx:26-28` — renders `Name` (required), `Email` (required), `Company` (optional, no `required` attr). Line 22 sends `company: company || undefined`.
-- `components/contacts/ContactCard.tsx` — renders **only** name and email. Does NOT display `company`, `job_title`, or `notes` even though the API returns them.
-- `components/contacts/ContactImport.tsx:18` — helper text says CSV "should contain name, email, and company columns".
+- `app/(dashboard)/contacts/page.tsx` — list page with search, pagination, add/import toggles. `Contact` type on line 22 includes `name?: string`.
+- `components/contacts/ContactForm.tsx:26-28` — renders `Name` (optional), `Email` (required).
+- `components/contacts/ContactCard.tsx` — renders **only** name and email.
+- `components/contacts/ContactImport.tsx:18` — helper text says CSV "should contain name and email columns".
 
 **Contacts API** — `app/api/contacts/route.ts`
-- GET (line 27): `select: { id, name, email, company, job_title }` — explicitly selects a fixed set.
-- POST (line 52-61): writes `name, email, company, job_title, notes` from the parsed body.
-- Search (line 16-21): `OR: [name contains, email contains]` — only name and email are searchable. No filtering by company, job_title, or any other field.
+- GET (line 27): `select: { id, name, email }` — explicitly selects a fixed set.
+- POST (line 52-61): writes `name, email` from the parsed body.
+- Search (line 16-21): `OR: [name contains, email contains]` — only name and email are searchable.
 
 **Templates UI**
 - `app/(dashboard)/templates/page.tsx` — list page. `Template` type on line 19 is `{ id, name, subject, created_at }` — note: `body` is not even in the page-level type.
-- `components/templates/TemplateForm.tsx:27-29` — three inputs: Template name, Subject, Body (plain `<Textarea>`). **No merge-tag picker** — authors must memorize `{{name}}`, `{{company}}`, etc.
+- `components/templates/TemplateForm.tsx:27-29` — three inputs: Template name, Subject, Body (plain `<Textarea>`). **No merge-tag picker** — authors must memorize `{{name}}`, `{{email}}`, etc.
 
 **Tests**
-- `tests/unit/email/template.test.ts` — covers `{{name}}`, `{{email}}`, `{{company}}`, `{{job_title}}`, `{{first_name}}`, whitespace-tolerant `{{ NAME }}`, unknown-token passthrough, and idempotency.
+- `tests/unit/email/template.test.ts` — covers `{{name}}`, `{{email}}`, `{{first_name}}`, whitespace-tolerant `{{ NAME }}`, unknown-token passthrough, and idempotency.
 - `tests/integration/api/contacts-crud.test.ts`, `tests/integration/api/contacts-import-csv.test.ts` — CRUD + CSV import coverage.
 
 ### 1.2 Status summary
 
 | Capability | Status |
 |---|---|
-| Fixed set of 5 contact fields | ✅ Working |
+| Fixed set of 2 contact fields (name optional, email required) | ✅ Working |
 | `{{token}}` substitution at scheduling time | ✅ Working |
 | Per-recipient personalization in campaigns | ✅ Working |
-| Company field collected and stored | ✅ Working |
-| Company field displayed on contact card | ❌ Not shown (ContactCard renders only name + email) |
-| `job_title` / `notes` surfaced in UI | ❌ Not shown |
 | User-defined custom fields | ❌ Not supported |
 | Merge-tag picker in template editor | ❌ Not supported |
 | Fallback values (`{{x:default}}`) | ❌ Not supported |
 | Conditional blocks (`{{#if x}}`) | ❌ Not supported |
-| Segmentation by company / custom fields | ❌ Not supported (search is name + email only) |
+| Segmentation by custom fields | ❌ Not supported (search is name + email only) |
 | Onboarding / audience-field setup wizard | ❌ Does not exist |
 
 ### 1.3 Pre-existing test status (verified 2026-09-07)
@@ -161,14 +155,14 @@ Secondary Mailchimp features also missing: fallback values (`*|FNAME:there|*`), 
 
 ### 3.1 Hybrid model (recommended)
 
-Keep the five existing columns (`name, email, company, job_title, notes`) on `Contact` exactly as-is. Add a new side table for **user-defined custom fields only**.
+Keep the two existing columns (`name`, `email`) on `Contact` exactly as-is. Add a new side table for **user-defined custom fields only**.
 
-- **Pros:** Zero disruption to existing code. `ContactForm`, `ContactCard`, `replaceTemplateVariables`, the scheduler, and all 30+ Prisma-generated references to `contact.company` keep working untouched. Custom fields are purely additive — you only pay for what users actually extend.
+- **Pros:** Zero disruption to existing code. `ContactForm`, `ContactCard`, `replaceTemplateVariables`, the scheduler, and all Prisma-generated references to `contact.name` / `contact.email` keep working untouched. Custom fields are purely additive — you only pay for what users actually extend.
 - **Cons:** Two code paths for "built-in field" vs "custom field" in a few places (the merged-contact builder, the merge-tag picker list).
 
 ### 3.2 Full migration (rejected)
 
-Move every field (including company, job_title, notes) into `ContactField` + `ContactFieldValue` rows. More "pure" but rips through every file that references `contact.company`, `contact.name`, etc. Higher risk, larger blast radius, no user-facing benefit over hybrid.
+Move every field (including `name` and `email`) into `ContactField` + `ContactFieldValue` rows. More "pure" but rips through every file that references `contact.name`, `contact.email`, etc. Higher risk, larger blast radius, no user-facing benefit over hybrid.
 
 **Decision: Hybrid.** This is the approach the rest of this document assumes.
 
@@ -214,9 +208,9 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
 ### Phase 2 — Substitution engine
 
 **Files:**
-- `lib/email/template.ts` — keep `SUPPORTED_TEMPLATE_VARIABLES` and `replaceTemplateVariables` unchanged in signature. The 5 built-ins continue to resolve from the contact object.
+- `lib/email/template.ts` — keep `SUPPORTED_TEMPLATE_VARIABLES` and `replaceTemplateVariables` unchanged in signature. The built-ins (`name`, `email`, `first_name`) continue to resolve from the contact object.
 - New `lib/email/template-contact.ts` — `buildTemplateContact(contact, fieldValues, userFieldDefinitions): TemplateContact`:
-  - Flattens built-in fields (`name, email, company, job_title`) from the contact.
+  - Flattens built-in fields (`name`, `email`) from the contact.
   - Flattens custom field values into top-level keys by their `name` token (e.g. `{ size: "M", plan: "Pro" }`).
   - **Returns a flat map containing ONLY approved tokens** (built-ins + the user's defined custom field names) — NOT the raw Prisma contact object. This prevents `{{id}}`, `{{user_id}}`, `{{created_at}}`, `{{updated_at}}` from resolving. See §11.19.
   - **Prototype-pollution safeguard (see §11.26):** the returned map must be created with `Object.create(null)` (no prototype chain), so `{{constructor}}`, `{{__proto__}}`, `{{toString}}`, `{{valueOf}}` resolve to undefined and are left as literal tokens. Additionally, `replaceTemplateVariables` must use `Object.prototype.hasOwnProperty.call(contact, varName)` before accessing the value — defense in depth.
@@ -242,9 +236,9 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
 - `lib/validation/contact.ts` — convert `createContactSchema` and `updateContactSchema` from static consts to builder functions:
   - `buildCreateContactSchema(customFields: ContactField[]): z.ZodObject`
   - `buildUpdateContactSchema(customFields: ContactField[]): z.ZodObject`
-  - Base schema stays the same (name, email, company, job_title, notes).
+  - Base schema stays the same (`name` optional, `email` required).
   - For each custom field, add a key typed by `field_type`:
-    - `text` → `z.string().max(MAX_FIELD_VALUE_LENGTH).optional()` (or `.nonempty()` if `is_required`). **Note:** custom field values use `MAX_FIELD_VALUE_LENGTH` (10,000 chars per §11.14), NOT the 200-char limit that applies to built-in `company`/`job_title` columns.
+    - `text` → `z.string().max(MAX_FIELD_VALUE_LENGTH).optional()` (or `.nonempty()` if `is_required`). **Note:** custom field values use `MAX_FIELD_VALUE_LENGTH` (10,000 chars per §11.14).
     - `number` → `z.coerce.number().optional()` (or required). **`0` is a legitimate value**, not "missing" — do not use `.nonempty()` or truthiness checks.
     - `date` → `z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((val) => { const d = new Date(val + 'T00:00:00Z'); return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === val; }, 'Invalid calendar date').optional()` (date-only, YYYY-MM-DD, rejects impossible dates like `2026-02-31`). NOT datetime. See §11.22.
     - `boolean` → `z.boolean().optional()`. **`false` is a legitimate value**, not "missing" — do not use truthiness checks.
@@ -312,7 +306,7 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
 - `app/api/contacts/[id]/route.ts`
   - `PATCH` — same dynamic validation; update built-in columns and upsert/delete custom field values in a transaction.
 - `app/api/contacts/import-csv/route.ts`
-  - Map CSV columns by header name. Built-in headers (`name, email, company, job_title, notes`) map to columns. Any other header maps to a custom field by `name` token if one exists.
+  - Map CSV columns by header name. Built-in headers (`name`, `email`) map to columns. Any other header maps to a custom field by `name` token if one exists.
   - **Unknown columns (no matching built-in or custom field):** do NOT silently auto-create and do NOT hard reject. Return a structured response listing the unknown columns so the client can show a confirmation prompt:
     ```
     Unknown columns in CSV:
@@ -348,23 +342,22 @@ Move every field (including company, job_title, notes) into `ContactField` + `Co
   - Primary input is **"Field label"** (e.g. "T-shirt size"). The token is **auto-generated** from the label (`t_shirt_size`) and shown as read-only below. An "Edit token" toggle reveals an advanced input for users who want to override. This makes field creation accessible to nontechnical users.
   - **Move up / move down buttons** replace the sort-order number input. Users don't think in ordinal numbers. The API receives the new position via a reorder endpoint or via `sort_order` computed from the new list position.
 - Per-field actions: edit label, move up, move down, toggle required, delete (via `ConfirmDialog` showing template-usage count + contact-value count + affected template names per Phase 4 `DELETE`).
-- Built-in fields (name, email, company, job_title, notes) shown as locked/non-editable rows for clarity.
+- Built-in fields (name, email) shown as locked/non-editable rows for clarity.
 
 **Modified components:**
 - `components/contacts/ContactForm.tsx`
   - Accept a `fields: ContactField[]` prop.
-  - After the 3 built-in inputs, render one `Input` per custom field, ordered by `sort_order`. Required-ness from `field.is_required`. Input type from `field.field_type` (text → `Input`, number → `Input type="number"`, date → `Input type="date"`, boolean → a checkbox/toggle — match existing pattern if one exists, else use `Input`).
+  - After the 2 built-in inputs, render one `Input` per custom field, ordered by `sort_order`. Required-ness from `field.is_required`. Input type from `field.field_type` (text → `Input`, number → `Input type="number"`, date → `Input type="date"`, boolean → a checkbox/toggle — match existing pattern if one exists, else use `Input`).
   - Submit body includes custom field values keyed by token name.
 - `components/contacts/ContactCard.tsx`
   - After name + email, render a small "fields" section showing custom field label/value pairs for non-empty values. Keep the card visually consistent with the existing layout.
-  - (Optional, separate decision: also surface `company` and `job_title` here — they're currently returned by the API but not displayed.)
 - `components/contacts/ContactImport.tsx`
   - Update helper text on line 18: "CSV should contain name, email, and any custom field columns by their token name (e.g. `size`, `plan`). Unknown columns will prompt you to create them as fields before importing."
   - On import, if the API returns unknown columns, show a confirmation dialog listing them with "Create & Import" / "Cancel" actions (match existing `ConfirmDialog` pattern).
 - `components/templates/TemplateForm.tsx`
   - Add a merge-tag picker (small dropdown or popover button) above **both** the `Subject` input AND the `Body` textarea. Merge tags are used in subject lines too (the scheduler substitutes both `template.subject` and `template.body` at `scheduler.ts:46-47`). See §11.15.
-  - Lists built-in tokens (`{{name}}`, `{{email}}`, `{{company}}`, `{{job_title}}`, `{{first_name}}`) + the user's custom field tokens (`{{size}}`, `{{plan}}`, …).
-  - Each entry shows **label + token**, e.g. "Size ({{size}})" — helps authors who know the field by its display label. Built-ins show their natural name, e.g. "Company ({{company}})".
+  - Lists built-in tokens (`{{name}}`, `{{email}}`, `{{first_name}}`) + the user's custom field tokens (`{{size}}`, `{{plan}}`, …).
+  - Each entry shows **label + token**, e.g. "Size ({{size}})" — helps authors who know the field by its display label. Built-ins show their natural name, e.g. "Name ({{name}})".
   - Clicking a token inserts it at the cursor position in the textarea.
   - Fetch the user's fields via `GET /api/contact-fields` on mount.
   - Match existing `Button` + `Input` styling for the picker trigger.
@@ -444,7 +437,7 @@ This is what an end user does after Path C ships. **No developer, no migration, 
    - Position: determined by move up / move down buttons (not a numeric sort order).
 3. Saves. POST to `/api/contact-fields` creates one `ContactField` row.
 4. **Automatically, with no further user action:**
-   - `/contacts` "Add contact" form now shows a "T-shirt size" input below Company.
+    - `/contacts` "Add contact" form now shows a "T-shirt size" input below Email.
    - `/contacts` contact cards show "T-shirt size: M" for contacts that have a value.
    - `/contacts` CSV import accepts a `t_shirt_size` column header and maps it.
    - `/templates` merge-tag picker lists `{{t_shirt_size}}` alongside the built-ins.
@@ -480,9 +473,9 @@ With Path C, the user does step 2 in §6 above and everything else is automatic.
 ## 8. Risk callouts
 
 1. **Migration safety** — `ContactFieldValue` is purely additive; no backfill. Existing contacts simply have no custom values. Low risk.
-2. **Token collision + reserved tokens** — the `contact-fields` POST route must reject names matching built-ins (`name`, `email`, `company`, `job_title`, `first_name`, `notes`) **and** reserved system tokens (`id`, `user_id`, `contact_id`, `unsubscribe`, `unsubscribe_url`, `campaign`, `date`, and any token starting with `_`). The reserved list protects future system merge tags (notably `unsubscribe`/`unsubscribe_url` for CAN-SPAM compliance) and database column names. Enforce server-side; the full reserved list is in §11.2.
+2. **Token collision + reserved tokens** — the `contact-fields` POST route must reject names matching built-ins (`name`, `email`, `first_name`) **and** reserved system tokens (`id`, `user_id`, `contact_id`, `unsubscribe`, `unsubscribe_url`, `campaign`, `date`, and any token starting with `_`). The reserved list protects future system merge tags (notably `unsubscribe`/`unsubscribe_url` for CAN-SPAM compliance) and database column names. Enforce server-side; the full reserved list is in §11.2.
 3. **Token immutability** — `name` (the token) must be immutable after creation because templates reference it. Only `label` is mutable.
-4. **CSV import backward compat** — existing CSVs with `name,email,company` columns must still import cleanly. Do not break the happy path while adding custom-column mapping. Unknown columns trigger an explicit "Create & Import" prompt, not silent auto-creation.
+4. **CSV import backward compat** — existing CSVs with `name,email` columns must still import cleanly. Do not break the happy path while adding custom-column mapping. Unknown columns trigger an explicit "Create & Import" prompt, not silent auto-creation.
 5. **Performance — N+1 on contact list** — use the 3-query pattern (field defs once → contacts → values by contact IDs) on the list endpoint, NOT nested `include`. Nested include is acceptable on single-contact fetches and the scheduler's bounded batch. See Phase 4 `GET` for details.
 6. **Delete semantics** — deleting a `ContactField` cascades to all `ContactFieldValue` rows. The `ConfirmDialog` must show concrete counts (N templates using `{{token}}`, M contacts with values) and ideally the affected template names before the user confirms. Templates containing `{{token}}` will subsequently leave the literal token in sent emails — the dialog must state this. (Mitigation: Path B's fallback syntax — out of scope here.)
 7. **Type change semantics** — changing `field_type` after values exist is dangerous. Allow only if all existing values coerce cleanly to the new type per the explicit rules in Phase 3; else reject with a clear error listing offending values.
@@ -511,8 +504,8 @@ Every phase must pass before moving on:
 ## 10. Out of scope (future enhancements — Path B)
 
 These Mailchimp features are intentionally excluded from Path C to keep scope bounded:
-- **Fallback values** (`{{company:there}}`) — Easy, ~10 lines in `lib/email/template.ts`.
-- **Conditional blocks** (`{{#if company}}…{{/if}}`) — Medium, requires a small parser.
+- **Fallback values** (`{{size:default}}`) — Easy, ~10 lines in `lib/email/template.ts`.
+- **Conditional blocks** (`{{#if size}}…{{/if}}`) — Medium, requires a small parser.
 - **Segmentation by custom fields** in the contacts list filter — Medium, extends the `where` builder in `app/api/contacts/route.ts`.
 - **Default merge-field seeding** for new users — defer until usage patterns are known.
 
@@ -547,7 +540,7 @@ On "Create & Import", the server creates the `ContactField` rows (as `field_type
 
 **Decision:** The `contact-fields` POST route rejects any `name` matching:
 
-- **Built-in field names:** `name`, `email`, `company`, `job_title`, `first_name`, `notes`
+- **Built-in field names:** `name`, `email`, `first_name`
 - **System/database tokens:** `id`, `user_id`, `contact_id`, `campaign`, `date`
 - **Future email-compliance tokens:** `unsubscribe`, `unsubscribe_url`
 - **Reserved prefix:** any token starting with `_` (namespace for future system tokens)
@@ -578,15 +571,15 @@ On "Create & Import", the server creates the `ContactField` rows (as `field_type
 
 ### 11.6 Merge-tag picker display → label + token
 
-**Decision:** Each entry in the picker shows the display label followed by the token in parentheses, e.g. "Size ({{size}})", "Company ({{company}})".
+**Decision:** Each entry in the picker shows the display label followed by the token in parentheses, e.g. "Size ({{size}})", "Name ({{name}})".
 
 **Why:** authors think in labels ("I want to insert the Size"), but need the token to recognize it in the template body. Showing both bridges the gap without forcing the author to memorize tokens.
 
-### 11.7 ContactCard display → custom fields only this scope; built-ins separate
+### 11.7 ContactCard display → custom fields only this scope
 
-**Decision:** In this scope, `ContactCard` shows custom field label/value pairs only. Surfacing the hidden built-ins (`company`, `job_title`) on the card is a separate small change, not part of Path C.
+**Decision:** In this scope, `ContactCard` shows custom field label/value pairs only. The built-ins (`name`, `email`) are already displayed.
 
-**Why:** keeps the scope of this change bounded to the custom-fields feature. The built-in display gap is pre-existing and independent.
+**Why:** keeps the scope of this change bounded to the custom-fields feature.
 
 ### 11.8 Settings page route → `/settings/fields`
 
@@ -676,13 +669,13 @@ This applies to: `GET /api/contact-fields`, `POST /api/contact-fields`, `PATCH /
 ### 11.16 Missing-personalization pre-send warning → warn at scheduling time
 
 **Decision:** When a user schedules a campaign, before generating jobs, scan the selected contacts for missing values in fields the template references. If any contacts are missing values:
-- Show a warning: "N contacts are missing values for: Size, Plan. Emails to these contacts will contain the literal `{{size}}`, `{{plan}}` in the body."
-- Offer three actions: **[Exclude affected contacts]**, **[Continue anyway]**, **[Cancel]**.
-- The chosen action is submitted as `missingValueAction: "exclude" | "continue"` (see §11.29). The server enforces each differently. `acknowledgeMissingValues: true` is NOT used — the explicit enum replaces it.
+  - Show a warning: "N contacts are missing values for: Size, Plan. Emails to these contacts will contain the literal `{{size}}`, `{{plan}}` in the body."
+  - Offer three actions: **[Exclude affected contacts]**, **[Continue anyway]**, **[Cancel]**.
+  - The chosen action is submitted as `missingValueAction: "exclude" | "continue"` (see §11.29). The server enforces each differently. `acknowledgeMissingValues: true` is NOT used — the explicit enum replaces it.
 
 **Why:** sending "Hello {{size}}" looks broken to the recipient and damages sender reputation. This is a pre-send check, not fallback syntax — it doesn't require Path B's `{{x:default}}`. It surfaces the problem at the right moment (when the user can still act) without blocking the feature.
 
-**Implementation note:** this check runs in the campaign scheduling API, not in the scheduler. It scans the template for `{{token}}` patterns, maps them to custom fields, queries the selected contacts for missing values, and returns the counts. The UI shows the warning before the user confirms scheduling.
+**Implementation note:** this check runs in the campaign scheduling API, not in the scheduler. It scans the template for `{{token}}` patterns, maps them to custom fields, queries the selected contacts for missing values, and returns the counts. The UI shows the warning before the user confirms scheduling. Since `name` is optional and `email` is always required, only custom field missing values are detected — no built-in field can be "missing."
 
 **API contract (see §11.25):**
 - **Pre-check:** `POST /api/campaigns/[id]/pre-check` with `{ templateId, contactIds }` returns:
@@ -690,14 +683,14 @@ This applies to: `GET /api/contact-fields`, `POST /api/contact-fields`, `PATCH /
   {
     "missingValues": [
       { "token": "size", "label": "Size", "contactCount": 12, "contactIds": ["..."] },
-      { "token": "company", "label": "Company", "contactCount": 3, "contactIds": ["..."] }
+      { "token": "plan", "label": "Plan", "contactCount": 3, "contactIds": ["..."] }
     ],
     "unknownTokens": ["{{deleted_field}}"],
     "affectedContactCount": 15,
     "totalContactCount": 100
   }
   ```
-  Scans **both** `template.subject` and `template.body` for tokens. Includes missing **built-in** fields (e.g. `{{company}}` on a contact with no company). Reports **unknown/deleted** tokens (template references a field that no longer exists).
+  Scans **both** `template.subject` and `template.body` for tokens. Reports **unknown/deleted** tokens (template references a field that no longer exists). Built-in fields (`name`, `email`) are never reported as missing — `name` is optional and `email` is always required.
 - **Submit — Exclude:** `POST /api/campaigns/[id]/schedule` with `{ contactIds: [...filtered], missingValueAction: "exclude" }`. Server re-checks; if remaining contacts still have missing values, returns 400. If filtered list is empty, returns 400 "No recipients remaining after excluding contacts with missing values. Cannot create an empty campaign."
 - **Submit — Continue:** `POST /api/campaigns/[id]/schedule` with `{ contactIds: [...all], missingValueAction: "continue" }`. Server proceeds; missing values leave literal `{{token}}` in the email.
 - **Submit — Cancel:** client does not submit; returns to campaign editor.
@@ -712,7 +705,7 @@ This applies to: `GET /api/contact-fields`, `POST /api/contact-fields`, `PATCH /
 ### 11.18 Validation rule consistency → fix contradictions
 
 **Decision:**
-- **Value length:** custom field values use `MAX_FIELD_VALUE_LENGTH` (10,000 chars, per §11.14). The 200-char limit applies only to built-in `company` and `job_title` columns (`VarChar(200)` in the schema). `ContactFieldValue.value` should be `@db.Text` (PostgreSQL `text`, effectively unbounded at the DB level) with the 10,000-char limit enforced in validation.
+- **Value length:** custom field values use `MAX_FIELD_VALUE_LENGTH` (10,000 chars, per §11.14). `ContactFieldValue.value` should be `@db.Text` (PostgreSQL `text`, effectively unbounded at the DB level) with the 10,000-char limit enforced in validation.
 - **Date fields:** `field_type: date` validates as date-only `YYYY-MM-DD` with **calendar-validity check** (rejects `2026-02-31`), NOT ISO 8601 datetime with time. Store as string. Use `z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine()` with a `new Date(val + 'T00:00:00Z')` round-trip check. See §11.22. If datetime is needed later, add a separate `datetime` field type.
 - **Blank vs missing (PATCH semantics):** a key absent from the PATCH payload means "no change." A key present with `null` or empty string means "clear the value" (set to null). These are distinct operations.
 - **`0` and `false` are legitimate values:** for `number` fields, `0` is a valid value, not "missing." For `boolean` fields, `false` is a valid value, not "missing." Validation must not use truthiness checks or `.nonempty()` for these types.
@@ -723,7 +716,7 @@ This applies to: `GET /api/contact-fields`, `POST /api/contact-fields`, `PATCH /
 ### 11.19 Approved-token boundary → expose only approved tokens, consistent usage check
 
 **Decision:**
-- `buildTemplateContact` must return a **flat map of only approved tokens** (the 5 built-ins + the user's defined custom field names), NOT the raw Prisma `Contact` object. The raw object has `id`, `user_id`, `created_at`, `updated_at`, and relation fields — none of these should be resolvable via `{{id}}` etc. This is a security boundary, not just a convenience.
+- `buildTemplateContact` must return a **flat map of only approved tokens** (the 2 built-ins + the user's defined custom field names), NOT the raw Prisma `Contact` object. The raw object has `id`, `user_id`, `created_at`, `updated_at`, and relation fields — none of these should be resolvable via `{{id}}` etc. This is a security boundary, not just a convenience.
 - The deletion usage check (`template_usage_count` in Phase 4 `DELETE`) must use the **same `VARIABLE_PATTERN` regex** as the substitution engine (`/\{\{\s*(\w+)\s*\}\}/g` with case-insensitive token comparison), NOT a naive substring match. This ensures `{{size}}`, `{{ size }}`, and `{{SIZE}}` are all recognized as usage of the `size` field.
 
 **Why:** the current `replaceTemplateVariables` reads `contact[varName]` for any `varName` — if the contact object exposes `user_id`, then `{{user_id}}` resolves to it. Reserving names at field-creation time is insufficient; the rendering boundary must also be enforced. Inconsistent usage detection (substring vs regex) would either over-count or under-count affected templates on delete.
@@ -780,8 +773,8 @@ This applies to: `GET /api/contact-fields`, `POST /api/contact-fields`, `PATCH /
 
 **Pre-check:** `POST /api/campaigns/[id]/pre-check` with `{ templateId, contactIds }` returns `{ missingValues: [{ token, label, contactCount, contactIds }], unknownTokens: [...], affectedContactCount, totalContactCount }`.
 - Scans **both** `template.subject` and `template.body` for tokens using the `VARIABLE_PATTERN` regex.
-- Includes missing **built-in** fields (e.g. `{{company}}` on a contact with no company), not just custom fields.
 - Reports **unknown/deleted** tokens separately.
+- Built-in fields (`name`, `email`) are never reported as missing — `name` is optional and `email` is always required.
 
 **Submit flow:**
 - **Exclude:** `POST /api/campaigns/[id]/schedule` with `{ contactIds: [...filtered], missingValueAction: "exclude" }`. Server re-checks; if remaining contacts still have missing values, returns 400. If filtered list is empty, returns 400 "No recipients remaining after excluding contacts with missing values. Cannot create an empty campaign."
@@ -958,6 +951,9 @@ Playwright browser test that exercises the full user journey through the real UI
 - [x] Review 6 incorporated (testing plan §12 added: 18 test files mapped to phases, organized by unit/integration/worker levels).
 - [x] Review 7 incorporated (real-DB concurrency tests §12.3, E2E browser journey §12.4, test counts updated to 20 files).
 - [x] Verification gates re-confirmed 2026-09-07: tests 39/39 ✅, tsc ✅, eslint ✅, build ✅.
-- [ ] User has authorized Phase 1 to begin.
+- [x] User has authorized Phase 1 to begin.
+- [x] All 7 phases implemented (Phase 1 schema + migration, Phase 2 substitution, Phase 3 validation, Phase 4 API, Phase 5 UI, Phase 6 scheduler, Phase 7 verification).
+- [x] Built-in fields simplified (2026-09-09): `company`, `job_title`, `notes` removed; `name` made optional. Only `name` (optional) and `email` (required) remain.
+- [x] All verification gates pass after simplification: 1590 tests passed, 15 skipped, 0 failed. tsc ✅, eslint ✅, build ✅.
 
-**Next action:** Awaiting user authorization to start Phase 1 (schema + migration). No code will be written until then.
+**Status:** Implementation complete. This document has been updated to reflect the simplified built-in field set.
