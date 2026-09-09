@@ -34,7 +34,6 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
     exclude: [
-      'tests/e2e/**',
       '.next/**',
       '.open-next/**',
       'node_modules/**',

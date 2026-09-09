@@ -901,7 +901,9 @@ These tests connect to a real PostgreSQL database (via `@neondatabase/serverless
 
 ### 12.4 E2E browser journey — `tests/e2e/`
 
-Playwright browser test that exercises the full user journey through the real UI. Follows the existing pattern in `tests/e2e/smoke/app.spec.ts`: `@playwright/test` with `page.goto`, `getByRole`/`getByLabel` selectors, `expect(...).toBeVisible()`.
+> **Note:** The Playwright e2e suite (`tests/e2e/`, `@playwright/test`, `playwright.config.ts`) was removed from the project on 2026-09-09. The browser journey described below is no longer present; the full campaign flow is covered by worker/integration tests with a test delivery transport instead.
+
+Historical plan: a browser test that exercises the full user journey through the real UI, using `page.goto`, `getByRole`/`getByLabel` selectors, `expect(...).toBeVisible()`.
 
 | File | Status | Phase | Covers |
 |---|---|---|---|
@@ -929,7 +931,6 @@ Playwright browser test that exercises the full user journey through the real UI
 - **Per-phase:** run `npm test` after each phase; all tests must pass before the next phase begins.
 - **Full suite:** `npm test` runs all unit + integration + worker tests. Must be green at Phase 7.
 - **Real-DB tests:** `OAUTH_MIGRATION_TEST_DATABASE_URL` (or equivalent `CONTACT_FIELDS_TEST_DATABASE_URL`) env var must be set; tests are skipped via `describe.skipIf` when absent.
-- **E2E tests:** `npx playwright test` — run after Phase 7; requires `npm run dev` server.
 - **Typecheck:** `npx tsc --noEmit` — clean at every phase.
 - **Lint:** `npx eslint .` — clean at every phase.
 - **Build:** `npm run build` — succeeds at Phase 7.

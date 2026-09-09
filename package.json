@@ -17,8 +17,6 @@
     "test:integration": "vitest run tests/integration",
     "test:gmail:live": "node scripts/test-gmail-live.mjs",
     "test:unit": "vitest run tests/unit",
-    "test:e2e": "playwright test --pass-with-no-tests",
-    "test:smoke": "playwright test tests/e2e/smoke --pass-with-no-tests",
     "check:local-production": "node scripts/check-production-readiness.mjs --local",
     "check:production": "node scripts/check-production-readiness.mjs"
   },
@@ -34,7 +32,6 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.0.0",
-    "@playwright/test": "^1.52.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.1",
