@@ -53,6 +53,9 @@ export async function generateCampaignJobs(
       fieldDefinitions
     );
 
+    const bodyText = template.body_text ?? template.body;
+    const bodyHtml = template.body_html ?? null;
+
     return {
       user_id: campaign.user_id,
       campaign_id: campaign.id,
@@ -63,7 +66,8 @@ export async function generateCampaignJobs(
       template_id: campaign.template_id,
       to_email: contact.email,
       subject: replaceTemplateVariables(template.subject, templateContact),
-      body: replaceTemplateVariables(template.body, templateContact),
+      body: replaceTemplateVariables(bodyText, templateContact),
+      body_html: bodyHtml ? replaceTemplateVariables(bodyHtml, templateContact) : null,
       scheduled_at: scheduledAt,
       status: 'SCHEDULED' as const,
       attempt_count: 0,

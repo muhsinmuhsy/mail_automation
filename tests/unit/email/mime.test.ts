@@ -33,8 +33,6 @@ describe('lib/email/mime', () => {
       subject: 'Hi\r\nBcc: evil@x.com',
       body: 'body',
     });
-    // Newlines are stripped, so no independent "Bcc:" header line can be
-    // injected into the message.
     expect(mime).not.toMatch(/\r\nBcc:/);
   });
 
@@ -84,5 +82,44 @@ describe('lib/email/mime', () => {
   it('formats mailbox addresses with RFC 2047 encoded display names', () => {
     expect(formatMailboxAddress('John', 'john@x.com')).toBe('John <john@x.com>');
     expect(formatMailboxAddress('Jön', 'j@x.com')).toMatch(/=\?UTF-8\?B\?/);
+  });
+
+  it('builds multipart/alternative with text+html when bodyHtml is present', () => {
+    const mime = buildMimeMessage({
+      from: 'a@b.com',
+      to: 'c@d.com',
+      subject: 'Test',
+      body: 'Hello world',
+      bodyHtml: '<p>Hello <b>world</b></p>',
+    });
+    expect(mime).toContain('Content-Type: multipart/alternative;');
+    expect(mime).toContain('Content-Type: text/plain; charset="UTF-8"');
+    expect(mime).toContain('Content-Type: text/html; charset="UTF-8"');
+  });
+
+  it('builds nested multipart/mixed > multipart/alternative with attachments + bodyHtml', () => {
+    const mime = buildMimeMessage({
+      from: 'a@b.com',
+      to: 'c@d.com',
+      subject: 'Test',
+      body: 'Hello',
+      bodyHtml: '<p>Hello</p>',
+      attachments: [sampleAttachment],
+    });
+    expect(mime).toContain('Content-Type: multipart/mixed;');
+    expect(mime).toContain('Content-Type: multipart/alternative;');
+    expect(mime).toContain('Content-Type: text/html; charset="UTF-8"');
+    expect(mime).toContain('Content-Disposition: attachment; filename="resume.pdf"');
+  });
+
+  it('keeps single-part text/plain when bodyHtml is absent (legacy)', () => {
+    const mime = buildMimeMessage({
+      from: 'a@b.com',
+      to: 'c@d.com',
+      subject: 'Test',
+      body: 'Hello world',
+    });
+    expect(mime).toContain('Content-Type: text/plain; charset="UTF-8"');
+    expect(mime).not.toContain('multipart/alternative');
   });
 });

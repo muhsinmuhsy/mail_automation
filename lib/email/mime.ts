@@ -77,6 +77,8 @@ export type BuildMimeOptions = {
   subject: string;
   body: string;
   bodyContentType?: string;
+  /** HTML alternative for multipart/alternative. When present, builds text+html. See §9. */
+  bodyHtml?: string;
   attachments?: Attachment[];
   messageId?: string;
   date?: Date;
@@ -98,6 +100,7 @@ export function buildMimeMessage(options: BuildMimeOptions): string {
     subject,
     body,
     bodyContentType = 'text/plain; charset="UTF-8"',
+    bodyHtml,
     attachments = [],
     messageId,
     date,
@@ -106,6 +109,7 @@ export function buildMimeMessage(options: BuildMimeOptions): string {
   } = options;
 
   const boundary = randomBoundary();
+  const altBoundary = randomBoundary();
   const headers: string[] = [];
 
   headers.push(`From: ${formatMailboxAddress(fromName, from)}`);
@@ -120,6 +124,27 @@ export function buildMimeMessage(options: BuildMimeOptions): string {
   const bodyBytes = new TextEncoder().encode(body);
   const bodyB64 = wrapBase64(base64Of(bodyBytes));
 
+  if (bodyHtml && attachments.length === 0) {
+    headers.push(`Content-Type: multipart/alternative; boundary="${altBoundary}"`);
+    headers.push('');
+    headers.push(`--${altBoundary}`);
+    headers.push(`Content-Type: ${bodyContentType}`);
+    headers.push('Content-Transfer-Encoding: base64');
+    headers.push('');
+    headers.push(bodyB64);
+
+    const htmlBytes = new TextEncoder().encode(bodyHtml);
+    const htmlB64 = wrapBase64(base64Of(htmlBytes));
+    headers.push(`--${altBoundary}`);
+    headers.push('Content-Type: text/html; charset="UTF-8"');
+    headers.push('Content-Transfer-Encoding: base64');
+    headers.push('');
+    headers.push(htmlB64);
+
+    headers.push(`--${altBoundary}--`);
+    return headers.join('\r\n');
+  }
+
   if (attachments.length === 0) {
     headers.push(`Content-Type: ${bodyContentType}`);
     headers.push('Content-Transfer-Encoding: base64');
@@ -130,11 +155,33 @@ export function buildMimeMessage(options: BuildMimeOptions): string {
 
   headers.push(`Content-Type: multipart/mixed; boundary="${boundary}"`);
   headers.push('');
-  headers.push(`--${boundary}`);
-  headers.push(`Content-Type: ${bodyContentType}`);
-  headers.push('Content-Transfer-Encoding: base64');
-  headers.push('');
-  headers.push(bodyB64);
+
+  if (bodyHtml) {
+    headers.push(`--${boundary}`);
+    headers.push(`Content-Type: multipart/alternative; boundary="${altBoundary}"`);
+    headers.push('');
+    headers.push(`--${altBoundary}`);
+    headers.push(`Content-Type: ${bodyContentType}`);
+    headers.push('Content-Transfer-Encoding: base64');
+    headers.push('');
+    headers.push(bodyB64);
+
+    const htmlBytes = new TextEncoder().encode(bodyHtml);
+    const htmlB64 = wrapBase64(base64Of(htmlBytes));
+    headers.push(`--${altBoundary}`);
+    headers.push('Content-Type: text/html; charset="UTF-8"');
+    headers.push('Content-Transfer-Encoding: base64');
+    headers.push('');
+    headers.push(htmlB64);
+
+    headers.push(`--${altBoundary}--`);
+  } else {
+    headers.push(`--${boundary}`);
+    headers.push(`Content-Type: ${bodyContentType}`);
+    headers.push('Content-Transfer-Encoding: base64');
+    headers.push('');
+    headers.push(bodyB64);
+  }
 
   for (const attachment of attachments) {
     const bytes =

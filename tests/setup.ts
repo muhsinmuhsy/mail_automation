@@ -20,6 +20,7 @@ process.env.B2_REGION ??= 'us-west-004';
 process.env.B2_ENDPOINT ??= 'https://s3.us-west-004.backblazeb2.com';
 process.env.B2_KEY_ID ??= 'test-key-id';
 process.env.B2_APPLICATION_KEY ??= 'test-application-key';
+process.env.B2_PUBLIC_BASE_URL ??= 'https://test-bucket.s3.us-west-004.backblazeb2.com';
 process.env.APP_VERSION ??= '1.0.0';
 
 if (typeof globalThis.window !== 'undefined') {

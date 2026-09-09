@@ -29,6 +29,10 @@ export type TemplateMinAggregateOutputType = {
   user_id: string | null
   name: string | null
   subject: string | null
+  body_json: string | null
+  body_mjml: string | null
+  body_html: string | null
+  body_text: string | null
   body: string | null
   created_at: Date | null
   updated_at: Date | null
@@ -39,6 +43,10 @@ export type TemplateMaxAggregateOutputType = {
   user_id: string | null
   name: string | null
   subject: string | null
+  body_json: string | null
+  body_mjml: string | null
+  body_html: string | null
+  body_text: string | null
   body: string | null
   created_at: Date | null
   updated_at: Date | null
@@ -49,6 +57,10 @@ export type TemplateCountAggregateOutputType = {
   user_id: number
   name: number
   subject: number
+  body_json: number
+  body_mjml: number
+  body_html: number
+  body_text: number
   body: number
   created_at: number
   updated_at: number
@@ -61,6 +73,10 @@ export type TemplateMinAggregateInputType = {
   user_id?: true
   name?: true
   subject?: true
+  body_json?: true
+  body_mjml?: true
+  body_html?: true
+  body_text?: true
   body?: true
   created_at?: true
   updated_at?: true
@@ -71,6 +87,10 @@ export type TemplateMaxAggregateInputType = {
   user_id?: true
   name?: true
   subject?: true
+  body_json?: true
+  body_mjml?: true
+  body_html?: true
+  body_text?: true
   body?: true
   created_at?: true
   updated_at?: true
@@ -81,6 +101,10 @@ export type TemplateCountAggregateInputType = {
   user_id?: true
   name?: true
   subject?: true
+  body_json?: true
+  body_mjml?: true
+  body_html?: true
+  body_text?: true
   body?: true
   created_at?: true
   updated_at?: true
@@ -164,6 +188,10 @@ export type TemplateGroupByOutputType = {
   user_id: string
   name: string
   subject: string
+  body_json: string | null
+  body_mjml: string | null
+  body_html: string | null
+  body_text: string | null
   body: string
   created_at: Date
   updated_at: Date
@@ -195,6 +223,10 @@ export type TemplateWhereInput = {
   user_id?: Prisma.UuidFilter<"Template"> | string
   name?: Prisma.StringFilter<"Template"> | string
   subject?: Prisma.StringFilter<"Template"> | string
+  body_json?: Prisma.StringNullableFilter<"Template"> | string | null
+  body_mjml?: Prisma.StringNullableFilter<"Template"> | string | null
+  body_html?: Prisma.StringNullableFilter<"Template"> | string | null
+  body_text?: Prisma.StringNullableFilter<"Template"> | string | null
   body?: Prisma.StringFilter<"Template"> | string
   created_at?: Prisma.DateTimeFilter<"Template"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Template"> | Date | string
@@ -208,6 +240,10 @@ export type TemplateOrderByWithRelationInput = {
   user_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   subject?: Prisma.SortOrder
+  body_json?: Prisma.SortOrderInput | Prisma.SortOrder
+  body_mjml?: Prisma.SortOrderInput | Prisma.SortOrder
+  body_html?: Prisma.SortOrderInput | Prisma.SortOrder
+  body_text?: Prisma.SortOrderInput | Prisma.SortOrder
   body?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -224,6 +260,10 @@ export type TemplateWhereUniqueInput = Prisma.AtLeast<{
   user_id?: Prisma.UuidFilter<"Template"> | string
   name?: Prisma.StringFilter<"Template"> | string
   subject?: Prisma.StringFilter<"Template"> | string
+  body_json?: Prisma.StringNullableFilter<"Template"> | string | null
+  body_mjml?: Prisma.StringNullableFilter<"Template"> | string | null
+  body_html?: Prisma.StringNullableFilter<"Template"> | string | null
+  body_text?: Prisma.StringNullableFilter<"Template"> | string | null
   body?: Prisma.StringFilter<"Template"> | string
   created_at?: Prisma.DateTimeFilter<"Template"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Template"> | Date | string
@@ -237,6 +277,10 @@ export type TemplateOrderByWithAggregationInput = {
   user_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   subject?: Prisma.SortOrder
+  body_json?: Prisma.SortOrderInput | Prisma.SortOrder
+  body_mjml?: Prisma.SortOrderInput | Prisma.SortOrder
+  body_html?: Prisma.SortOrderInput | Prisma.SortOrder
+  body_text?: Prisma.SortOrderInput | Prisma.SortOrder
   body?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -253,6 +297,10 @@ export type TemplateScalarWhereWithAggregatesInput = {
   user_id?: Prisma.UuidWithAggregatesFilter<"Template"> | string
   name?: Prisma.StringWithAggregatesFilter<"Template"> | string
   subject?: Prisma.StringWithAggregatesFilter<"Template"> | string
+  body_json?: Prisma.StringNullableWithAggregatesFilter<"Template"> | string | null
+  body_mjml?: Prisma.StringNullableWithAggregatesFilter<"Template"> | string | null
+  body_html?: Prisma.StringNullableWithAggregatesFilter<"Template"> | string | null
+  body_text?: Prisma.StringNullableWithAggregatesFilter<"Template"> | string | null
   body?: Prisma.StringWithAggregatesFilter<"Template"> | string
   created_at?: Prisma.DateTimeWithAggregatesFilter<"Template"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"Template"> | Date | string
@@ -262,6 +310,10 @@ export type TemplateCreateInput = {
   id?: string
   name: string
   subject: string
+  body_json?: string | null
+  body_mjml?: string | null
+  body_html?: string | null
+  body_text?: string | null
   body: string
   created_at?: Date | string
   updated_at?: Date | string
@@ -275,6 +327,10 @@ export type TemplateUncheckedCreateInput = {
   user_id: string
   name: string
   subject: string
+  body_json?: string | null
+  body_mjml?: string | null
+  body_html?: string | null
+  body_text?: string | null
   body: string
   created_at?: Date | string
   updated_at?: Date | string
@@ -286,6 +342,10 @@ export type TemplateUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  body_json?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_mjml?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   body?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -299,6 +359,10 @@ export type TemplateUncheckedUpdateInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  body_json?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_mjml?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   body?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -311,6 +375,10 @@ export type TemplateCreateManyInput = {
   user_id: string
   name: string
   subject: string
+  body_json?: string | null
+  body_mjml?: string | null
+  body_html?: string | null
+  body_text?: string | null
   body: string
   created_at?: Date | string
   updated_at?: Date | string
@@ -320,6 +388,10 @@ export type TemplateUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  body_json?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_mjml?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   body?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -330,6 +402,10 @@ export type TemplateUncheckedUpdateManyInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  body_json?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_mjml?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   body?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -350,6 +426,10 @@ export type TemplateCountOrderByAggregateInput = {
   user_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   subject?: Prisma.SortOrder
+  body_json?: Prisma.SortOrder
+  body_mjml?: Prisma.SortOrder
+  body_html?: Prisma.SortOrder
+  body_text?: Prisma.SortOrder
   body?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -360,6 +440,10 @@ export type TemplateMaxOrderByAggregateInput = {
   user_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   subject?: Prisma.SortOrder
+  body_json?: Prisma.SortOrder
+  body_mjml?: Prisma.SortOrder
+  body_html?: Prisma.SortOrder
+  body_text?: Prisma.SortOrder
   body?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -370,6 +454,10 @@ export type TemplateMinOrderByAggregateInput = {
   user_id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   subject?: Prisma.SortOrder
+  body_json?: Prisma.SortOrder
+  body_mjml?: Prisma.SortOrder
+  body_html?: Prisma.SortOrder
+  body_text?: Prisma.SortOrder
   body?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
@@ -454,6 +542,10 @@ export type TemplateCreateWithoutUserInput = {
   id?: string
   name: string
   subject: string
+  body_json?: string | null
+  body_mjml?: string | null
+  body_html?: string | null
+  body_text?: string | null
   body: string
   created_at?: Date | string
   updated_at?: Date | string
@@ -465,6 +557,10 @@ export type TemplateUncheckedCreateWithoutUserInput = {
   id?: string
   name: string
   subject: string
+  body_json?: string | null
+  body_mjml?: string | null
+  body_html?: string | null
+  body_text?: string | null
   body: string
   created_at?: Date | string
   updated_at?: Date | string
@@ -506,6 +602,10 @@ export type TemplateScalarWhereInput = {
   user_id?: Prisma.UuidFilter<"Template"> | string
   name?: Prisma.StringFilter<"Template"> | string
   subject?: Prisma.StringFilter<"Template"> | string
+  body_json?: Prisma.StringNullableFilter<"Template"> | string | null
+  body_mjml?: Prisma.StringNullableFilter<"Template"> | string | null
+  body_html?: Prisma.StringNullableFilter<"Template"> | string | null
+  body_text?: Prisma.StringNullableFilter<"Template"> | string | null
   body?: Prisma.StringFilter<"Template"> | string
   created_at?: Prisma.DateTimeFilter<"Template"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"Template"> | Date | string
@@ -515,6 +615,10 @@ export type TemplateCreateWithoutCampaignsInput = {
   id?: string
   name: string
   subject: string
+  body_json?: string | null
+  body_mjml?: string | null
+  body_html?: string | null
+  body_text?: string | null
   body: string
   created_at?: Date | string
   updated_at?: Date | string
@@ -527,6 +631,10 @@ export type TemplateUncheckedCreateWithoutCampaignsInput = {
   user_id: string
   name: string
   subject: string
+  body_json?: string | null
+  body_mjml?: string | null
+  body_html?: string | null
+  body_text?: string | null
   body: string
   created_at?: Date | string
   updated_at?: Date | string
@@ -553,6 +661,10 @@ export type TemplateUpdateWithoutCampaignsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  body_json?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_mjml?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   body?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -565,6 +677,10 @@ export type TemplateUncheckedUpdateWithoutCampaignsInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  body_json?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_mjml?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   body?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -575,6 +691,10 @@ export type TemplateCreateWithoutEmail_jobsInput = {
   id?: string
   name: string
   subject: string
+  body_json?: string | null
+  body_mjml?: string | null
+  body_html?: string | null
+  body_text?: string | null
   body: string
   created_at?: Date | string
   updated_at?: Date | string
@@ -587,6 +707,10 @@ export type TemplateUncheckedCreateWithoutEmail_jobsInput = {
   user_id: string
   name: string
   subject: string
+  body_json?: string | null
+  body_mjml?: string | null
+  body_html?: string | null
+  body_text?: string | null
   body: string
   created_at?: Date | string
   updated_at?: Date | string
@@ -613,6 +737,10 @@ export type TemplateUpdateWithoutEmail_jobsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  body_json?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_mjml?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   body?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -625,6 +753,10 @@ export type TemplateUncheckedUpdateWithoutEmail_jobsInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  body_json?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_mjml?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   body?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -635,6 +767,10 @@ export type TemplateCreateManyUserInput = {
   id?: string
   name: string
   subject: string
+  body_json?: string | null
+  body_mjml?: string | null
+  body_html?: string | null
+  body_text?: string | null
   body: string
   created_at?: Date | string
   updated_at?: Date | string
@@ -644,6 +780,10 @@ export type TemplateUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  body_json?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_mjml?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   body?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -655,6 +795,10 @@ export type TemplateUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  body_json?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_mjml?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   body?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -666,6 +810,10 @@ export type TemplateUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
+  body_json?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_mjml?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  body_text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   body?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -716,6 +864,10 @@ export type TemplateSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   user_id?: boolean
   name?: boolean
   subject?: boolean
+  body_json?: boolean
+  body_mjml?: boolean
+  body_html?: boolean
+  body_text?: boolean
   body?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -730,6 +882,10 @@ export type TemplateSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   user_id?: boolean
   name?: boolean
   subject?: boolean
+  body_json?: boolean
+  body_mjml?: boolean
+  body_html?: boolean
+  body_text?: boolean
   body?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -741,6 +897,10 @@ export type TemplateSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   user_id?: boolean
   name?: boolean
   subject?: boolean
+  body_json?: boolean
+  body_mjml?: boolean
+  body_html?: boolean
+  body_text?: boolean
   body?: boolean
   created_at?: boolean
   updated_at?: boolean
@@ -752,12 +912,16 @@ export type TemplateSelectScalar = {
   user_id?: boolean
   name?: boolean
   subject?: boolean
+  body_json?: boolean
+  body_mjml?: boolean
+  body_html?: boolean
+  body_text?: boolean
   body?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type TemplateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "name" | "subject" | "body" | "created_at" | "updated_at", ExtArgs["result"]["template"]>
+export type TemplateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "name" | "subject" | "body_json" | "body_mjml" | "body_html" | "body_text" | "body" | "created_at" | "updated_at", ExtArgs["result"]["template"]>
 export type TemplateInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   campaigns?: boolean | Prisma.Template$campaignsArgs<ExtArgs>
@@ -783,6 +947,25 @@ export type $TemplatePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     user_id: string
     name: string
     subject: string
+    /**
+     * Templatical editor JSON (source of truth). Null for legacy plain-text templates.
+     */
+    body_json: string | null
+    /**
+     * Server-rendered MJML from @templatical/renderer. Derived cache from body_json.
+     */
+    body_mjml: string | null
+    /**
+     * Server-compiled HTML from the mjml package. Derived cache from body_mjml.
+     */
+    body_html: string | null
+    /**
+     * Plain-text fallback derived from body_html. Legacy `body` migrates here.
+     */
+    body_text: string | null
+    /**
+     * DEPRECATED: retained for backward compat during migration. Equals body_text for new templates.
+     */
     body: string
     created_at: Date
     updated_at: Date
@@ -1216,6 +1399,10 @@ export interface TemplateFieldRefs {
   readonly user_id: Prisma.FieldRef<"Template", 'String'>
   readonly name: Prisma.FieldRef<"Template", 'String'>
   readonly subject: Prisma.FieldRef<"Template", 'String'>
+  readonly body_json: Prisma.FieldRef<"Template", 'String'>
+  readonly body_mjml: Prisma.FieldRef<"Template", 'String'>
+  readonly body_html: Prisma.FieldRef<"Template", 'String'>
+  readonly body_text: Prisma.FieldRef<"Template", 'String'>
   readonly body: Prisma.FieldRef<"Template", 'String'>
   readonly created_at: Prisma.FieldRef<"Template", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"Template", 'DateTime'>

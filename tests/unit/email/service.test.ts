@@ -116,6 +116,21 @@ describe('lib/email/service (sendEmail dispatcher)', () => {
     expect(call.attachments).toBeUndefined();
   });
 
+  it('threads bodyHtml into the MIME message as multipart/alternative', async () => {
+    fakeProvider.sendEmail.mockResolvedValue({ success: true });
+    await sendEmail({ ...baseParams, bodyHtml: '<p>Hello</p>' });
+    const call = fakeProvider.sendEmail.mock.calls[0][0];
+    expect(call.mimeMessage).toContain('multipart/alternative');
+    expect(call.mimeMessage).toContain('text/html');
+  });
+
+  it('omits multipart/alternative when bodyHtml is absent', async () => {
+    fakeProvider.sendEmail.mockResolvedValue({ success: true });
+    await sendEmail(baseParams);
+    const call = fakeProvider.sendEmail.mock.calls[0][0];
+    expect(call.mimeMessage).not.toContain('multipart/alternative');
+  });
+
   // NOTE: source bug — `sendEmail` does NOT wrap `EmailProviderFactory.resolve`
   // in try/catch, so an unknown/disabled provider throws instead of returning a
   // safe error outcome. We assert the actual (throwing) behaviour here and

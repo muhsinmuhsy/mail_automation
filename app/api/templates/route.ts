@@ -5,6 +5,7 @@ import { respondError, respondOk, respondList } from '@/lib/api/respond';
 import { parseListQuery } from '@/lib/api/list';
 import { createTemplateSchema } from '@/lib/validation/template';
 import { ConflictError, ValidationError, fromPrismaError } from '@/lib/errors';
+import { renderTemplate } from '@/lib/email/render';
 
 const _GET = defineRoute(async (req, ctx) => {
   const { page, limit, search } = parseListQuery(req, { search: true });
@@ -17,7 +18,7 @@ const _GET = defineRoute(async (req, ctx) => {
   const [templates, total] = await Promise.all([
     getPrisma().template.findMany({
       where,
-      select: { id: true, name: true, subject: true, created_at: true },
+      select: { id: true, name: true, subject: true, created_at: true, updated_at: true },
       orderBy: { created_at: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
@@ -41,13 +42,37 @@ const _POST = defineRoute(async (req, ctx) => {
     );
   }
 
+  const { name, subject, bodyJson, body: legacyBody } = parsed.data;
+
   try {
+    if (bodyJson !== undefined) {
+      const rendered = await renderTemplate(bodyJson);
+
+      const template = await getPrisma().template.create({
+        data: {
+          user_id: ctx.user.id,
+          name,
+          subject,
+          body_json: bodyJson,
+          body_mjml: rendered.mjml,
+          body_html: rendered.html,
+          body_text: rendered.text,
+          body: rendered.text,
+        },
+        select: { id: true, name: true, subject: true, created_at: true },
+      });
+
+      return respondOk(template, ctx.requestId, 'Template created successfully.', 201);
+    }
+
+    const textBody = legacyBody ?? '';
     const template = await getPrisma().template.create({
       data: {
         user_id: ctx.user.id,
-        name: parsed.data.name,
-        subject: parsed.data.subject,
-        body: parsed.data.body,
+        name,
+        subject,
+        body: textBody,
+        body_text: textBody,
       },
       select: { id: true, name: true, subject: true, created_at: true },
     });
@@ -56,6 +81,9 @@ const _POST = defineRoute(async (req, ctx) => {
   } catch (error) {
     if ((error as { code?: string })?.code === 'P2002') {
       return respondError(new ConflictError('This template already exists.'), ctx.requestId);
+    }
+    if (error instanceof ValidationError) {
+      return respondError(error, ctx.requestId);
     }
     throw fromPrismaError(error);
   }

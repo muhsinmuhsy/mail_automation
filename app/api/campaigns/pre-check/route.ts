@@ -34,7 +34,7 @@ const _POST = defineRoute(async (req, ctx) => {
 
   const template = await getPrisma().template.findFirst({
     where: { id: templateId, user_id: ctx.user.id },
-    select: { id: true, subject: true, body: true },
+    select: { id: true, subject: true, body: true, body_text: true, body_html: true },
   });
   if (!template) {
     return respondError(
@@ -57,7 +57,7 @@ const _POST = defineRoute(async (req, ctx) => {
     getPrisma(),
     ctx.user.id,
     template.subject,
-    template.body,
+    template.body_html ?? template.body_text ?? template.body,
     contactIds
   );
 

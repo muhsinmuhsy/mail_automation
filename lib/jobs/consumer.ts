@@ -154,6 +154,7 @@ export async function processQueueJob(
         to: job.to_email,
         subject: job.subject,
         body: job.body,
+        bodyHtml: job.body_html ?? undefined,
         attachments: attachmentEmails,
         credentials: {
           email: emailAccount.email,

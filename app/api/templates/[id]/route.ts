@@ -4,7 +4,37 @@ import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
 import { updateTemplateSchema } from '@/lib/validation/template';
-import { NotFoundError, ValidationError } from '@/lib/errors';
+import { NotFoundError, ValidationError, fromPrismaError } from '@/lib/errors';
+import { renderTemplate } from '@/lib/email/render';
+
+const _GET = defineRoute(async (_req, ctx) => {
+  const parsed = idParamSchema.safeParse({ id: ctx.params.id });
+  if (!parsed.success) {
+    return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
+  }
+
+  const template = await getPrisma().template.findFirst({
+    where: { id: parsed.data.id, user_id: ctx.user.id },
+    select: {
+      id: true,
+      name: true,
+      subject: true,
+      body: true,
+      body_json: true,
+      body_mjml: true,
+      body_html: true,
+      body_text: true,
+      created_at: true,
+      updated_at: true,
+    },
+  });
+
+  if (!template) {
+    return respondError(new NotFoundError('Template not found.'), ctx.requestId);
+  }
+
+  return respondOk(template, ctx.requestId);
+}, { auth: 'user' });
 
 const _PATCH = defineRoute(async (req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
@@ -24,16 +54,53 @@ const _PATCH = defineRoute(async (req, ctx) => {
     );
   }
 
-  const result = await getPrisma().template.updateMany({
-    where: { id: parsed.data.id, user_id: ctx.user.id },
-    data: updateParsed.data,
-  });
+  const { bodyJson, body: legacyBody, ...patchData } = updateParsed.data;
 
-  if (result.count === 0) {
-    return respondError(new NotFoundError('Template not found.'), ctx.requestId);
+  try {
+    if (bodyJson !== undefined) {
+      const rendered = await renderTemplate(bodyJson);
+
+      const result = await getPrisma().template.updateMany({
+        where: { id: parsed.data.id, user_id: ctx.user.id },
+        data: {
+          ...patchData,
+          body_json: bodyJson,
+          body_mjml: rendered.mjml,
+          body_html: rendered.html,
+          body_text: rendered.text,
+          body: rendered.text,
+        },
+      });
+
+      if (result.count === 0) {
+        return respondError(new NotFoundError('Template not found.'), ctx.requestId);
+      }
+
+      return respondOk(null, ctx.requestId, 'Template updated.');
+    }
+
+    const data: Record<string, unknown> = { ...patchData };
+    if (legacyBody !== undefined) {
+      data.body = legacyBody;
+      data.body_text = legacyBody;
+    }
+
+    const result = await getPrisma().template.updateMany({
+      where: { id: parsed.data.id, user_id: ctx.user.id },
+      data,
+    });
+
+    if (result.count === 0) {
+      return respondError(new NotFoundError('Template not found.'), ctx.requestId);
+    }
+
+    return respondOk(null, ctx.requestId, 'Template updated.');
+  } catch (error) {
+    if (error instanceof NotFoundError || error instanceof ValidationError) {
+      return respondError(error, ctx.requestId);
+    }
+    throw fromPrismaError(error);
   }
-
-  return respondOk(null, ctx.requestId, 'Template updated.');
 }, {
   auth: {
     ownership: async (params) => {
@@ -72,6 +139,11 @@ const _DELETE = defineRoute(async (_req, ctx) => {
   },
   rateLimitKey: 'template-delete',
 });
+
+
+export async function GET(req: NextRequest, ctx: { params: RouteParams } = { params: {} as RouteParams }) {
+  return _GET(req, ctx);
+}
 
 
 export async function PATCH(req: NextRequest, ctx: { params: RouteParams } = { params: {} as RouteParams }) {

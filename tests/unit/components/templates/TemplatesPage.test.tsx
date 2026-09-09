@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+vi.mock('@/components/templates/VisualEmailEditorLazy', () => ({
+  default: () => null,
+}));
+
 import TemplatesPage from '@/app/(dashboard)/templates/page';
 
 const mockTemplate = (id: string, name: string, subject: string) => ({
@@ -24,11 +29,6 @@ const mockListResponse = (templates: ReturnType<typeof mockTemplate>[], total?: 
     data: templates,
     pagination: mockPagination(total ?? templates.length, 1),
   }),
-}) as Response;
-
-const mockFieldsResponse = () => ({
-  ok: true,
-  json: async () => ({ success: true, data: [] }),
 }) as Response;
 
 describe('TemplatesPage', () => {
@@ -93,15 +93,31 @@ describe('TemplatesPage', () => {
     );
   });
 
-  it('submits the form and reloads the list', async () => {
+  it('opens the editor dialog when New template is clicked', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockListResponse([mockTemplate('t1', 'Welcome', 'Hi')])
+    );
+
+    render(<TemplatesPage />);
+
+    await waitFor(() => expect(screen.getByText('Welcome')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'New template' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
+    );
+    expect(screen.getByLabelText('Template name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Subject')).toBeInTheDocument();
+  });
+
+  it('submits a plain text template and reloads the list', async () => {
     const user = userEvent.setup();
     const fetchMock = vi.spyOn(globalThis, 'fetch');
 
     fetchMock.mockResolvedValueOnce(
       mockListResponse([mockTemplate('t1', 'Existing', 'Subject')])
     );
-
-    fetchMock.mockResolvedValueOnce(mockFieldsResponse());
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -126,9 +142,15 @@ describe('TemplatesPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'New template' }));
 
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
+
     await user.type(screen.getByLabelText('Template name'), 'New template');
     await user.type(screen.getByLabelText('Subject'), 'New subject');
-    await user.type(screen.getByLabelText('Body'), 'Body text');
+    await user.type(screen.getByLabelText('Plain text body'), 'Body text');
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 
     await waitFor(() =>
@@ -152,7 +174,6 @@ describe('TemplatesPage', () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(mockListResponse([]))
-      .mockResolvedValueOnce(mockFieldsResponse())
       .mockResolvedValueOnce({
         ok: false,
         json: async () => ({ success: false, error: { message: 'Save failed' } }),
@@ -164,9 +185,15 @@ describe('TemplatesPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'New template' }));
 
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
+
     await user.type(screen.getByLabelText('Template name'), 'Bad template');
     await user.type(screen.getByLabelText('Subject'), 'Subject');
-    await user.type(screen.getByLabelText('Body'), 'Body');
+    await user.type(screen.getByLabelText('Plain text body'), 'Body');
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 
     await waitFor(() =>
@@ -174,7 +201,7 @@ describe('TemplatesPage', () => {
     );
   });
 
-  it('disables the submit button while saving', async () => {
+  it('disables the save button while saving', async () => {
     const user = userEvent.setup();
     let resolveCreate!: (value: Response) => void;
     const fetchMock = vi.spyOn(globalThis, 'fetch');
@@ -194,12 +221,20 @@ describe('TemplatesPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'New template' }));
 
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
+
     await user.type(screen.getByLabelText('Template name'), 'Slow template');
     await user.type(screen.getByLabelText('Subject'), 'Subject');
-    await user.type(screen.getByLabelText('Body'), 'Body');
+    await user.type(screen.getByLabelText('Plain text body'), 'Body');
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 
-    expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save template' })).toBeDisabled()
+    );
 
     resolveCreate({
       ok: true,
@@ -211,7 +246,7 @@ describe('TemplatesPage', () => {
     } as Response);
   });
 
-  it('hides the form after successful save', async () => {
+  it('closes the dialog after successful save', async () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(mockListResponse([]))
@@ -230,15 +265,126 @@ describe('TemplatesPage', () => {
     await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'New template' }));
-    expect(screen.getByLabelText('Template name')).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
 
     await user.type(screen.getByLabelText('Template name'), 'Persisted');
     await user.type(screen.getByLabelText('Subject'), 'Subject');
-    await user.type(screen.getByLabelText('Body'), 'Body');
+    await user.type(screen.getByLabelText('Plain text body'), 'Body');
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 
     await waitFor(() =>
-      expect(screen.queryByLabelText('Template name')).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: 'New template' })).not.toBeInTheDocument()
+    );
+  });
+
+  it('closes the dialog when Cancel is clicked', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockListResponse([mockTemplate('t1', 'Welcome', 'Hi')])
+    );
+
+    render(<TemplatesPage />);
+
+    await waitFor(() => expect(screen.getByText('Welcome')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'New template' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'New template' })).not.toBeInTheDocument()
+    );
+  });
+
+  it('renders Edit and Preview buttons on template cards', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      mockListResponse([mockTemplate('t1', 'Welcome', 'Hi')])
+    );
+
+    render(<TemplatesPage />);
+
+    await waitFor(() => expect(screen.getByText('Welcome')).toBeInTheDocument());
+
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Preview' })).toBeInTheDocument();
+  });
+
+  it('opens the editor in edit mode when Edit is clicked', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    fetchMock.mockResolvedValueOnce(
+      mockListResponse([mockTemplate('t1', 'Welcome', 'Hi')])
+    );
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          id: 't1',
+          name: 'Welcome',
+          subject: 'Hi',
+          body: 'Hello',
+          body_json: null,
+          body_html: null,
+          body_text: 'Hello',
+        },
+      }),
+    } as Response);
+
+    render(<TemplatesPage />);
+
+    await waitFor(() => expect(screen.getByText('Welcome')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/templates/t1')
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Edit template' })).toBeInTheDocument()
+    );
+  });
+
+  it('opens the preview dialog when Preview is clicked', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    fetchMock.mockResolvedValueOnce(
+      mockListResponse([mockTemplate('t1', 'Welcome', 'Hi')])
+    );
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: { html: '<p>Hello</p>', text: 'Hello', subject: 'Hi' },
+      }),
+    } as Response);
+
+    render(<TemplatesPage />);
+
+    await waitFor(() => expect(screen.getByText('Welcome')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/templates/t1/preview',
+        expect.objectContaining({ method: 'POST' })
+      )
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Template preview' })).toBeInTheDocument()
     );
   });
 

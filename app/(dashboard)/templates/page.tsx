@@ -1,7 +1,8 @@
 'use client';
 
 import { TemplateCard } from '@/components/templates/TemplateCard';
-import { TemplateForm } from '@/components/templates/TemplateForm';
+import { TemplateEditorDialog } from '@/components/templates/TemplateEditorDialog';
+import { TemplatePreviewDialog } from '@/components/templates/TemplatePreviewDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
@@ -16,7 +17,7 @@ interface PaginationMeta {
   totalPages: number;
 }
 
-type Template = { id: string; name: string; subject: string; created_at: string };
+type Template = { id: string; name: string; subject: string; created_at?: string };
 type ApiEnvelope<T> =
   | { success: true; data: T; message?: string; pagination?: PaginationMeta }
   | { success: false; error: { message: string; fields?: Record<string, string> } };
@@ -27,9 +28,11 @@ export default function TemplatesPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
@@ -54,28 +57,19 @@ export default function TemplatesPage() {
     return () => clearTimeout(timer);
   }, [load]);
 
-  const handleSubmit = async (data: { name: string; subject: string; body: string }) => {
-    setSaving(true);
-    setFormError(null);
-    try {
-      const response = await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const payload = (await response.json()) as ApiEnvelope<Template>;
-      if (!payload.success) {
-        setFormError(payload.error.message);
-        return;
-      }
-      setShowForm(false);
-      setPage(1);
-      await load();
-    } catch {
-      setFormError('Unable to save template.');
-    } finally {
-      setSaving(false);
-    }
+  const handleNew = () => {
+    setEditingId(null);
+    setEditorOpen(true);
+  };
+
+  const handleEdit = (template: Template) => {
+    setEditingId(template.id);
+    setEditorOpen(true);
+  };
+
+  const handlePreview = (template: Template) => {
+    setPreviewId(template.id);
+    setPreviewOpen(true);
   };
 
   return (
@@ -86,18 +80,12 @@ export default function TemplatesPage() {
           <p className="mt-2 text-text-secondary">Create and manage email templates.</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={handleNew}
           className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
         >
-          {showForm ? 'Cancel' : 'New template'}
+          New template
         </button>
       </div>
-
-      {showForm && (
-        <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
-          <TemplateForm onSubmit={handleSubmit} saving={saving} error={formError} />
-        </div>
-      )}
 
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
 
@@ -114,7 +102,12 @@ export default function TemplatesPage() {
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {templates.map((template) => (
-              <TemplateCard key={template.id} template={template} />
+              <TemplateCard
+                key={template.id}
+                template={template}
+                onEdit={handleEdit}
+                onPreview={handlePreview}
+              />
             ))}
           </div>
 
@@ -130,6 +123,19 @@ export default function TemplatesPage() {
           )}
         </div>
       )}
+
+      <TemplateEditorDialog
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        templateId={editingId}
+        onSaved={() => { setPage(1); void load(); }}
+      />
+
+      <TemplatePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        templateId={previewId}
+      />
     </div>
   );
 }

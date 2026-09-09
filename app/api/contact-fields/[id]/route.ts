@@ -228,18 +228,18 @@ const _GET = defineRoute(async (req, ctx) => {
   const token = field.name;
   const templates = await getPrisma().template.findMany({
     where: { user_id: ctx.user.id },
-    select: { id: true, name: true, subject: true, body: true },
+    select: { id: true, name: true, subject: true, body: true, body_html: true, body_text: true },
   });
 
   const affectedTemplateNames: string[] = [];
   for (const t of templates) {
-    const subjectTokens = new Set(
-      [...t.subject.matchAll(VARIABLE_PATTERN)].map((m) => m[1].toLowerCase())
-    );
-    const bodyTokens = new Set(
-      [...t.body.matchAll(VARIABLE_PATTERN)].map((m) => m[1].toLowerCase())
-    );
-    if (subjectTokens.has(token) || bodyTokens.has(token)) {
+    const tokens = new Set<string>([
+      ...[...t.subject.matchAll(VARIABLE_PATTERN)].map((m) => m[1].toLowerCase()),
+      ...[...t.body.matchAll(VARIABLE_PATTERN)].map((m) => m[1].toLowerCase()),
+      ...(t.body_html ? [...t.body_html.matchAll(VARIABLE_PATTERN)].map((m) => m[1].toLowerCase()) : []),
+      ...(t.body_text ? [...t.body_text.matchAll(VARIABLE_PATTERN)].map((m) => m[1].toLowerCase()) : []),
+    ]);
+    if (tokens.has(token)) {
       affectedTemplateNames.push(t.name);
     }
   }

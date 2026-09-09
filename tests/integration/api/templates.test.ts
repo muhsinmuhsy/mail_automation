@@ -1,8 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
 import { ForbiddenError } from '@/lib/errors';
+
+const { mockRenderTemplate } = vi.hoisted(() => ({
+  mockRenderTemplate: vi.fn(),
+}));
+
+vi.mock('@/lib/email/render', () => ({
+  renderTemplate: mockRenderTemplate,
+}));
+
 import { GET as listTemplates, POST as createTemplate } from '@/app/api/templates/route';
-import { PATCH as patchTemplate, DELETE as deleteTemplate } from '@/app/api/templates/[id]/route';
+import { GET as getTemplate, PATCH as patchTemplate, DELETE as deleteTemplate } from '@/app/api/templates/[id]/route';
 
 interface ApiBody {
   success: boolean;
@@ -23,10 +32,20 @@ const mockPrisma = {
   template: {
     findMany: vi.fn(),
     findUnique: vi.fn().mockResolvedValue({ user_id: 'user-1' }),
+    findFirst: vi.fn(),
     count: vi.fn(),
     create: vi.fn(),
     updateMany: vi.fn(),
     deleteMany: vi.fn(),
+  },
+  contact: {
+    findFirst: vi.fn(),
+  },
+  contactField: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
+  contactFieldValue: {
+    findMany: vi.fn().mockResolvedValue([]),
   },
   user: {
     findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
@@ -198,6 +217,7 @@ describe('POST /api/templates', () => {
         name: 'Intro',
         subject: 'Hi {{name}}',
         body: 'Hello {{name}}',
+        body_text: 'Hello {{name}}',
       },
       select: { id: true, name: true, subject: true, created_at: true },
     });
@@ -355,6 +375,120 @@ describe('PATCH /api/templates/[id]', () => {
 
     expect(response.status).toBe(500);
     expect(body.error?.type).toBe('INTERNAL_ERROR');
+  });
+});
+
+describe('POST /api/templates with bodyJson', () => {
+  it('renders server-side and stores all four body columns', async () => {
+    mockRenderTemplate.mockResolvedValue({
+      mjml: '<mjml></mjml>',
+      html: '<html>Hi</html>',
+      text: 'Hi',
+    });
+
+    const response = await createTemplate(
+      jsonRequest({ name: 'Visual', subject: 'Hi', bodyJson: '{"blocks":[],"settings":{}}' })
+    );
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(201);
+    expect(body.success).toBe(true);
+    expect(mockPrisma.template.create).toHaveBeenCalledWith({
+      data: {
+        user_id: 'user-1',
+        name: 'Visual',
+        subject: 'Hi',
+        body_json: '{"blocks":[],"settings":{}}',
+        body_mjml: '<mjml></mjml>',
+        body_html: '<html>Hi</html>',
+        body_text: 'Hi',
+        body: 'Hi',
+      },
+      select: { id: true, name: true, subject: true, created_at: true },
+    });
+  });
+
+  it('returns 500 when renderTemplate throws (no partial write)', async () => {
+    mockRenderTemplate.mockRejectedValue(new Error('Invalid template content.'));
+
+    const response = await createTemplate(
+      jsonRequest({ name: 'Bad', subject: 'Hi', bodyJson: 'invalid' })
+    );
+    const _body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(500);
+    expect(mockPrisma.template.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET /api/templates/[id]', () => {
+  const url = `http://localhost/api/templates/${TEMPLATE_ID}`;
+
+  it('returns the full template including bodyJson', async () => {
+    mockPrisma.template.findFirst.mockResolvedValue({
+      id: TEMPLATE_ID,
+      name: 'Visual',
+      subject: 'Hi',
+      body: 'Hi',
+      body_json: '{"blocks":[],"settings":{}}',
+      body_mjml: '<mjml></mjml>',
+      body_html: '<html>Hi</html>',
+      body_text: 'Hi',
+      created_at: new Date('2030-01-01'),
+      updated_at: new Date('2030-01-01'),
+    });
+
+    const response = await getTemplate(new NextRequest(url), {
+      params: Promise.resolve({ id: TEMPLATE_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect((body.data as { body_json: string }).body_json).toBe('{"blocks":[],"settings":{}}');
+  });
+
+  it('returns 404 when the template is not found', async () => {
+    mockPrisma.template.findFirst.mockResolvedValue(null);
+
+    const response = await getTemplate(new NextRequest(url), {
+      params: Promise.resolve({ id: TEMPLATE_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(404);
+    expect(body.error?.type).toBe('NOT_FOUND');
+  });
+});
+
+describe('PATCH /api/templates/[id] with bodyJson', () => {
+  const url = `http://localhost/api/templates/${TEMPLATE_ID}`;
+
+  it('renders server-side and updates all four body columns', async () => {
+    mockRenderTemplate.mockResolvedValue({
+      mjml: '<mjml>updated</mjml>',
+      html: '<html>updated</html>',
+      text: 'updated',
+    });
+
+    const response = await patchTemplate(
+      jsonRequest({ bodyJson: '{"blocks":[],"settings":{}}' }, 'PATCH', url),
+      { params: Promise.resolve({ id: TEMPLATE_ID }) }
+    );
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(mockPrisma.template.updateMany).toHaveBeenCalledWith({
+      where: { id: TEMPLATE_ID, user_id: 'user-1' },
+      data: {
+        body_json: '{"blocks":[],"settings":{}}',
+        body_mjml: '<mjml>updated</mjml>',
+        body_html: '<html>updated</html>',
+        body_text: 'updated',
+        body: 'updated',
+      },
+    });
   });
 });
 

@@ -49,6 +49,7 @@ describe('lib/campaigns/scheduler', () => {
           to_email: 'test@example.com',
           subject: 'Subject',
           body: 'Body',
+          body_html: null,
           scheduled_at: new Date('2024-01-15T09:00:00Z'),
           status: 'SCHEDULED',
           attempt_count: 0,
@@ -127,5 +128,54 @@ describe('lib/campaigns/scheduler', () => {
     expect(jobs.length).toBe(1);
     const scheduledAt = jobs[0].scheduled_at;
     expect(scheduledAt.toISOString()).toBe('2024-01-15T09:00:00.000Z');
+  });
+
+  it('snapshots body_html alongside body for visual templates', async () => {
+    const mockContact = { id: 'contact-1', email: 'test@example.com', user_id: 'user-1', name: 'Jane', contact_field_values: [] };
+    const createMany = vi.fn().mockResolvedValue({ count: 1 });
+    const prisma = {
+      contact: { findMany: vi.fn().mockResolvedValue([mockContact]) },
+      contactField: { findMany: vi.fn().mockResolvedValue([]) },
+      template: { findUnique: vi.fn().mockResolvedValue({ subject: 'Hi {{name}}', body: 'Hello {{name}}', body_text: 'Hello {{name}}', body_html: '<p>Hello {{name}}</p>' }) },
+      emailJob: { createMany },
+    } as unknown as PrismaClient;
+
+    await generateCampaignJobs(prisma, {
+      id: 'campaign-1',
+      user_id: 'user-1',
+      start_at: new Date('2024-01-15T09:00:00Z'),
+      timezone: 'UTC',
+      interval_minutes: 10,
+      email_account_id: 'account-1',
+      template_id: 'template-1',
+    }, ['contact-1']);
+
+    const jobs = createMany.mock.calls[0][0].data as Array<{ body: string; body_html: string | null }>;
+    expect(jobs[0].body).toBe('Hello Jane');
+    expect(jobs[0].body_html).toBe('<p>Hello Jane</p>');
+  });
+
+  it('snapshots body_html as null for legacy plain-text templates', async () => {
+    const mockContact = { id: 'contact-1', email: 'test@example.com', user_id: 'user-1', name: 'Jane', contact_field_values: [] };
+    const createMany = vi.fn().mockResolvedValue({ count: 1 });
+    const prisma = {
+      contact: { findMany: vi.fn().mockResolvedValue([mockContact]) },
+      contactField: { findMany: vi.fn().mockResolvedValue([]) },
+      template: { findUnique: vi.fn().mockResolvedValue({ subject: 'Hi', body: 'Hello', body_text: null, body_html: null }) },
+      emailJob: { createMany },
+    } as unknown as PrismaClient;
+
+    await generateCampaignJobs(prisma, {
+      id: 'campaign-1',
+      user_id: 'user-1',
+      start_at: new Date('2024-01-15T09:00:00Z'),
+      timezone: 'UTC',
+      interval_minutes: 10,
+      email_account_id: 'account-1',
+      template_id: 'template-1',
+    }, ['contact-1']);
+
+    const jobs = createMany.mock.calls[0][0].data as Array<{ body_html: string | null }>;
+    expect(jobs[0].body_html).toBeNull();
   });
 });

@@ -1761,6 +1761,10 @@ export const TemplateScalarFieldEnum = {
   user_id: 'user_id',
   name: 'name',
   subject: 'subject',
+  body_json: 'body_json',
+  body_mjml: 'body_mjml',
+  body_html: 'body_html',
+  body_text: 'body_text',
   body: 'body',
   created_at: 'created_at',
   updated_at: 'updated_at'
@@ -1801,6 +1805,7 @@ export const EmailJobScalarFieldEnum = {
   to_email: 'to_email',
   subject: 'subject',
   body: 'body',
+  body_html: 'body_html',
   scheduled_at: 'scheduled_at',
   status: 'status',
   attempt_count: 'attempt_count',

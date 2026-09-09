@@ -99,7 +99,7 @@ const _POST = defineRoute(async (req, ctx) => {
     getPrisma(),
     ctx.user.id,
     template.subject,
-    template.body,
+    template.body_html ?? template.body_text ?? template.body,
     parsed.data.contact_ids
   );
 

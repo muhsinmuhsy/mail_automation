@@ -213,6 +213,15 @@ model Template {
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   name       String   @db.VarChar(100)
   subject    String   @db.VarChar(200)
+  /// Templatical editor JSON (source of truth). Null for legacy plain-text templates.
+  body_json  String?  @db.Text
+  /// Server-rendered MJML from @templatical/renderer. Derived cache from body_json.
+  body_mjml  String?  @db.Text
+  /// Server-compiled HTML from the mjml package. Derived cache from body_mjml.
+  body_html  String?  @db.Text
+  /// Plain-text fallback derived from body_html. Legacy `body` migrates here.
+  body_text  String?  @db.Text
+  /// DEPRECATED: retained for backward compat during migration. Equals body_text for new templates.
   body       String   @db.Text
   created_at DateTime @default(now()) @db.Timestamptz
   updated_at DateTime @updatedAt @default(now()) @db.Timestamptz
@@ -270,6 +279,8 @@ model EmailJob {
   to_email                String        @db.VarChar(255)
   subject                 String        @db.VarChar(255)
   body                    String        @db.Text
+  /// Resolved HTML snapshot (merge tags already substituted). Null for legacy text-only jobs.
+  body_html               String?       @db.Text
   scheduled_at            DateTime      @db.Timestamptz
   status                  EmailJobStatus @default(SCHEDULED)
   attempt_count           Int           @default(0)

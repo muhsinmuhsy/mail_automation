@@ -10,6 +10,8 @@ export interface SendEmailParams {
   toName?: string;
   subject: string;
   body: string;
+  /** HTML alternative for multipart/alternative. When present, builds text+html. See §9. */
+  bodyHtml?: string;
   attachment?: Attachment;
   attachments?: Attachment[];
   credentials: {
@@ -38,6 +40,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailOutco
     toName: params.toName,
     subject: params.subject,
     body: params.body,
+    bodyHtml: params.bodyHtml,
     attachments: params.attachments ?? (params.attachment ? [params.attachment] : undefined),
     messageId: params.messageId,
   });
