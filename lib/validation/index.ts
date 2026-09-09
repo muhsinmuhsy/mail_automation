@@ -11,11 +11,8 @@ export const emailSchema = z
   .regex(EMAIL_RE, 'Enter a valid email address.');
 
 export const contactSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required.').max(100, 'Name is too long.'),
+  name: z.string().trim().max(100, 'Name is too long.').optional().or(z.literal('')),
   email: emailSchema,
-  company: z.string().trim().max(200, 'Company is too long.').optional().or(z.literal('')),
-  job_title: z.string().trim().max(200, 'Job title is too long.').optional().or(z.literal('')),
-  notes: z.string().trim().max(2000, 'Notes are too long.').optional().or(z.literal('')),
 });
 
 export const contactImportSchema = z.array(contactSchema).max(500, 'Too many contacts per import.');

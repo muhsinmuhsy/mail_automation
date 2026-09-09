@@ -48,6 +48,7 @@ describe('lib/validation/index', () => {
   describe('aggregate schemas', () => {
     it('contactSchema accepts valid and rejects invalid', () => {
       expect(() => contactSchema.parse({ name: 'n', email: 'a@b.com' })).not.toThrow();
+      expect(() => contactSchema.parse({ email: 'a@b.com' })).not.toThrow();
       expect(() => contactSchema.parse({ name: '', email: 'bad' })).toThrow();
     });
 
