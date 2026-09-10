@@ -8,16 +8,17 @@ interface ProviderConnectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   provider: string;
-  onConnect: (email: string, secret: string) => void | Promise<void>;
+  onConnect?: (email: string, secret: string) => void | Promise<void>;
   onOAuthConnect?: () => void | Promise<void>;
 }
 
-export function ProviderConnectionDialog({ open, onOpenChange, provider, onConnect, onOAuthConnect }: ProviderConnectionDialogProps) {
-  const [email, setEmail] = useState('');
-  const [secret, setSecret] = useState('');
+export function ProviderConnectionDialog({ open, onOpenChange, provider, onOAuthConnect }: ProviderConnectionDialogProps) {
+  // App password disabled — commented out for future re-enablement
+  // const [email, setEmail] = useState('');
+  // const [secret, setSecret] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fallback, setFallback] = useState(false);
+  // const [fallback, setFallback] = useState(false);
   const run = async (action: () => void | Promise<void>) => {
     setLoading(true); setError(null);
     try { await action(); }
@@ -31,6 +32,7 @@ export function ProviderConnectionDialog({ open, onOpenChange, provider, onConne
         {error && <p role="alert" className="text-sm text-error">{error}</p>}
         <Button disabled={!onOAuthConnect} loading={loading} onClick={() => onOAuthConnect && run(onOAuthConnect)}>Continue with Google</Button>
         <p className="text-sm text-text-secondary">You never give us your Google password.</p>
+        {/* App password disabled — commented out for future re-enablement
         <button type="button" className="text-left text-sm underline text-text-secondary" onClick={() => setFallback(!fallback)} aria-expanded={fallback}>Advanced: use an App Password instead</button>
         {fallback && <form onSubmit={(event) => {
           event.preventDefault();
@@ -41,6 +43,7 @@ export function ProviderConnectionDialog({ open, onOpenChange, provider, onConne
           <Input label="App Password" type="password" value={secret} onChange={e => setSecret(e.target.value)} required autoComplete="off" />
           <Button type="submit" loading={loading}>Connect with App Password</Button>
         </form>}
+        */}
         <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
       </div>}
     </Dialog>

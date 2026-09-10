@@ -43,6 +43,9 @@ vi.mock('@/lib/db', () => ({
 }));
 
 describe('email-accounts/[id] PATCH', () => {
+  // App password disabled — commented out for future re-enablement
+  it.skip('app password tests disabled — commented out for future re-enablement', () => {});
+
   beforeEach(() => {
     mockPrismaUpdate.emailAccount.findFirst.mockClear();
     mockPrismaUpdate.emailAccount.update.mockClear();
@@ -53,6 +56,8 @@ describe('email-accounts/[id] PATCH', () => {
     });
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('should update the app password when account exists', async () => {
     mockPrismaUpdate.emailAccount.findFirst.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1', is_active: true });
     mockPrismaUpdate.emailAccount.update.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', encrypted_secret: 'encrypted-secret' });
@@ -121,4 +126,5 @@ describe('email-accounts/[id] PATCH', () => {
     expect(body.error?.type).toBe('BUSINESS_ERROR');
     expect(mockPrismaUpdate.emailAccount.update).not.toHaveBeenCalled();
   });
+  */
 });

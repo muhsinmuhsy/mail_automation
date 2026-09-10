@@ -9,6 +9,8 @@ describe('lib/email/providers/factory', () => {
     expect(EmailProviderFactory.isEnabled('unknown')).toBe(false);
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('resolves a registered provider to a GmailProvider instance', () => {
     const provider = EmailProviderFactory.resolve('gmail');
     expect(provider).toBeInstanceOf(GmailProvider);
@@ -22,6 +24,7 @@ describe('lib/email/providers/factory', () => {
     });
     expect(provider).toBeInstanceOf(GmailProvider);
   });
+  */
 
   it('throws for a disabled provider on resolve', () => {
     expect(() => EmailProviderFactory.resolve('microsoft')).toThrow(/not enabled/);
@@ -31,6 +34,8 @@ describe('lib/email/providers/factory', () => {
     expect(() => EmailProviderFactory.resolve('totally-unknown')).toThrow(/not enabled/);
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('returns gmail capabilities via getCapabilities', () => {
     const caps = EmailProviderFactory.getCapabilities('gmail');
     expect(caps).toEqual({
@@ -40,6 +45,7 @@ describe('lib/email/providers/factory', () => {
       supportsAttachments: true,
     });
   });
+  */
 
   it('throws for an unknown provider in getCapabilities', () => {
     expect(() => EmailProviderFactory.getCapabilities('unknown')).toThrow(/not enabled/);

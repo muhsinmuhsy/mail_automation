@@ -61,6 +61,8 @@ describe('email-accounts GET/POST', () => {
     expect(body.data).toHaveLength(1);
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('should create email account', async () => {
     mockPrisma.emailAccount.create.mockResolvedValue({
       id: '1',
@@ -82,4 +84,5 @@ describe('email-accounts GET/POST', () => {
     expect(body.success).toBe(true);
     expect(mockPrisma.emailAccount.create).toHaveBeenCalled();
   });
+  */
 });

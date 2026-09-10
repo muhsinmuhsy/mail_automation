@@ -46,11 +46,16 @@ vi.mock('@/lib/db', () => ({
 }));
 
 describe('email-accounts/[id]/test POST', () => {
+  // App password disabled — commented out for future re-enablement
+  it.skip('app password tests disabled — commented out for future re-enablement', () => {});
+
   beforeEach(() => {
     mockPrismaTest.emailAccount.findUnique.mockClear();
     mockTestConnection.mockClear();
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('should test connection successfully', async () => {
     mockTestConnection.mockResolvedValue({ success: true, message: 'Connection successful' });
 
@@ -85,4 +90,5 @@ describe('email-accounts/[id]/test POST', () => {
     expect(body.success).toBe(false);
     expect(body.error?.type).toBe('NOT_FOUND');
   });
+  */
 });

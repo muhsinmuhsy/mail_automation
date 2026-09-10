@@ -3,6 +3,8 @@ import { createEmailAccountSchema, testEmailAccountSchema } from '@/lib/validati
 
 describe('lib/validation/email-account', () => {
   describe('createEmailAccountSchema', () => {
+    // App password disabled — commented out for future re-enablement
+    /*
     it('accepts valid input', () => {
       expect(() =>
         createEmailAccountSchema.parse({
@@ -35,6 +37,7 @@ describe('lib/validation/email-account', () => {
         })
       ).toThrow();
     });
+    */
 
     it('rejects invalid auth_method', () => {
       expect(() =>
@@ -47,6 +50,8 @@ describe('lib/validation/email-account', () => {
       ).toThrow();
     });
 
+    // App password disabled — commented out for future re-enablement
+    /*
     it('rejects empty secret', () => {
       expect(() =>
         createEmailAccountSchema.parse({
@@ -57,8 +62,11 @@ describe('lib/validation/email-account', () => {
         })
       ).toThrow();
     });
+    */
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   describe('testEmailAccountSchema', () => {
     it('accepts valid input', () => {
       expect(() => testEmailAccountSchema.parse({ secret: 'my-secret' })).not.toThrow();
@@ -68,4 +76,5 @@ describe('lib/validation/email-account', () => {
       expect(() => testEmailAccountSchema.parse({ secret: '' })).toThrow();
     });
   });
+  */
 });

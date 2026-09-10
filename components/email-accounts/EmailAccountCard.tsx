@@ -18,7 +18,7 @@ interface EmailAccountCardProps {
   onTest: () => void;
   onDeactivate: () => void;
   onReactivate: () => void;
-  onEdit: () => void;
+  onEdit?: () => void;
   onReconnect?: () => void;
   onDisconnect?: () => void;
 }
@@ -49,7 +49,8 @@ export function EmailAccountCard({ account, onTest, onDeactivate, onReactivate, 
         {account.auth_method === 'oauth2' ? <>
           <Button variant="secondary" size="sm" onClick={onReconnect}>Reconnect</Button>
           {account.is_active && <Button variant="destructive" size="sm" onClick={onDisconnect}>Disconnect</Button>}
-        </> : account.is_active ? (
+        </> : /* App password disabled — commented out for future re-enablement
+        account.is_active ? (
           <>
             <Button variant="secondary" size="sm" onClick={onEdit}>
               Edit
@@ -62,7 +63,8 @@ export function EmailAccountCard({ account, onTest, onDeactivate, onReactivate, 
           <Button variant="primary" size="sm" onClick={onReactivate}>
             Reactivate
           </Button>
-        )}
+        )
+        */ null}
       </div>
     </div>
   );

@@ -104,21 +104,22 @@ export default function EmailAccountsPage() {
     finally { setDisconnecting(false); setDisconnectId(null); }
   };
 
-  const handleConnect = async (email: string, secret: string) => {
-    const res = await fetch('/api/email-accounts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider: 'gmail', email, auth_method: 'app_password', secret }),
-    });
-    const data = (await res.json()) as ApiResponse<EmailAccount>;
-    if (data.success) {
-      setDialogOpen(false);
-      setToast({ message: 'Email account connected successfully.', type: 'success' });
-      fetchAccounts();
-    } else {
-      throw new Error(data.error?.message || 'Failed to connect account.');
-    }
-  };
+  // App password disabled — commented out for future re-enablement
+  // const handleConnect = async (email: string, secret: string) => {
+  //   const res = await fetch('/api/email-accounts', {
+  //     method: 'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify({ provider: 'gmail', email, auth_method: 'app_password', secret }),
+  //   });
+  //   const data = (await res.json()) as ApiResponse<EmailAccount>;
+  //   if (data.success) {
+  //     setDialogOpen(false);
+  //     setToast({ message: 'Email account connected successfully.', type: 'success' });
+  //     fetchAccounts();
+  //   } else {
+  //     throw new Error(data.error?.message || 'Failed to connect account.');
+  //   }
+  // };
 
   const handleTest = async (id: string) => {
     try {
@@ -179,31 +180,32 @@ export default function EmailAccountsPage() {
     }
   };
 
-  const openEdit = (account: EmailAccount) => {
-    setEditTarget(account);
-    setEditOpen(true);
-  };
+  // App password disabled — commented out for future re-enablement
+  // const openEdit = (account: EmailAccount) => {
+  //   setEditTarget(account);
+  //   setEditOpen(true);
+  // };
 
-  const handleEditSecret = async (secret: string) => {
-    if (!editTarget) return;
-    setEditing(true);
-    try {
-      const res = await fetch(`/api/email-accounts/${editTarget.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret }),
-      });
-      const data = (await res.json()) as ApiResponse<null>;
-      if (data.success) {
-        setToast({ message: 'App password updated.', type: 'success' });
-        setEditOpen(false);
-      } else {
-        setToast({ message: data.error?.message || 'Failed to update app password.', type: 'error' });
-      }
-    } finally {
-      setEditing(false);
-    }
-  };
+  // const handleEditSecret = async (secret: string) => {
+  //   if (!editTarget) return;
+  //   setEditing(true);
+  //   try {
+  //     const res = await fetch(`/api/email-accounts/${editTarget.id}`, {
+  //       method: 'PATCH',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ secret }),
+  //     });
+  //     const data = (await res.json()) as ApiResponse<null>;
+  //     if (data.success) {
+  //       setToast({ message: 'App password updated.', type: 'success' });
+  //       setEditOpen(false);
+  //     } else {
+  //       setToast({ message: data.error?.message || 'Failed to update app password.', type: 'error' });
+  //     }
+  //   } finally {
+  //     setEditing(false);
+  //   }
+  // };
 
   return (
     <div className="flex flex-col gap-8">
@@ -247,7 +249,7 @@ export default function EmailAccountsPage() {
                   onTest={() => handleTest(account.id)}
                   onDeactivate={() => openDeactivateConfirm(account.id)}
                   onReactivate={() => openReactivateConfirm(account.id)}
-                  onEdit={() => openEdit(account)}
+                  /* App password disabled — onEdit={() => openEdit(account)} */
                   onReconnect={() => void reconnect(account.id)}
                   onDisconnect={() => setDisconnectId(account.id)}
                 />
@@ -262,7 +264,7 @@ export default function EmailAccountsPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         provider="Gmail"
-        onConnect={handleConnect}
+        /* App password disabled — onConnect={handleConnect} */
         onOAuthConnect={() => connectGoogle()}
       />
 
@@ -294,6 +296,7 @@ export default function EmailAccountsPage() {
         onConfirm={confirmReactivate}
       />
 
+      {/* App password disabled — commented out for future re-enablement
       <EmailAccountEditDialog
         open={editOpen}
         onOpenChange={setEditOpen}
@@ -301,6 +304,7 @@ export default function EmailAccountsPage() {
         onSave={handleEditSecret}
         loading={editing}
       />
+      */}
 
       {toast && (
         <Toast

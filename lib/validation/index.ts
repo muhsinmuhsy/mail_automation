@@ -26,8 +26,9 @@ export const templateSchema = z.object({
 export const emailAccountSchema = z.object({
   provider: z.enum(['gmail', 'microsoft', 'yahoo', 'custom_smtp']),
   email: emailSchema,
-  auth_method: z.enum(['app_password', 'oauth2', 'password']),
-  secret: z.string().min(1).max(2000).optional(),
+  // App password disabled — 'app_password' removed from enum for future re-enablement
+  auth_method: z.enum(['oauth2', 'password']),
+  // secret: z.string().min(1).max(2000).optional(),
   refresh_token: z.string().max(4000).optional(),
 });
 

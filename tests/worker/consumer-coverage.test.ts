@@ -349,6 +349,8 @@ describe('worker/consumer additional coverage', () => {
     }
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   describe('encryptionKey', () => {
     it('uses the env arg when SMTP_ENCRYPTION_KEY is present', async () => {
       const prisma = buildPrisma();
@@ -374,4 +376,5 @@ describe('worker/consumer additional coverage', () => {
       expect(getUpdate(prisma, 'RETRY_WAIT')).toMatchObject({ status: 'RETRY_WAIT' });
     });
   });
+  */
 });

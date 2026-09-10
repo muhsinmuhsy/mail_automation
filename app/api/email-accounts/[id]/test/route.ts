@@ -33,26 +33,28 @@ const _POST = defineRoute(async (req, ctx) => {
     }
   }
 
-  if (!account.encrypted_secret) {
-    return respondError(new ValidationError('No credentials stored for this account.'), ctx.requestId);
-  }
-
-  const decryptedSecret = await decryptSecret(account.encrypted_secret, process.env.SMTP_ENCRYPTION_KEY!);
-
-  const { GmailProvider } = await import('@/lib/email/providers/gmail');
-  const provider = new GmailProvider();
-  try {
-    const result = await provider.testConnection({ email: account.email, secret: decryptedSecret });
-    return respondOk({ connected: result.success, message: result.message }, ctx.requestId);
-  } catch (err) {
-    if (err instanceof ExternalServiceError || err instanceof NotFoundError || err instanceof ValidationError) {
-      return respondError(err, ctx.requestId);
-    }
-    return respondError(
-      new ExternalServiceError("We couldn't connect to your email account. Please check your credentials."),
-      ctx.requestId
-    );
-  }
+  // App password disabled — commented out for future re-enablement
+  // if (!account.encrypted_secret) {
+  //   return respondError(new ValidationError('No credentials stored for this account.'), ctx.requestId);
+  // }
+  //
+  // const decryptedSecret = await decryptSecret(account.encrypted_secret, process.env.SMTP_ENCRYPTION_KEY!);
+  //
+  // const { GmailProvider } = await import('@/lib/email/providers/gmail');
+  // const provider = new GmailProvider();
+  // try {
+  //   const result = await provider.testConnection({ email: account.email, secret: decryptedSecret });
+  //   return respondOk({ connected: result.success, message: result.message }, ctx.requestId);
+  // } catch (err) {
+  //   if (err instanceof ExternalServiceError || err instanceof NotFoundError || err instanceof ValidationError) {
+  //     return respondError(err, ctx.requestId);
+  //   }
+  //   return respondError(
+  //     new ExternalServiceError("We couldn't connect to your email account. Please check your credentials."),
+  //     ctx.requestId
+  //   );
+  // }
+  return respondError(new ValidationError('App password authentication is disabled. Use Continue with Google.'), ctx.requestId);
 }, {
   auth: {
     ownership: async (params) => {

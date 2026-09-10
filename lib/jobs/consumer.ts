@@ -139,9 +139,11 @@ export async function processQueueJob(
     try {
       let decryptedSecret = emailAccount.auth_method === 'oauth2'
         ? await gmailAccessToken(prisma, emailAccount, env)
-        : emailAccount.encrypted_secret
-        ? await decryptSecret(emailAccount.encrypted_secret, encryptionKey(env))
-        : '';
+        : // App password disabled — commented out for future re-enablement
+          // emailAccount.encrypted_secret
+          // ? await decryptSecret(emailAccount.encrypted_secret, encryptionKey(env))
+          // : '';
+          '';
 
       // `accepted` distinguishes a crash *after* the provider accepted the
       // message (→ DELIVERY_UNKNOWN, never auto-retry) from a thrown error

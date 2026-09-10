@@ -42,31 +42,33 @@ const _POST = defineRoute(async (req, ctx) => {
     );
   }
 
-  if (parsed.data.provider !== 'gmail' || parsed.data.auth_method !== 'app_password') {
-    throw new ValidationError('Use Continue with Google to connect Gmail. Other providers are coming soon.');
-  }
-
-  const encryptedSecret = await encryptSecret(parsed.data.secret, process.env.SMTP_ENCRYPTION_KEY!);
-
-  try {
-    const account = await getPrisma().emailAccount.create({
-      data: {
-        user_id: ctx.user.id,
-        provider: parsed.data.provider,
-        email: parsed.data.email,
-        auth_method: parsed.data.auth_method,
-        encrypted_secret: encryptedSecret,
-      },
-      select: { id: true, provider: true, email: true, is_active: true, created_at: true },
-    });
-
-    return respondOk(account, ctx.requestId, 'Email account connected successfully.', 201);
-  } catch (error) {
-    if ((error as { code?: string })?.code === 'P2002') {
-      return respondError(new ConflictError('This email account is already connected.'), ctx.requestId);
-    }
-    throw fromPrismaError(error);
-  }
+  // App password disabled — commented out for future re-enablement
+  // if (parsed.data.provider !== 'gmail' || parsed.data.auth_method !== 'app_password') {
+  //   throw new ValidationError('Use Continue with Google to connect Gmail. Other providers are coming soon.');
+  // }
+  //
+  // const encryptedSecret = await encryptSecret(parsed.data.secret, process.env.SMTP_ENCRYPTION_KEY!);
+  //
+  // try {
+  //   const account = await getPrisma().emailAccount.create({
+  //     data: {
+  //       user_id: ctx.user.id,
+  //       provider: parsed.data.provider,
+  //       email: parsed.data.email,
+  //       auth_method: parsed.data.auth_method,
+  //       encrypted_secret: encryptedSecret,
+  //     },
+  //     select: { id: true, provider: true, email: true, is_active: true, created_at: true },
+  //   });
+  //
+  //   return respondOk(account, ctx.requestId, 'Email account connected successfully.', 201);
+  // } catch (error) {
+  //   if ((error as { code?: string })?.code === 'P2002') {
+  //     return respondError(new ConflictError('This email account is already connected.'), ctx.requestId);
+  //   }
+  //   throw fromPrismaError(error);
+  // }
+  throw new ValidationError('Use Continue with Google to connect Gmail. App password authentication is disabled.');
 }, { auth: 'user', rateLimitKey: 'email-account-create' });
 
 

@@ -37,6 +37,9 @@ vi.mock('@/lib/db', () => ({
 }));
 
 describe('email-accounts/[id]/reactivate POST', () => {
+  // App password disabled — commented out for future re-enablement
+  it.skip('app password tests disabled — commented out for future re-enablement', () => {});
+
   beforeEach(() => {
     mockPrismaReactivate.emailAccount.findFirst.mockClear();
     mockPrismaReactivate.emailAccount.update.mockClear();
@@ -47,6 +50,8 @@ describe('email-accounts/[id]/reactivate POST', () => {
     });
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('should reactivate the email account', async () => {
     mockPrismaReactivate.emailAccount.findFirst.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', user_id: 'user-1', is_active: false });
     mockPrismaReactivate.emailAccount.update.mockResolvedValue({ id: '07314147-25ec-4cf2-ae63-388e40add7b8', is_active: true });
@@ -79,4 +84,5 @@ describe('email-accounts/[id]/reactivate POST', () => {
     expect(body.error?.type).toBe('NOT_FOUND');
     expect(mockPrismaReactivate.emailAccount.update).not.toHaveBeenCalled();
   });
+  */
 });

@@ -23,6 +23,8 @@ describe('Google-first connection dialog', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Continue with Google' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Google connection is unavailable.');
   });
+  // App password disabled — commented out for future re-enablement
+  /*
   it('supports the explicitly selected SMTP fallback', async () => {
     const user = userEvent.setup(); const { onConnect, onOAuthConnect } = setup();
     await user.click(screen.getByRole('button', { name: /Advanced/ }));
@@ -42,6 +44,7 @@ describe('Google-first connection dialog', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Connection failed.');
     expect(screen.getByLabelText('Email')).toHaveValue('me@gmail.com');
   });
+  */
   it('does not expose connection controls for unavailable providers', () => {
     setup({ provider: 'Microsoft' });
     expect(screen.getByText('This provider is coming soon.')).toBeInTheDocument();

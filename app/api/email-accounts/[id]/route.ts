@@ -7,59 +7,64 @@ import { updateEmailAccountSecretSchema } from '@/lib/validation/email-account';
 import { encryptSecret } from '@/lib/security/encryption';
 import { NotFoundError, ValidationError, AppError } from '@/lib/errors';
 
-const _PATCH = defineRoute(async (req, ctx) => {
-  const parsedId = idParamSchema.safeParse({ id: ctx.params.id });
-  if (!parsedId.success) {
-    return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
-  }
+// App password disabled — commented out for future re-enablement
+// const _PATCH = defineRoute(async (req, ctx) => {
+//   const parsedId = idParamSchema.safeParse({ id: ctx.params.id });
+//   if (!parsedId.success) {
+//     return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
+//   }
+//
+//   const body = await req.json().catch(() => null);
+//   const parsedBody = updateEmailAccountSecretSchema.safeParse(body);
+//   if (!parsedBody.success) {
+//     return respondError(new ValidationError('App password is required.'), ctx.requestId);
+//   }
+//
+//   const account = await getPrisma().emailAccount.findUnique({
+//     where: { id: parsedId.data.id },
+//   });
+//
+//   if (!account) {
+//     return respondError(new NotFoundError('Email account not found.'), ctx.requestId);
+//   }
+//   if (account.auth_method === 'oauth2') throw new ValidationError('Reconnect through Google to update this account.');
+//
+//   if (!account.is_active) {
+//     return respondError(
+//       new AppError(
+//         'Cannot update the app password of a deactivated account. Reactivate it first.',
+//         400,
+//         'BUSINESS_ERROR'
+//       ),
+//       ctx.requestId
+//     );
+//   }
+//
+//   const encryptedSecret = await encryptSecret(parsedBody.data.secret, process.env.SMTP_ENCRYPTION_KEY!);
+//
+//   await getPrisma().emailAccount.update({
+//     where: { id: parsedId.data.id },
+//     data: { encrypted_secret: encryptedSecret },
+//   });
+//
+//   return respondOk(null, ctx.requestId, 'App password updated.');
+// }, {
+//   auth: {
+//     ownership: async (params) => {
+//       const acc = await getPrisma().emailAccount.findUnique({
+//         where: { id: params.id },
+//         select: { user_id: true },
+//       });
+//       if (!acc) throw new NotFoundError('Email account not found.');
+//       return acc.user_id;
+//     },
+//   },
+//   rateLimitKey: 'email-account-update',
+// });
 
-  const body = await req.json().catch(() => null);
-  const parsedBody = updateEmailAccountSecretSchema.safeParse(body);
-  if (!parsedBody.success) {
-    return respondError(new ValidationError('App password is required.'), ctx.requestId);
-  }
-
-  const account = await getPrisma().emailAccount.findUnique({
-    where: { id: parsedId.data.id },
-  });
-
-  if (!account) {
-    return respondError(new NotFoundError('Email account not found.'), ctx.requestId);
-  }
-  if (account.auth_method === 'oauth2') throw new ValidationError('Reconnect through Google to update this account.');
-
-  if (!account.is_active) {
-    return respondError(
-      new AppError(
-        'Cannot update the app password of a deactivated account. Reactivate it first.',
-        400,
-        'BUSINESS_ERROR'
-      ),
-      ctx.requestId
-    );
-  }
-
-  const encryptedSecret = await encryptSecret(parsedBody.data.secret, process.env.SMTP_ENCRYPTION_KEY!);
-
-  await getPrisma().emailAccount.update({
-    where: { id: parsedId.data.id },
-    data: { encrypted_secret: encryptedSecret },
-  });
-
-  return respondOk(null, ctx.requestId, 'App password updated.');
-}, {
-  auth: {
-    ownership: async (params) => {
-      const acc = await getPrisma().emailAccount.findUnique({
-        where: { id: params.id },
-        select: { user_id: true },
-      });
-      if (!acc) throw new NotFoundError('Email account not found.');
-      return acc.user_id;
-    },
-  },
-  rateLimitKey: 'email-account-update',
-});
+const _PATCH = defineRoute(async (_req, ctx) => {
+  return respondError(new ValidationError('App password authentication is disabled. Use Continue with Google.'), ctx.requestId);
+}, { auth: 'user' });
 
 const _DELETE = defineRoute(async (_req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });

@@ -4,16 +4,19 @@ import { email, nonEmptyString } from './common';
 export const createEmailAccountSchema = z.object({
   provider: z.enum(['gmail', 'microsoft', 'yahoo', 'custom_smtp']),
   email,
-  auth_method: z.enum(['app_password', 'oauth2', 'password']),
-  secret: nonEmptyString.max(100),
+  // App password disabled — 'app_password' removed from enum for future re-enablement
+  auth_method: z.enum(['oauth2', 'password']),
+  // secret: nonEmptyString.max(100),
 });
 
 export const testEmailAccountSchema = z.object({
-  secret: nonEmptyString.max(100),
+  // App password disabled — secret field commented out for future re-enablement
+  // secret: nonEmptyString.max(100),
 });
 
 export const updateEmailAccountSecretSchema = z.object({
-  secret: nonEmptyString.max(100),
+  // App password disabled — secret field commented out for future re-enablement
+  // secret: nonEmptyString.max(100),
 });
 
 export type CreateEmailAccountInput = z.infer<typeof createEmailAccountSchema>;

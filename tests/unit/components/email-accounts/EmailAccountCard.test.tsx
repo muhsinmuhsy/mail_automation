@@ -63,6 +63,8 @@ describe('EmailAccountCard', () => {
     expect(badge.className).toContain('bg-selected');
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('renders Test, Edit and Deactivate for an active account', () => {
     render(<EmailAccountCard account={activeAccount} {...handlers()} />);
     expect(screen.getByRole('button', { name: 'Test' })).toBeEnabled();
@@ -102,6 +104,7 @@ describe('EmailAccountCard', () => {
     await user.click(screen.getByRole('button', { name: 'Reactivate' }));
     expect(h.onReactivate).toHaveBeenCalledTimes(1);
   });
+  */
 
   it('calls onTest when Test is clicked', async () => {
     const user = userEvent.setup();
@@ -139,6 +142,8 @@ describe('EmailAccountCard', () => {
     expect(h.onTest).not.toHaveBeenCalled();
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('renders the Deactivate button with the destructive variant', () => {
     render(<EmailAccountCard account={activeAccount} {...handlers()} />);
     expect(screen.getByRole('button', { name: 'Deactivate' })).toHaveClass('bg-error');
@@ -155,6 +160,7 @@ describe('EmailAccountCard', () => {
       expect(screen.getByRole('button', { name })).toHaveClass('h-8');
     }
   });
+  */
 
   it('lays the card out as a space-between row', () => {
     const { container } = render(<EmailAccountCard account={activeAccount} {...handlers()} />);

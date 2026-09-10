@@ -5,6 +5,8 @@ import { EmailProviderFactory } from '@/lib/email/providers/factory';
 describe('lib/email/providers/gmail', () => {
   const provider = new GmailProvider();
 
+  // App password disabled — commented out for future re-enablement
+  /*
   describe('getCapabilities', () => {
     it('should return correct capabilities', () => {
       const caps = provider.getCapabilities();
@@ -36,8 +38,11 @@ describe('lib/email/providers/gmail', () => {
       expect(result.error).toBe('Missing credentials.');
     });
   });
+  */
 
   describe('STARTTLS primary production path', () => {
+    // App password disabled — commented out for future re-enablement
+    /*
     it('connects on port 587 and upgrades the socket via STARTTLS', async () => {
       const replies = [
         '220 smtp.gmail.com ESMTP ready',
@@ -101,6 +106,7 @@ describe('lib/email/providers/gmail', () => {
       expect(startTlsSpy).toHaveBeenCalled();
       expect(received.join('')).toContain('STARTTLS');
     });
+    */
 
     it('rejects disabled providers via the registry', () => {
       expect(() => EmailProviderFactory.resolve('microsoft')).toThrow(/not enabled/);

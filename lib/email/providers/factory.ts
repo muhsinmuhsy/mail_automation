@@ -1,6 +1,7 @@
 import { EmailProvider, type ProviderOptions } from './types';
 import { ENABLED_PROVIDERS, PROVIDER_CAPABILITIES } from './registry';
-import { GmailProvider } from './gmail';
+// App password disabled — commented out for future re-enablement
+// import { GmailProvider } from './gmail';
 import { GmailApiProvider } from './gmail/provider';
 
 export class EmailProviderFactory {
@@ -11,16 +12,18 @@ export class EmailProviderFactory {
     switch (provider) {
       case 'gmail': {
         if (options.authMethod === 'oauth2') return new GmailApiProvider(options.fetcher);
-        if (options.authMethod === 'password') throw new Error('Gmail password authentication is not supported.');
-        // STARTTLS on port 587 is the validated primary production path. The
-        // registry supplies the canonical host/port; caller options override.
-        const cfg = PROVIDER_CAPABILITIES[provider];
-        return new GmailProvider({
-          host: cfg?.smtpHost,
-          port: cfg?.smtpPort,
-          useStartTls: true,
-          ...options,
-        });
+        // App password disabled — commented out for future re-enablement
+        // if (options.authMethod === 'password') throw new Error('Gmail password authentication is not supported.');
+        // // STARTTLS on port 587 is the validated primary production path. The
+        // // registry supplies the canonical host/port; caller options override.
+        // const cfg = PROVIDER_CAPABILITIES[provider];
+        // return new GmailProvider({
+        //   host: cfg?.smtpHost,
+        //   port: cfg?.smtpPort,
+        //   useStartTls: true,
+        //   ...options,
+        // });
+        throw new Error('App password authentication is disabled. Use Continue with Google.');
       }
       default:
         throw new Error(`Unknown provider: ${provider}`);

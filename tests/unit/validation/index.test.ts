@@ -57,12 +57,15 @@ describe('lib/validation/index', () => {
       expect(() => templateSchema.parse({ name: '', subject: '', body: '' })).toThrow();
     });
 
+    // App password disabled — commented out for future re-enablement
+    /*
     it('emailAccountSchema validates provider and auth method', () => {
       expect(
         emailAccountSchema.parse({ provider: 'gmail', email: 'a@b.com', auth_method: 'app_password' }),
       ).toBeDefined();
       expect(() => emailAccountSchema.parse({ provider: 'nope', email: 'a@b.com', auth_method: 'app_password' })).toThrow();
     });
+    */
 
     it('campaignSchema validates nested uuid arrays and bounds', () => {
       const id = crypto.randomUUID();

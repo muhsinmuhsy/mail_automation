@@ -327,6 +327,8 @@ describe('app/api route handlers (unit coverage)', () => {
     await ok((await (emailAccounts as any).GET(makeReq(), CTX())));
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('email-accounts POST connects an account', async () => {
     prismaMock.emailAccount.create.mockResolvedValue({ id: 'ea1' });
     const res = await (emailAccounts as any).POST(
@@ -335,12 +337,15 @@ describe('app/api route handlers (unit coverage)', () => {
     );
     await ok(res);
   });
+  */
 
   it('email-accounts POST rejects invalid input', async () => {
     const res = await (emailAccounts as any).POST(makeReq({ json: {} }), CTX());
     await fail(res);
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('email-accounts/[id] PATCH updates secret when active', async () => {
     prismaMock.emailAccount.findUnique.mockResolvedValue({ id: UUID, is_active: true });
     prismaMock.emailAccount.update.mockResolvedValue({});
@@ -352,6 +357,7 @@ describe('app/api route handlers (unit coverage)', () => {
     prismaMock.emailAccount.findUnique.mockResolvedValue({ id: UUID, is_active: false });
     await fail((await (emailAccountById as any).PATCH(makeReq({ json: { secret: 'pw' } }), CTX({ id: UUID }))));
   });
+  */
 
   it('email-accounts/[id] DELETE keeps pending jobs', async () => {
     prismaMock.emailAccount.findUnique.mockResolvedValue({ id: UUID });
@@ -367,12 +373,17 @@ describe('app/api route handlers (unit coverage)', () => {
     await ok((await (emailAccountById as any).DELETE(makeReq(), CTX({ id: UUID }))));
   });
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('email-accounts/[id]/reactivate reactivates', async () => {
     prismaMock.emailAccount.findUnique.mockResolvedValue({ id: UUID });
     prismaMock.emailAccount.update.mockResolvedValue({});
     await ok((await (emailAccountReactivate as any).POST(makeReq(), CTX({ id: UUID }))));
   });
+  */
 
+  // App password disabled — commented out for future re-enablement
+  /*
   it('email-accounts/[id]/test connects when credentials exist', async () => {
     const secret = await encryptSecret('pw', KEY);
     prismaMock.emailAccount.findUnique.mockResolvedValue({ id: UUID, email: 'a@b.com', encrypted_secret: secret });
@@ -381,6 +392,7 @@ describe('app/api route handlers (unit coverage)', () => {
     expect(body.success).toBe(true);
     expect(body.data.connected).toBe(true);
   });
+  */
 
   it('emails GET lists email jobs', async () => {
     prismaMock.emailJob.findMany.mockResolvedValue([]);
