@@ -14,7 +14,7 @@ export class GmailApiProvider implements EmailProvider {
   async testConnection(config: { email: string; secret: string }) {
     const identity = await googleIdentity(config.secret, this.fetcher);
     const success = identity.email === config.email.toLowerCase();
-    return { success, message: success ? 'Google authorization verified. No test email was sent.' : 'The Google account does not match this connection. Reconnect the correct account.', provider: 'gmail' };
+    return { success, message: success ? 'Google authorization is valid.' : 'The Google account does not match this connection. Reconnect the correct account.', provider: 'gmail' };
   }
 
   async sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
