@@ -112,6 +112,34 @@ describe('lib/email/template', () => {
     });
   });
 
+  describe('HTML-string substitution (§14)', () => {
+    it('substitutes {{token}} inside an HTML string', () => {
+      const htmlContact = { name: 'Jane', email: 'jane@example.com' };
+      expect(replaceTemplateVariables('<p>Hello {{name}}</p>', htmlContact)).toBe('<p>Hello Jane</p>');
+    });
+
+    it('substitutes multiple tokens in HTML', () => {
+      const htmlContact = { name: 'Jane', email: 'jane@example.com', company: 'Acme' };
+      const html = '<div><h1>Hi {{name}}</h1><p>Email: {{email}}</p><p>Company: {{company}}</p></div>';
+      const result = replaceTemplateVariables(html, htmlContact);
+      expect(result).toBe('<div><h1>Hi Jane</h1><p>Email: jane@example.com</p><p>Company: Acme</p></div>');
+    });
+
+    it('preserves HTML tags when no tokens are present', () => {
+      expect(replaceTemplateVariables('<p>Hello World</p>', contact)).toBe('<p>Hello World</p>');
+    });
+
+    it('substitutes tokens in HTML attributes', () => {
+      const htmlContact = { name: 'Jane', id: '12345' };
+      const html = '<a href="/users/{{id}}">{{name}}</a>';
+      expect(replaceTemplateVariables(html, htmlContact)).toBe('<a href="/users/12345">Jane</a>');
+    });
+
+    it('leaves unknown tokens as literals in HTML', () => {
+      expect(replaceTemplateVariables('<p>{{unknown}}</p>', contact)).toBe('<p>{{unknown}}</p>');
+    });
+  });
+
   describe('VARIABLE_PATTERN export (§11.19)', () => {
     it('matches {{token}}', () => {
       const matches = [...'Hi {{name}} and {{ size }}'.matchAll(VARIABLE_PATTERN)];

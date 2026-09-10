@@ -73,4 +73,28 @@ describe('VisualEmailEditor', () => {
     unmount();
     expect(mockEditor.unmount).toHaveBeenCalledTimes(1);
   });
+
+  it('passes mergeTags config to init when provided', async () => {
+    const mergeTags = {
+      tags: [
+        { label: 'Name', value: 'name' },
+        { label: 'T-shirt Size', value: 't_shirt_size' },
+      ],
+    };
+
+    render(<VisualEmailEditor mergeTags={mergeTags} />);
+    await vi.waitFor(() => expect(mockInit).toHaveBeenCalledTimes(1));
+
+    const config = mockInit.mock.calls[0][0];
+    expect(config.mergeTags).toBe(mergeTags);
+    expect(config.mergeTags.tags).toHaveLength(2);
+  });
+
+  it('omits mergeTags from init config when not provided', async () => {
+    render(<VisualEmailEditor />);
+    await vi.waitFor(() => expect(mockInit).toHaveBeenCalledTimes(1));
+
+    const config = mockInit.mock.calls[0][0];
+    expect(config.mergeTags).toBeUndefined();
+  });
 });

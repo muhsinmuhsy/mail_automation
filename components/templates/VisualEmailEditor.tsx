@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import type { TemplateContent } from '@templatical/types';
+import type { TemplateContent, MergeTagsConfig } from '@templatical/types';
 
 interface VisualEmailEditorProps {
   content?: TemplateContent;
   onChange?: (content: TemplateContent) => void;
   onError?: (error: Error) => void;
+  mergeTags?: MergeTagsConfig;
 }
 
 /**
@@ -23,7 +24,7 @@ interface VisualEmailEditorProps {
  * no `transform`/`filter`/`perspective`/`will-change`/`opacity<1`/`isolation`/
  * `contain`/positioned-`z-index` on ancestors.
  */
-export function VisualEmailEditor({ content, onChange, onError }: VisualEmailEditorProps) {
+export function VisualEmailEditor({ content, onChange, onError, mergeTags }: VisualEmailEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<{ unmount: () => void } | null>(null);
 
@@ -42,6 +43,7 @@ export function VisualEmailEditor({ content, onChange, onError }: VisualEmailEdi
         shadowDom: true,
         ...(onChange ? { onChange } : {}),
         ...(onError ? { onError } : {}),
+        ...(mergeTags ? { mergeTags } : {}),
       });
 
       if (cancelled) {
@@ -59,7 +61,7 @@ export function VisualEmailEditor({ content, onChange, onError }: VisualEmailEdi
       editorRef.current?.unmount();
       editorRef.current = null;
     };
-  }, [content, onChange, onError]);
+  }, [content, onChange, onError, mergeTags]);
 
   return <div ref={containerRef} style={{ height: '100%', minHeight: '600px' }} />;
 }

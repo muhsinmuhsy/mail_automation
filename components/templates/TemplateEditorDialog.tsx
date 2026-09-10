@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import VisualEmailEditorLazy from '@/components/templates/VisualEmailEditorLazy';
-import type { TemplateContent } from '@templatical/types';
+import type { TemplateContent, MergeTagsConfig, MergeTag } from '@templatical/types';
+
+const BUILTIN_MERGE_TAGS: MergeTag[] = [
+  { label: 'Name', value: 'name' },
+  { label: 'Email', value: 'email' },
+  { label: 'First Name', value: 'first_name' },
+];
 
 type EditorMode = 'visual' | 'plaintext';
 
@@ -55,6 +61,7 @@ export function TemplateEditorDialog({
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mergeTags, setMergeTags] = useState<MergeTagsConfig | undefined>(undefined);
 
   const contentRef = useRef<TemplateContent | null>(null);
 
@@ -69,6 +76,32 @@ export function TemplateEditorDialog({
     setError(null);
     contentRef.current = null;
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    async function loadMergeTags() {
+      try {
+        const response = await fetch('/api/contact-fields');
+        const payload = (await response.json()) as ApiEnvelope<Array<{ label: string; name: string }>>;
+        if (!cancelled && payload.success && Array.isArray(payload.data)) {
+          const customTags: MergeTag[] = payload.data.map((f) => ({
+            label: f.label,
+            value: f.name,
+          }));
+          setMergeTags({ tags: [...BUILTIN_MERGE_TAGS, ...customTags] });
+        } else if (!cancelled) {
+          setMergeTags({ tags: BUILTIN_MERGE_TAGS });
+        }
+      } catch {
+        if (!cancelled) {
+          setMergeTags({ tags: BUILTIN_MERGE_TAGS });
+        }
+      }
+    }
+    void loadMergeTags();
+    return () => { cancelled = true; };
+  }, [open]);
 
   const loadTemplate = useCallback(async (id: string) => {
     setLoading(true);
@@ -242,6 +275,7 @@ export function TemplateEditorDialog({
             <VisualEmailEditorLazy
               content={content ?? undefined}
               onChange={handleEditorChange}
+              mergeTags={mergeTags}
             />
           </div>
         ) : (

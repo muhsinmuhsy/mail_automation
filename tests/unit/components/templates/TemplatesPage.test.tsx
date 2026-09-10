@@ -121,6 +121,11 @@ describe('TemplatesPage', () => {
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
+      json: async () => ({ success: true, data: [] }),
+    } as Response);
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
       json: async () => ({
         success: true,
         data: mockTemplate('t2', 'New template', 'New subject'),
@@ -174,6 +179,10 @@ describe('TemplatesPage', () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(mockListResponse([]))
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, data: [] }),
+      } as Response)
       .mockResolvedValueOnce({
         ok: false,
         json: async () => ({ success: false, error: { message: 'Save failed' } }),
@@ -252,6 +261,10 @@ describe('TemplatesPage', () => {
       .mockResolvedValueOnce(mockListResponse([]))
       .mockResolvedValueOnce({
         ok: true,
+        json: async () => ({ success: true, data: [] }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
         json: async () => ({
           success: true,
           data: mockTemplate('t4', 'Persisted', 'Subject'),
@@ -323,6 +336,11 @@ describe('TemplatesPage', () => {
     fetchMock.mockResolvedValueOnce(
       mockListResponse([mockTemplate('t1', 'Welcome', 'Hi')])
     );
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, data: [] }),
+    } as Response);
 
     fetchMock.mockResolvedValueOnce({
       ok: true,

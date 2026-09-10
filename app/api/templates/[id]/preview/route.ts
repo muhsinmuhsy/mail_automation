@@ -5,6 +5,7 @@ import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema, uuid } from '@/lib/validation/common';
 import { NotFoundError, ValidationError, ForbiddenError } from '@/lib/errors';
 import { replaceTemplateVariables, type TemplateContact } from '@/lib/email/template';
+import { sanitizePreviewHtml } from '@/lib/email/sanitize-html';
 import { buildTemplateContact, type ContactFieldDefinition, type ContactFieldValueRow } from '@/lib/email/template-contact';
 import { z } from 'zod';
 
@@ -86,7 +87,7 @@ const _POST = defineRoute(async (req, ctx) => {
   const sampleContact: TemplateContact = contact ?? { name: 'John Doe', email: 'john@example.com' };
 
   const resolvedSubject = replaceTemplateVariables(template.subject, sampleContact);
-  const resolvedHtml = html ? replaceTemplateVariables(html, sampleContact) : null;
+  const resolvedHtml = html ? sanitizePreviewHtml(replaceTemplateVariables(html, sampleContact)) : null;
   const resolvedText = replaceTemplateVariables(text, sampleContact);
 
   return respondOk(

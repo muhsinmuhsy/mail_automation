@@ -18,7 +18,8 @@
     "test:gmail:live": "node scripts/test-gmail-live.mjs",
     "test:unit": "vitest run tests/unit",
     "check:local-production": "node scripts/check-production-readiness.mjs --local",
-    "check:production": "node scripts/check-production-readiness.mjs"
+    "check:production": "node scripts/check-production-readiness.mjs",
+    "postinstall": "node scripts/strip-editor-font.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1121.0",

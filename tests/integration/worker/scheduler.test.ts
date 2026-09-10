@@ -86,11 +86,55 @@ describe('integration/worker (scheduler, no real DB)', () => {
             to_email: 'jane@example.com',
             subject: 'Hi Jane Doe',
             body: 'Hello Jane',
+            body_html: null,
           }),
           expect.objectContaining({
             to_email: 'john@example.com',
             subject: 'Hi John Roe',
             body: 'Hello John',
+            body_html: null,
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it('generateCampaignJobs carries body_html from a visual template into EmailJob rows', async () => {
+
+    const prisma = createMockPrisma() as any;
+    prisma.contact.findMany.mockResolvedValue([
+      { id: 'contact-1', name: 'Jane Doe', first_name: 'Jane', email: 'jane@example.com', contact_field_values: [] },
+    ]);
+    prisma.contactField.findMany.mockResolvedValue([]);
+    prisma.template.findUnique.mockResolvedValue({
+      id: 'template-1',
+      subject: 'Hi {{name}}',
+      body: 'Hello {{first_name}}',
+      body_text: 'Hello {{first_name}}',
+      body_html: '<p>Hello {{first_name}}</p>',
+    });
+    prisma.emailJob.createMany.mockResolvedValue({ count: 1 });
+
+    await generateCampaignJobs(
+      prisma,
+      {
+        id: 'campaign-1',
+        user_id: 'user-1',
+        start_at: new Date('2026-01-01T09:00:00Z'),
+        timezone: 'UTC',
+        interval_minutes: 10,
+        email_account_id: 'account-1',
+        attachment_id: null,
+        template_id: 'template-1',
+      },
+      ['contact-1'],
+    );
+
+    expect(prisma.emailJob.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.arrayContaining([
+          expect.objectContaining({
+            body_html: '<p>Hello Jane</p>',
           }),
         ]),
       }),

@@ -30,6 +30,7 @@ const eslintConfig = defineConfig([
     "coverage/**",
     ".wrangler/**",
     "lib/generated/**",
+    ".codeartsdoer/**",
   ]),
 ]);
 
