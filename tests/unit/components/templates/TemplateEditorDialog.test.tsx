@@ -74,7 +74,8 @@ describe('TemplateEditorDialog', () => {
 
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Name and subject are required.');
+    expect(screen.getByText('Template name is required.')).toBeInTheDocument();
+    expect(screen.getByText('Subject is required.')).toBeInTheDocument();
   });
 
   it('POSTs to /api/templates with plain text body on save', async () => {

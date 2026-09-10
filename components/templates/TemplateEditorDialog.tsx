@@ -61,6 +61,7 @@ export function TemplateEditorDialog({
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; subject?: string }>({});
   const [mergeTags, setMergeTags] = useState<MergeTagsConfig | undefined>(undefined);
 
   const contentRef = useRef<TemplateContent | null>(null);
@@ -74,6 +75,7 @@ export function TemplateEditorDialog({
     setContent(null);
     setPlainBody('');
     setError(null);
+    setFieldErrors({});
     contentRef.current = null;
   }, []);
 
@@ -161,12 +163,16 @@ export function TemplateEditorDialog({
   }, []);
 
   const handleSave = async () => {
-    if (!name.trim() || !subject.trim()) {
-      setError('Name and subject are required.');
+    const errors: { name?: string; subject?: string } = {};
+    if (!name.trim()) errors.name = 'Template name is required.';
+    if (!subject.trim()) errors.subject = 'Subject is required.';
+    if (errors.name || errors.subject) {
+      setFieldErrors(errors);
       return;
     }
     setSaving(true);
     setError(null);
+    setFieldErrors({});
     try {
       const body =
         mode === 'visual'
@@ -249,13 +255,15 @@ export function TemplateEditorDialog({
           <Input
             label="Template name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { setName(e.target.value); setFieldErrors((fe) => ({ ...fe, name: undefined })); }}
+            error={fieldErrors.name}
             required
           />
           <Input
             label="Subject"
             value={subject}
-            onChange={(e) => setSubject(e.target.value)}
+            onChange={(e) => { setSubject(e.target.value); setFieldErrors((fe) => ({ ...fe, subject: undefined })); }}
+            error={fieldErrors.subject}
             required
           />
         </div>
