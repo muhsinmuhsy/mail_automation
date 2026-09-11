@@ -3,16 +3,13 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const migration = readFileSync(
-  join(process.cwd(), 'prisma/migrations/20260831_domain_checks/migration.sql'),
+  join(process.cwd(), 'prisma/migrations/20260910020208_initail/migration.sql'),
   'utf8'
 );
 
 function tableBlock(table: string): string {
-  const start = migration.indexOf(`ALTER TABLE "${table}"`);
-  if (start === -1) return '';
-  // Constraint additions end at the first semicolon after the ALTER TABLE.
-  const end = migration.indexOf(';', start);
-  return migration.slice(start, end === -1 ? undefined : end);
+  const re = new RegExp(`ALTER TABLE "${table}"[^;]+;`, 'g');
+  return migration.match(re)?.join('\n') ?? '';
 }
 
 describe('Prisma CHECK constraints migration', () => {

@@ -1,37 +1,17 @@
 import { readFileSync } from 'node:fs';
-import { randomUUID } from 'node:crypto';
-import { Pool } from '@neondatabase/serverless';
 import { describe, expect, it } from 'vitest';
 
-const connectionString = process.env.ATTACHMENT_MIGRATION_TEST_DATABASE_URL;
 const migration = readFileSync(
-  'prisma/migrations/20260905_resume_storage_key/migration.sql', 'utf8',
+  'prisma/migrations/20260910020208_initail/migration.sql', 'utf8',
 );
 
-// Opt in with a PostgreSQL test database. Every case runs in an isolated
-// schema and rolls back, including when an assertion fails.
-describe.skipIf(!connectionString)('attachment storage migration (real PostgreSQL)', () => {
-  it.each(['r2_key', 'storage_key'])('preserves data and permits uploads from %s', async (column) => {
-    const pool = new Pool({ connectionString });
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      const schema = `attachment_test_${randomUUID().replaceAll('-', '')}`;
-      await client.query(`CREATE SCHEMA "${schema}"`);
-      await client.query(`SET LOCAL search_path TO "${schema}"`);
-      await client.query(`CREATE TABLE attachments (id integer PRIMARY KEY, "${column}" varchar(1024) NOT NULL)`);
-      await client.query(`INSERT INTO attachments VALUES (1, 'attachments/existing.pdf')`);
-      await client.query(migration);
-      await client.query(migration);
-      expect((await client.query('SELECT storage_key FROM attachments WHERE id = 1')).rows)
-        .toEqual([{ storage_key: 'attachments/existing.pdf' }]);
-      await client.query(`INSERT INTO attachments (id, storage_key) VALUES (2, 'attachments/new.pdf')`);
-      expect((await client.query('SELECT storage_key FROM attachments WHERE id = 2')).rows)
-        .toEqual([{ storage_key: 'attachments/new.pdf' }]);
-    } finally {
-      await client.query('ROLLBACK');
-      client.release();
-      await pool.end();
-    }
-  }, 30000);
+describe('attachment storage_key column (consolidated migration)', () => {
+  it('creates attachments table with storage_key column', () => {
+    expect(migration).toContain('"storage_key" VARCHAR(1024) NOT NULL');
+    expect(migration).toContain('CREATE TABLE "attachments"');
+  });
+
+  it('does not reference the old r2_key column', () => {
+    expect(migration).not.toContain('r2_key');
+  });
 });

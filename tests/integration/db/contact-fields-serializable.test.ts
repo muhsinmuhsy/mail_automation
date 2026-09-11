@@ -1,15 +1,56 @@
-import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { config } from 'dotenv';
 import { Pool } from '@neondatabase/serverless';
 import { describe, expect, it } from 'vitest';
 
+const dotenvParsed = config().parsed;
 const connectionString =
-  process.env.CONTACT_FIELDS_TEST_DATABASE_URL ?? process.env.OAUTH_MIGRATION_TEST_DATABASE_URL;
+  dotenvParsed?.CONTACT_FIELDS_TEST_DATABASE_URL ??
+  dotenvParsed?.OAUTH_MIGRATION_TEST_DATABASE_URL ??
+  dotenvParsed?.DATABASE_URL ??
+  process.env.CONTACT_FIELDS_TEST_DATABASE_URL ??
+  process.env.OAUTH_MIGRATION_TEST_DATABASE_URL ??
+  process.env.DATABASE_URL;
 
-const migrationSql = readFileSync(
-  'prisma/migrations/20260908_custom_merge_fields/migration.sql',
-  'utf8'
+const migrationSql = `
+CREATE TYPE "FieldType" AS ENUM ('text', 'number', 'date', 'boolean');
+
+CREATE TABLE "contact_fields" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id" UUID NOT NULL,
+    "name" VARCHAR(50) NOT NULL,
+    "label" VARCHAR(100) NOT NULL,
+    "field_type" "FieldType" NOT NULL DEFAULT 'text',
+    "sort_order" INTEGER NOT NULL DEFAULT 0,
+    "is_required" BOOLEAN NOT NULL DEFAULT false,
+    "is_default" BOOLEAN NOT NULL DEFAULT false,
+    "version" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "contact_fields_pkey" PRIMARY KEY ("id")
 );
+
+CREATE TABLE "contact_field_values" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "contact_id" UUID NOT NULL,
+    "field_id" UUID NOT NULL,
+    "value" TEXT,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "contact_field_values_pkey" PRIMARY KEY ("id")
+);
+
+CREATE INDEX "idx_contact_fields_user_id" ON "contact_fields"("user_id");
+CREATE UNIQUE INDEX "unique_contact_fields_user_id_name" ON "contact_fields"("user_id", "name");
+CREATE INDEX "idx_contact_field_values_field_id" ON "contact_field_values"("field_id");
+CREATE UNIQUE INDEX "unique_contact_field_values_contact_id_field_id" ON "contact_field_values"("contact_id", "field_id");
+
+ALTER TABLE "contact_fields" ADD CONSTRAINT "contact_fields_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "contact_field_values" ADD CONSTRAINT "contact_field_values_contact_id_fkey" FOREIGN KEY ("contact_id") REFERENCES "contacts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "contact_field_values" ADD CONSTRAINT "contact_field_values_field_id_fkey" FOREIGN KEY ("field_id") REFERENCES "contact_fields"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+`;
 
 describe.skipIf(!connectionString)('contact-fields serializable concurrency (real PostgreSQL)', () => {
   it('unique constraint on (user_id, name) prevents duplicate tokens', async () => {

@@ -385,3 +385,13 @@ ALTER TABLE "email_send_reservations" ADD CONSTRAINT "email_send_reservations_us
 
 -- AddForeignKey
 ALTER TABLE "email_send_reservations" ADD CONSTRAINT "email_send_reservations_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "campaigns"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddCheckConstraints
+ALTER TABLE "campaigns" ADD CONSTRAINT "campaigns_interval_minutes_check" CHECK ("interval_minutes" > 0);
+ALTER TABLE "campaigns" ADD CONSTRAINT "campaigns_daily_limit_check" CHECK ("daily_limit" IS NULL OR "daily_limit" > 0);
+ALTER TABLE "email_usage_daily" ADD CONSTRAINT "email_usage_daily_sent_count_check" CHECK ("sent_count" >= 0);
+ALTER TABLE "email_usage_daily" ADD CONSTRAINT "email_usage_daily_reserved_count_check" CHECK ("reserved_count" >= 0);
+ALTER TABLE "campaign_usage_daily" ADD CONSTRAINT "campaign_usage_daily_sent_count_check" CHECK ("sent_count" >= 0);
+ALTER TABLE "campaign_usage_daily" ADD CONSTRAINT "campaign_usage_daily_reserved_count_check" CHECK ("reserved_count" >= 0);
+ALTER TABLE "system_usage_daily" ADD CONSTRAINT "system_usage_daily_sent_count_check" CHECK ("sent_count" >= 0);
+ALTER TABLE "system_usage_daily" ADD CONSTRAINT "system_usage_daily_reserved_count_check" CHECK ("reserved_count" >= 0);
