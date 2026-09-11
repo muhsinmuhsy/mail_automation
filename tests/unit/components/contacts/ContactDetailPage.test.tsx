@@ -4,9 +4,11 @@ import userEvent from '@testing-library/user-event';
 
 const router = { push: vi.fn() };
 const params = { id: 'c1' };
+const searchParams = new URLSearchParams();
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
   useParams: () => params,
+  useSearchParams: () => searchParams,
 }));
 
 import ContactDetailPage from '@/app/(dashboard)/contacts/[id]/page';
@@ -148,21 +150,30 @@ describe('ContactDetailPage', () => {
     expect(router.push).toHaveBeenCalledWith('/contacts');
   });
 
-  it('opens the edit dialog when Edit is clicked', async () => {
+  it('shows the contact details and an Edit button in view mode', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(mockContactResponse(mockContact()))
+      .mockResolvedValueOnce(mockFieldsResponse());
+
+    render(<ContactDetailPage />);
+
+    await waitFor(() => expect(screen.getByText('Jane Doe')).toBeInTheDocument());
+    expect(screen.getByText('jane@example.com')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+  });
+
+  it('navigates to the edit page when Edit is clicked', async () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(mockContactResponse(mockContact()))
-      .mockResolvedValueOnce(mockFieldsResponse())
-      .mockResolvedValueOnce(mockContactResponse(mockContact()));
+      .mockResolvedValueOnce(mockFieldsResponse());
 
     render(<ContactDetailPage />);
 
     await waitFor(() => expect(screen.getByText('Jane Doe')).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: 'Edit' }));
-
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: 'Edit contact' })).toBeInTheDocument()
-    );
+    expect(router.push).toHaveBeenCalledWith('/contacts/c1/edit');
   });
 
   it('shows an error when the contact fails to load', async () => {

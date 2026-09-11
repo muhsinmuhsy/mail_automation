@@ -3,7 +3,6 @@
 import { ContactCard } from '@/components/contacts/ContactCard';
 import { ContactForm, type ContactFieldDef } from '@/components/contacts/ContactForm';
 import { ContactImport } from '@/components/contacts/ContactImport';
-import { ContactEditDialog } from '@/components/contacts/ContactEditDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -37,7 +36,6 @@ export default function ContactsPage() {
   const [showImport, setShowImport] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [editId, setEditId] = useState<string | null>(null);
 
   const [fieldDefs, setFieldDefs] = useState<ContactFieldDef[]>([]);
   const [unknownColumns, setUnknownColumns] = useState<string[] | null>(null);
@@ -257,7 +255,7 @@ export default function ContactsPage() {
                 contact={contact}
                 onDelete={(id) => setDeleteTarget(contacts.find((c) => c.id === id) ?? null)}
                 onView={(id) => router.push(`/contacts/${id}`)}
-                onEdit={(id) => setEditId(id)}
+                onEdit={(id) => router.push(`/contacts/${id}/edit`)}
                 deleting={deleting && deleteTarget?.id === contact.id}
                 fieldLabels={fieldLabels}
               />
@@ -276,14 +274,6 @@ export default function ContactsPage() {
           )}
         </div>
       )}
-
-      <ContactEditDialog
-        open={editId !== null}
-        onOpenChange={(open) => { if (!open) setEditId(null); }}
-        contactId={editId}
-        fields={fieldDefs}
-        onSaved={() => { void load(); }}
-      />
 
       <ConfirmDialog
         open={deleteTarget !== null}
