@@ -25,7 +25,6 @@ const ALL_LABELS = [
   'Templates',
   'Campaigns',
   'Emails',
-  'Settings',
 ];
 
 const ACTIVE_CLASS = 'bg-selected';
@@ -62,7 +61,6 @@ describe('DashboardSidebar', () => {
     ['Templates', '/templates'],
     ['Campaigns', '/campaigns'],
     ['Emails', '/emails'],
-    ['Settings', '/settings/fields'],
   ])('links %s to %s', (label, href) => {
     render(<DashboardSidebar />);
     expect(linkFor(label)).toHaveAttribute('href', href);
@@ -70,7 +68,7 @@ describe('DashboardSidebar', () => {
 
   it('renders clean text markers for each nav item', () => {
     render(<DashboardSidebar />);
-    for (const icon of ['DB', 'EA', 'AT', 'CT', 'TP', 'CP', 'EM', 'ST']) {
+    for (const icon of ['DB', 'EA', 'AT', 'CT', 'TP', 'CP', 'EM']) {
       expect(screen.getByText(icon)).toBeInTheDocument();
     }
   });

@@ -1,6 +1,6 @@
 # LIST_PAGE_ENHANCEMENTS
 
-> Status: PLANNED — awaiting review before implementation.
+> Status: IMPLEMENTED — all changes applied, all 4 verification gates pass (174 test files, 1711 tests passed).
 > Created: 2026-09-11
 > Supersedes: none
 

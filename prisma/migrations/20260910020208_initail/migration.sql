@@ -74,6 +74,7 @@ CREATE TABLE "attachments" (
     "is_default" BOOLEAN NOT NULL DEFAULT false,
     "deleted_at" TIMESTAMPTZ,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "attachments_pkey" PRIMARY KEY ("id")
 );

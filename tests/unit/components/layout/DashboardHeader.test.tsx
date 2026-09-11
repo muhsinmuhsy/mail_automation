@@ -34,16 +34,14 @@ describe('DashboardHeader', () => {
   it('keeps the dropdown menu closed initially', () => {
     render(<DashboardHeader />);
     expect(screen.queryByRole('button', { name: 'Profile' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Sign out' })).not.toBeInTheDocument();
   });
 
-  it('opens the dropdown with the three account items when the trigger is clicked', async () => {
+  it('opens the dropdown with the two account items when the trigger is clicked', async () => {
     const user = userEvent.setup();
     render(<DashboardHeader />);
     await user.click(screen.getByRole('button', { name: 'Account' }));
     expect(screen.getByRole('button', { name: 'Profile' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
   });
 
@@ -79,23 +77,22 @@ describe('DashboardHeader', () => {
     render(<DashboardHeader />);
     await user.click(screen.getByRole('button', { name: 'Account' }));
     expect(screen.queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument();
   });
 
   it('closes the dropdown when clicking outside of it', async () => {
     const user = userEvent.setup();
     render(<DashboardHeader />);
     await user.click(screen.getByRole('button', { name: 'Account' }));
-    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Profile' })).toBeInTheDocument();
     fireEvent.mouseDown(document.body);
-    expect(screen.queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Profile' })).not.toBeInTheDocument();
   });
 
   it('keeps the dropdown open when clicking inside the menu container', async () => {
     const user = userEvent.setup();
     render(<DashboardHeader />);
     await user.click(screen.getByRole('button', { name: 'Account' }));
-    fireEvent.mouseDown(screen.getByRole('button', { name: 'Settings' }));
-    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
+    fireEvent.mouseDown(screen.getByRole('button', { name: 'Profile' }));
+    expect(screen.getByRole('button', { name: 'Profile' })).toBeInTheDocument();
   });
 });

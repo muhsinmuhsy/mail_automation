@@ -21,7 +21,6 @@ export function DashboardHeader() {
         }
         items={[
           { label: 'Profile', href: '/profile' },
-          { label: 'Settings', href: '/settings' },
           { label: 'Sign out', onClick: () => { void signOut(); } },
         ]}
       />

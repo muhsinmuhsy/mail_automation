@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+const router = { push: vi.fn() };
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
+
 import ContactsPage from '@/app/(dashboard)/contacts/page';
 
 const mockContact = (id: string, name: string, email: string) => ({
@@ -65,7 +69,7 @@ describe('ContactsPage', () => {
     render(<ContactsPage />);
 
     await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith('/api/contacts?page=1&limit=20')
+      expect(fetchMock).toHaveBeenCalledWith('/api/contacts?page=1&limit=20&sortOrder=desc')
     );
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('alice@example.com')).toBeInTheDocument();
@@ -403,7 +407,7 @@ describe('ContactsPage', () => {
       await user.click(screen.getByRole('button', { name: 'Next' }));
 
       await waitFor(() =>
-        expect(fetchMock).toHaveBeenCalledWith('/api/contacts?page=2&limit=20')
+        expect(fetchMock).toHaveBeenCalledWith('/api/contacts?page=2&limit=20&sortOrder=desc')
       );
       await waitFor(() => expect(screen.getByText('Page2 0')).toBeInTheDocument());
       expect(screen.queryByText('Page1 0')).not.toBeInTheDocument();
@@ -459,7 +463,7 @@ describe('ContactsPage', () => {
       await user.click(screen.getByRole('button', { name: 'Previous' }));
 
       await waitFor(() =>
-        expect(fetchMock).toHaveBeenCalledWith('/api/contacts?page=1&limit=20')
+        expect(fetchMock).toHaveBeenCalledWith('/api/contacts?page=1&limit=20&sortOrder=desc')
       );
       await waitFor(() => expect(screen.getByText('Page1 Contact')).toBeInTheDocument());
       expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();

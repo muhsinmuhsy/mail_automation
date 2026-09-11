@@ -162,7 +162,7 @@ describe('GET /api/contacts', () => {
         where: { user_id: 'user-1' },
         skip: 0,
         take: 20,
-        orderBy: { created_at: 'desc' },
+        orderBy: { created_at: 'asc' },
       })
     );
   });

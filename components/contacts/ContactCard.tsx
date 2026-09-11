@@ -20,12 +20,13 @@ interface Contact {
 interface ContactCardProps {
   contact: Contact;
   onDelete?: (id: string) => void;
+  onView?: (id: string) => void;
+  onEdit?: (id: string) => void;
   deleting?: boolean;
-  /** Custom field definitions for label lookup. If omitted, custom field keys are shown as-is. */
   fieldLabels?: Record<string, string>;
 }
 
-export function ContactCard({ contact, onDelete, deleting = false, fieldLabels }: ContactCardProps) {
+export function ContactCard({ contact, onDelete, onView, onEdit, deleting = false, fieldLabels }: ContactCardProps) {
   const customEntries = contact.custom_fields
     ? Object.entries(contact.custom_fields).filter(([, v]) => v != null && v !== '')
     : [];
@@ -47,17 +48,19 @@ export function ContactCard({ contact, onDelete, deleting = false, fieldLabels }
             </dl>
           )}
         </div>
-        {onDelete && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => onDelete(contact.id)}
-            disabled={deleting}
-          >
-            Delete
-          </Button>
-        )}
+        <div className="flex flex-col gap-1">
+          {onView && (
+            <Button variant="secondary" size="sm" onClick={() => onView(contact.id)}>View</Button>
+          )}
+          {onEdit && (
+            <Button variant="secondary" size="sm" onClick={() => onEdit(contact.id)}>Edit</Button>
+          )}
+          {onDelete && (
+            <Button variant="destructive" size="sm" onClick={() => onDelete(contact.id)} disabled={deleting}>Delete</Button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+

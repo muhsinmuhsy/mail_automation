@@ -6,6 +6,7 @@ import { TemplatePreviewDialog } from '@/components/templates/TemplatePreviewDia
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 import { useCallback, useEffect, useState } from 'react';
 
 const PAGE_SIZE = 20;
@@ -26,6 +27,8 @@ export default function TemplatesPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +38,8 @@ export default function TemplatesPage() {
   const [previewId, setPreviewId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+    const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sortOrder });
+    if (search) params.set('search', search);
     try {
       const response = await fetch(`/api/templates?${params.toString()}`);
       const payload = (await response.json()) as ApiEnvelope<Template[]>;
@@ -50,12 +54,22 @@ export default function TemplatesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, search, sortOrder]);
 
   useEffect(() => {
     const timer = setTimeout(() => void load(), 0);
     return () => clearTimeout(timer);
   }, [load]);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleSortOrderChange = (value: 'desc' | 'asc') => {
+    setSortOrder(value);
+    setPage(1);
+  };
 
   const handleNew = () => {
     setEditingId(null);
@@ -74,18 +88,19 @@ export default function TemplatesPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold">Templates</h1>
-          <p className="mt-2 text-text-secondary">Create and manage email templates.</p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-semibold">Templates</h1>
+        <p className="mt-2 text-text-secondary">Create and manage email templates.</p>
+      </div>
+
+      <ListToolbar search={search} onSearchChange={handleSearchChange} sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange}>
         <button
           onClick={handleNew}
           className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
         >
           New template
         </button>
-      </div>
+      </ListToolbar>
 
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
 

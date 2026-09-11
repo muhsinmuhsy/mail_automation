@@ -83,6 +83,7 @@ describe('AttachmentsPage uploads', () => {
     const user = userEvent.setup();
     const { container } = render(<AttachmentsPage />);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await user.click(screen.getByRole('button', { name: 'Upload Attachment' }));
     const file = new File(['%PDF-1.7'], 'cv.pdf', { type: 'application/pdf' });
     await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, file);
     await user.click(screen.getByRole('button', { name: 'Upload' }));
@@ -167,7 +168,7 @@ describe('AttachmentsPage pagination', () => {
     render(<AttachmentsPage />);
     await waitFor(() => expect(screen.getByText('page1-0.pdf')).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: 'Next' }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/attachments?page=2&limit=20'));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/attachments?page=2&limit=20&sortOrder=desc'));
     await waitFor(() => expect(screen.getByText('page2-0.pdf')).toBeInTheDocument());
     expect(screen.queryByText('page1-0.pdf')).not.toBeInTheDocument();
     expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
@@ -195,7 +196,7 @@ describe('AttachmentsPage pagination', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await waitFor(() => expect(screen.getByText('page2-0.pdf')).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: 'Previous' }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/attachments?page=1&limit=20'));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/attachments?page=1&limit=20&sortOrder=desc'));
     await waitFor(() => expect(screen.getByText('page1-0.pdf')).toBeInTheDocument());
     expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
   });

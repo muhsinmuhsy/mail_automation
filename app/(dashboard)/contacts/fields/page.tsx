@@ -45,7 +45,7 @@ const BUILTIN_FIELDS: Array<{ name: string; label: string; field_type: FieldType
   { name: 'email', label: 'Email', field_type: 'text' },
 ];
 
-export default function FieldsSettingsPage() {
+export default function CustomFieldsPage() {
   const [fields, setFields] = useState<ContactField[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [page, setPage] = useState(1);

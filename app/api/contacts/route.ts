@@ -21,7 +21,7 @@ import { ConflictError, ValidationError, fromPrismaError } from '@/lib/errors';
  */
 
 const _GET = defineRoute(async (req, ctx) => {
-  const { page, limit, search } = parseListQuery(req, { search: true });
+  const { page, limit, search, sortBy, sortOrder } = parseListQuery(req, { search: true, sortable: ['created_at'] });
 
   const where = {
     user_id: ctx.user.id,
@@ -45,7 +45,7 @@ const _GET = defineRoute(async (req, ctx) => {
     getPrisma().contact.findMany({
       where,
       select: { id: true, name: true, email: true },
-      orderBy: { created_at: 'desc' },
+      orderBy: { [sortBy ?? 'created_at']: sortOrder },
       skip: (page - 1) * limit,
       take: limit,
     }),

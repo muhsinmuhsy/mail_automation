@@ -16,6 +16,42 @@ import { NotFoundError, ValidationError, fromPrismaError } from '@/lib/errors';
  * transaction. DELETE removes the contact (cascade-deletes its custom values).
  */
 
+const _GET = defineRoute(async (_req, ctx) => {
+  const parsed = idParamSchema.safeParse({ id: ctx.params.id });
+  if (!parsed.success) {
+    return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
+  }
+
+  const contact = await getPrisma().contact.findUnique({
+    where: { id: parsed.data.id, user_id: ctx.user.id },
+    select: { id: true, name: true, email: true, created_at: true, updated_at: true },
+  });
+
+  if (!contact) {
+    return respondError(new NotFoundError('Contact not found.'), ctx.requestId);
+  }
+
+  const fieldDefs = await getPrisma().contactField.findMany({
+    where: { user_id: ctx.user.id },
+    orderBy: { sort_order: 'asc' },
+    select: { id: true, name: true, label: true, field_type: true, is_required: true },
+  });
+
+  const fieldValues = await getPrisma().contactFieldValue.findMany({
+    where: { contact_id: parsed.data.id },
+    select: { field_id: true, value: true },
+  });
+
+  const fieldDefById = new Map(fieldDefs.map((f) => [f.id, f]));
+  const custom_fields: Record<string, string | null> = {};
+  for (const v of fieldValues) {
+    const def = fieldDefById.get(v.field_id);
+    if (def) custom_fields[def.name] = v.value;
+  }
+
+  return respondOk({ ...contact, custom_fields }, ctx.requestId);
+}, { auth: 'user' });
+
 const _PATCH = defineRoute(async (req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
   if (!parsed.success) {
@@ -135,6 +171,11 @@ const _DELETE = defineRoute(async (_req, ctx) => {
   },
   rateLimitKey: 'contact-delete',
 });
+
+
+export async function GET(req: NextRequest, ctx: { params: RouteParams } = { params: {} as RouteParams }) {
+  return _GET(req, ctx);
+}
 
 
 export async function PATCH(req: NextRequest, ctx: { params: RouteParams } = { params: {} as RouteParams }) {

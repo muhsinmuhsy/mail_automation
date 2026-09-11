@@ -1708,7 +1708,8 @@ export const AttachmentScalarFieldEnum = {
   size_bytes: 'size_bytes',
   is_default: 'is_default',
   deleted_at: 'deleted_at',
-  created_at: 'created_at'
+  created_at: 'created_at',
+  updated_at: 'updated_at'
 } as const
 
 export type AttachmentScalarFieldEnum = (typeof AttachmentScalarFieldEnum)[keyof typeof AttachmentScalarFieldEnum]

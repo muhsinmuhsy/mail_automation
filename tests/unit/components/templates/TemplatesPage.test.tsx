@@ -44,7 +44,7 @@ describe('TemplatesPage', () => {
     render(<TemplatesPage />);
 
     await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith('/api/templates?page=1&limit=20')
+      expect(fetchMock).toHaveBeenCalledWith('/api/templates?page=1&limit=20&sortOrder=desc')
     );
     expect(screen.getByText('Welcome')).toBeInTheDocument();
     expect(screen.getByText('Hi there')).toBeInTheDocument();
@@ -489,7 +489,7 @@ describe('TemplatesPage', () => {
       await user.click(screen.getByRole('button', { name: 'Next' }));
 
       await waitFor(() =>
-        expect(fetchMock).toHaveBeenCalledWith('/api/templates?page=2&limit=20')
+        expect(fetchMock).toHaveBeenCalledWith('/api/templates?page=2&limit=20&sortOrder=desc')
       );
       await waitFor(() => expect(screen.getByText('Page2 0')).toBeInTheDocument());
       expect(screen.queryByText('Page1 0')).not.toBeInTheDocument();
@@ -541,7 +541,7 @@ describe('TemplatesPage', () => {
       await user.click(screen.getByRole('button', { name: 'Previous' }));
 
       await waitFor(() =>
-        expect(fetchMock).toHaveBeenCalledWith('/api/templates?page=1&limit=20')
+        expect(fetchMock).toHaveBeenCalledWith('/api/templates?page=1&limit=20&sortOrder=desc')
       );
       await waitFor(() => expect(screen.getByText('Page1 Contact')).toBeInTheDocument());
       expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();

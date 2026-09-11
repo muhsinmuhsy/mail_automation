@@ -35,7 +35,7 @@ describe('AttachmentCard', () => {
   it('emphasises the filename and de-emphasises the size', () => {
     render(<AttachmentCard attachment={attachment} />);
     expect(screen.getByText('alice-cv.pdf')).toHaveClass('font-medium', 'text-text-primary');
-    expect(screen.getByText('2.0 KB')).toHaveClass('text-sm', 'text-text-secondary');
+    expect(screen.getByText('2.0 KB').parentElement).toHaveClass('text-sm', 'text-text-secondary');
   });
 
   it('renders a bordered card container', () => {

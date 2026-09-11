@@ -43,6 +43,7 @@ export type AttachmentMinAggregateOutputType = {
   is_default: boolean | null
   deleted_at: Date | null
   created_at: Date | null
+  updated_at: Date | null
 }
 
 export type AttachmentMaxAggregateOutputType = {
@@ -54,6 +55,7 @@ export type AttachmentMaxAggregateOutputType = {
   is_default: boolean | null
   deleted_at: Date | null
   created_at: Date | null
+  updated_at: Date | null
 }
 
 export type AttachmentCountAggregateOutputType = {
@@ -65,6 +67,7 @@ export type AttachmentCountAggregateOutputType = {
   is_default: number
   deleted_at: number
   created_at: number
+  updated_at: number
   _all: number
 }
 
@@ -86,6 +89,7 @@ export type AttachmentMinAggregateInputType = {
   is_default?: true
   deleted_at?: true
   created_at?: true
+  updated_at?: true
 }
 
 export type AttachmentMaxAggregateInputType = {
@@ -97,6 +101,7 @@ export type AttachmentMaxAggregateInputType = {
   is_default?: true
   deleted_at?: true
   created_at?: true
+  updated_at?: true
 }
 
 export type AttachmentCountAggregateInputType = {
@@ -108,6 +113,7 @@ export type AttachmentCountAggregateInputType = {
   is_default?: true
   deleted_at?: true
   created_at?: true
+  updated_at?: true
   _all?: true
 }
 
@@ -206,6 +212,7 @@ export type AttachmentGroupByOutputType = {
   is_default: boolean
   deleted_at: Date | null
   created_at: Date
+  updated_at: Date
   _count: AttachmentCountAggregateOutputType | null
   _avg: AttachmentAvgAggregateOutputType | null
   _sum: AttachmentSumAggregateOutputType | null
@@ -240,6 +247,7 @@ export type AttachmentWhereInput = {
   is_default?: Prisma.BoolFilter<"Attachment"> | boolean
   deleted_at?: Prisma.DateTimeNullableFilter<"Attachment"> | Date | string | null
   created_at?: Prisma.DateTimeFilter<"Attachment"> | Date | string
+  updated_at?: Prisma.DateTimeFilter<"Attachment"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   campaigns?: Prisma.CampaignListRelationFilter
   email_jobs?: Prisma.EmailJobListRelationFilter
@@ -254,6 +262,7 @@ export type AttachmentOrderByWithRelationInput = {
   is_default?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  updated_at?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   campaigns?: Prisma.CampaignOrderByRelationAggregateInput
   email_jobs?: Prisma.EmailJobOrderByRelationAggregateInput
@@ -271,6 +280,7 @@ export type AttachmentWhereUniqueInput = Prisma.AtLeast<{
   is_default?: Prisma.BoolFilter<"Attachment"> | boolean
   deleted_at?: Prisma.DateTimeNullableFilter<"Attachment"> | Date | string | null
   created_at?: Prisma.DateTimeFilter<"Attachment"> | Date | string
+  updated_at?: Prisma.DateTimeFilter<"Attachment"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   campaigns?: Prisma.CampaignListRelationFilter
   email_jobs?: Prisma.EmailJobListRelationFilter
@@ -285,6 +295,7 @@ export type AttachmentOrderByWithAggregationInput = {
   is_default?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  updated_at?: Prisma.SortOrder
   _count?: Prisma.AttachmentCountOrderByAggregateInput
   _avg?: Prisma.AttachmentAvgOrderByAggregateInput
   _max?: Prisma.AttachmentMaxOrderByAggregateInput
@@ -304,6 +315,7 @@ export type AttachmentScalarWhereWithAggregatesInput = {
   is_default?: Prisma.BoolWithAggregatesFilter<"Attachment"> | boolean
   deleted_at?: Prisma.DateTimeNullableWithAggregatesFilter<"Attachment"> | Date | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"Attachment"> | Date | string
+  updated_at?: Prisma.DateTimeWithAggregatesFilter<"Attachment"> | Date | string
 }
 
 export type AttachmentCreateInput = {
@@ -314,6 +326,7 @@ export type AttachmentCreateInput = {
   is_default?: boolean
   deleted_at?: Date | string | null
   created_at?: Date | string
+  updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutAttachmentsInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutAttachmentInput
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutAttachmentInput
@@ -328,6 +341,7 @@ export type AttachmentUncheckedCreateInput = {
   is_default?: boolean
   deleted_at?: Date | string | null
   created_at?: Date | string
+  updated_at?: Date | string
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutAttachmentInput
   email_jobs?: Prisma.EmailJobUncheckedCreateNestedManyWithoutAttachmentInput
 }
@@ -340,6 +354,7 @@ export type AttachmentUpdateInput = {
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutAttachmentsNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutAttachmentNestedInput
   email_jobs?: Prisma.EmailJobUpdateManyWithoutAttachmentNestedInput
@@ -354,6 +369,7 @@ export type AttachmentUncheckedUpdateInput = {
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutAttachmentNestedInput
   email_jobs?: Prisma.EmailJobUncheckedUpdateManyWithoutAttachmentNestedInput
 }
@@ -367,6 +383,7 @@ export type AttachmentCreateManyInput = {
   is_default?: boolean
   deleted_at?: Date | string | null
   created_at?: Date | string
+  updated_at?: Date | string
 }
 
 export type AttachmentUpdateManyMutationInput = {
@@ -377,6 +394,7 @@ export type AttachmentUpdateManyMutationInput = {
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type AttachmentUncheckedUpdateManyInput = {
@@ -388,6 +406,7 @@ export type AttachmentUncheckedUpdateManyInput = {
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type AttachmentListRelationFilter = {
@@ -409,6 +428,7 @@ export type AttachmentCountOrderByAggregateInput = {
   is_default?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  updated_at?: Prisma.SortOrder
 }
 
 export type AttachmentAvgOrderByAggregateInput = {
@@ -424,6 +444,7 @@ export type AttachmentMaxOrderByAggregateInput = {
   is_default?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  updated_at?: Prisma.SortOrder
 }
 
 export type AttachmentMinOrderByAggregateInput = {
@@ -435,6 +456,7 @@ export type AttachmentMinOrderByAggregateInput = {
   is_default?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  updated_at?: Prisma.SortOrder
 }
 
 export type AttachmentSumOrderByAggregateInput = {
@@ -528,6 +550,7 @@ export type AttachmentCreateWithoutUserInput = {
   is_default?: boolean
   deleted_at?: Date | string | null
   created_at?: Date | string
+  updated_at?: Date | string
   campaigns?: Prisma.CampaignCreateNestedManyWithoutAttachmentInput
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutAttachmentInput
 }
@@ -540,6 +563,7 @@ export type AttachmentUncheckedCreateWithoutUserInput = {
   is_default?: boolean
   deleted_at?: Date | string | null
   created_at?: Date | string
+  updated_at?: Date | string
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutAttachmentInput
   email_jobs?: Prisma.EmailJobUncheckedCreateNestedManyWithoutAttachmentInput
 }
@@ -582,6 +606,7 @@ export type AttachmentScalarWhereInput = {
   is_default?: Prisma.BoolFilter<"Attachment"> | boolean
   deleted_at?: Prisma.DateTimeNullableFilter<"Attachment"> | Date | string | null
   created_at?: Prisma.DateTimeFilter<"Attachment"> | Date | string
+  updated_at?: Prisma.DateTimeFilter<"Attachment"> | Date | string
 }
 
 export type AttachmentCreateWithoutCampaignsInput = {
@@ -592,6 +617,7 @@ export type AttachmentCreateWithoutCampaignsInput = {
   is_default?: boolean
   deleted_at?: Date | string | null
   created_at?: Date | string
+  updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutAttachmentsInput
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutAttachmentInput
 }
@@ -605,6 +631,7 @@ export type AttachmentUncheckedCreateWithoutCampaignsInput = {
   is_default?: boolean
   deleted_at?: Date | string | null
   created_at?: Date | string
+  updated_at?: Date | string
   email_jobs?: Prisma.EmailJobUncheckedCreateNestedManyWithoutAttachmentInput
 }
 
@@ -632,6 +659,7 @@ export type AttachmentUpdateWithoutCampaignsInput = {
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutAttachmentsNestedInput
   email_jobs?: Prisma.EmailJobUpdateManyWithoutAttachmentNestedInput
 }
@@ -645,6 +673,7 @@ export type AttachmentUncheckedUpdateWithoutCampaignsInput = {
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   email_jobs?: Prisma.EmailJobUncheckedUpdateManyWithoutAttachmentNestedInput
 }
 
@@ -656,6 +685,7 @@ export type AttachmentCreateWithoutEmail_jobsInput = {
   is_default?: boolean
   deleted_at?: Date | string | null
   created_at?: Date | string
+  updated_at?: Date | string
   user: Prisma.UserCreateNestedOneWithoutAttachmentsInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutAttachmentInput
 }
@@ -669,6 +699,7 @@ export type AttachmentUncheckedCreateWithoutEmail_jobsInput = {
   is_default?: boolean
   deleted_at?: Date | string | null
   created_at?: Date | string
+  updated_at?: Date | string
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutAttachmentInput
 }
 
@@ -696,6 +727,7 @@ export type AttachmentUpdateWithoutEmail_jobsInput = {
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutAttachmentsNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutAttachmentNestedInput
 }
@@ -709,6 +741,7 @@ export type AttachmentUncheckedUpdateWithoutEmail_jobsInput = {
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutAttachmentNestedInput
 }
 
@@ -720,6 +753,7 @@ export type AttachmentCreateManyUserInput = {
   is_default?: boolean
   deleted_at?: Date | string | null
   created_at?: Date | string
+  updated_at?: Date | string
 }
 
 export type AttachmentUpdateWithoutUserInput = {
@@ -730,6 +764,7 @@ export type AttachmentUpdateWithoutUserInput = {
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaigns?: Prisma.CampaignUpdateManyWithoutAttachmentNestedInput
   email_jobs?: Prisma.EmailJobUpdateManyWithoutAttachmentNestedInput
 }
@@ -742,6 +777,7 @@ export type AttachmentUncheckedUpdateWithoutUserInput = {
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutAttachmentNestedInput
   email_jobs?: Prisma.EmailJobUncheckedUpdateManyWithoutAttachmentNestedInput
 }
@@ -754,6 +790,7 @@ export type AttachmentUncheckedUpdateManyWithoutUserInput = {
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -805,6 +842,7 @@ export type AttachmentSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   is_default?: boolean
   deleted_at?: boolean
   created_at?: boolean
+  updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   campaigns?: boolean | Prisma.Attachment$campaignsArgs<ExtArgs>
   email_jobs?: boolean | Prisma.Attachment$email_jobsArgs<ExtArgs>
@@ -820,6 +858,7 @@ export type AttachmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   is_default?: boolean
   deleted_at?: boolean
   created_at?: boolean
+  updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["attachment"]>
 
@@ -832,6 +871,7 @@ export type AttachmentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   is_default?: boolean
   deleted_at?: boolean
   created_at?: boolean
+  updated_at?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["attachment"]>
 
@@ -844,9 +884,10 @@ export type AttachmentSelectScalar = {
   is_default?: boolean
   deleted_at?: boolean
   created_at?: boolean
+  updated_at?: boolean
 }
 
-export type AttachmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "filename" | "storage_key" | "size_bytes" | "is_default" | "deleted_at" | "created_at", ExtArgs["result"]["attachment"]>
+export type AttachmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "filename" | "storage_key" | "size_bytes" | "is_default" | "deleted_at" | "created_at" | "updated_at", ExtArgs["result"]["attachment"]>
 export type AttachmentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   campaigns?: boolean | Prisma.Attachment$campaignsArgs<ExtArgs>
@@ -876,6 +917,7 @@ export type $AttachmentPayload<ExtArgs extends runtime.Types.Extensions.Internal
     is_default: boolean
     deleted_at: Date | null
     created_at: Date
+    updated_at: Date
   }, ExtArgs["result"]["attachment"]>
   composites: {}
 }
@@ -1310,6 +1352,7 @@ export interface AttachmentFieldRefs {
   readonly is_default: Prisma.FieldRef<"Attachment", 'Boolean'>
   readonly deleted_at: Prisma.FieldRef<"Attachment", 'DateTime'>
   readonly created_at: Prisma.FieldRef<"Attachment", 'DateTime'>
+  readonly updated_at: Prisma.FieldRef<"Attachment", 'DateTime'>
 }
     
 

@@ -11,7 +11,7 @@ import { MAX_FILE_BYTES } from '@/lib/email/attachment-limits';
 import { attachmentContentType, fileExtension, validAttachmentFormat } from '@/lib/attachments/file-types';
 
 const _GET = defineRoute(async (req, ctx) => {
-  const { page, limit, search } = parseListQuery(req, { search: true });
+  const { page, limit, search, sortBy, sortOrder } = parseListQuery(req, { search: true, sortable: ['created_at'] });
 
   const where = {
     user_id: ctx.user.id,
@@ -22,8 +22,8 @@ const _GET = defineRoute(async (req, ctx) => {
   const [attachments, total] = await Promise.all([
     getPrisma().attachment.findMany({
       where,
-      select: { id: true, filename: true, size_bytes: true, is_default: true, created_at: true },
-      orderBy: { created_at: 'desc' },
+      select: { id: true, filename: true, size_bytes: true, is_default: true, created_at: true, updated_at: true },
+      orderBy: { [sortBy ?? 'created_at']: sortOrder },
       skip: (page - 1) * limit,
       take: limit,
     }),

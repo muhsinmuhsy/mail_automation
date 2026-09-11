@@ -18,8 +18,8 @@ interface ContactFormProps {
   onSubmit: (data: { name?: string; email: string; customFields?: Record<string, string> }) => void | Promise<void>;
   saving?: boolean;
   error?: string | null;
-  /** Custom field definitions, ordered by sort_order. */
   fields?: ContactFieldDef[];
+  initialValues?: { name?: string; email?: string; customFields?: Record<string, string> };
 }
 
 /**
@@ -61,10 +61,10 @@ function CustomFieldInput({
   );
 }
 
-export function ContactForm({ onSubmit, saving = false, error, fields = [] }: ContactFormProps) {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [customValues, setCustomValues] = useState<Record<string, string>>({});
+export function ContactForm({ onSubmit, saving = false, error, fields = [], initialValues }: ContactFormProps) {
+  const [name, setName] = useState(initialValues?.name ?? '');
+  const [email, setEmail] = useState(initialValues?.email ?? '');
+  const [customValues, setCustomValues] = useState<Record<string, string>>(initialValues?.customFields ?? {});
 
   const sortedFields = [...fields].sort((a, b) => {
     if (a.name < b.name) return -1;
