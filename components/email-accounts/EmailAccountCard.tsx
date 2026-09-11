@@ -47,7 +47,7 @@ export function EmailAccountCard({ account, onTest, onDeactivate, onReactivate, 
           {testing ? 'Testing...' : 'Test'}
         </Button>
         {account.auth_method === 'oauth2' ? <>
-          <Button variant="secondary" size="sm" onClick={onReconnect}>Reconnect</Button>
+          {(!account.is_active || account.connection_error === 'reconnect_required') && onReconnect && <Button variant="secondary" size="sm" onClick={onReconnect}>Reconnect</Button>}
           {account.is_active && <Button variant="destructive" size="sm" onClick={onDisconnect}>Disconnect</Button>}
         </> : /* App password disabled — commented out for future re-enablement
         account.is_active ? (

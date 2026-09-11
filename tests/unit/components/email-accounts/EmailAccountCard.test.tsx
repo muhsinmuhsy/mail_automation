@@ -23,14 +23,14 @@ function handlers(overrides: Partial<Record<string, ReturnType<typeof vi.fn>>> =
 }
 
 describe('EmailAccountCard', () => {
-  it('offers reconnect and disconnect for OAuth accounts without password editing', async () => {
+  it('offers disconnect for active OAuth accounts without reconnect button', async () => {
     const onReconnect = vi.fn(); const onDisconnect = vi.fn();
     render(<EmailAccountCard account={{ ...activeAccount, auth_method: 'oauth2' }} {...handlers()} onReconnect={onReconnect} onDisconnect={onDisconnect} />);
     expect(screen.getByText('Connected with Google')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
+    expect(screen.queryByRole('button', { name: 'Reconnect' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-    expect(onReconnect).toHaveBeenCalledOnce(); expect(onDisconnect).toHaveBeenCalledOnce();
+    expect(onDisconnect).toHaveBeenCalledOnce();
   });
   it('requires Google reconnection after authorization expires', () => {
     render(<EmailAccountCard account={{ ...inactiveAccount, auth_method: 'oauth2', connection_error: 'reconnect_required' }} {...handlers()} onReconnect={vi.fn()} />);
