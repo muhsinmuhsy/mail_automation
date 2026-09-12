@@ -24,7 +24,7 @@ describe('ListToolbar', () => {
         onSortOrderChange={vi.fn()}
       />
     );
-    expect(screen.getByLabelText('Sort')).toHaveValue('asc');
+    expect(screen.getByRole('combobox', { name: 'Sort' })).toHaveTextContent('Oldest first');
   });
 
   it('renders both sort options in the select', () => {
@@ -36,6 +36,7 @@ describe('ListToolbar', () => {
         onSortOrderChange={vi.fn()}
       />
     );
+    fireEvent.click(screen.getByRole('combobox', { name: 'Sort' }));
     expect(screen.getByRole('option', { name: 'Newest first' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Oldest first' })).toBeInTheDocument();
   });
@@ -66,7 +67,8 @@ describe('ListToolbar', () => {
         onSortOrderChange={onSortOrderChange}
       />
     );
-    fireEvent.change(screen.getByLabelText('Sort'), { target: { value: 'asc' } });
+    fireEvent.click(screen.getByRole('combobox', { name: 'Sort' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Oldest first' }));
     expect(onSortOrderChange).toHaveBeenCalledWith('asc');
   });
 

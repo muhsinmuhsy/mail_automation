@@ -33,10 +33,10 @@ async function completeWizard(onSubmit = vi.fn()) {
   await user.type(screen.getByLabelText('Campaign name'), 'Hiring outreach');
   await user.click(screen.getByRole('button', { name: 'Continue' }));
 
-  expect(screen.getByLabelText('Sending account')).toHaveValue('account-1');
+  expect(screen.getByRole('combobox', { name: 'Sending account' })).toHaveTextContent('sender@example.com (gmail)');
   expect(screen.getByRole('checkbox', { name: /Attachment.pdf/ })).not.toBeChecked();
   await user.click(screen.getByRole('checkbox', { name: /Attachment.pdf/ }));
-  expect(screen.getByLabelText('Template')).toHaveValue('template-1');
+  expect(screen.getByRole('combobox', { name: 'Template' })).toHaveTextContent('Follow-up');
   await user.click(screen.getByRole('button', { name: 'Continue' }));
 
   await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -152,8 +152,11 @@ describe('CampaignWizard', () => {
     await user.type(screen.getByLabelText('Campaign name'), 'Real options');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
+    await user.click(screen.getByRole('combobox', { name: 'Sending account' }));
     expect(screen.getByRole('option', { name: 'sender@example.com (gmail)' })).toBeInTheDocument();
+    await user.click(screen.getByRole('combobox', { name: 'Sending account' }));
     expect(screen.getByRole('checkbox', { name: /Attachment.pdf/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('combobox', { name: 'Template' }));
     expect(screen.getByRole('option', { name: 'Follow-up' })).toBeInTheDocument();
   });
 

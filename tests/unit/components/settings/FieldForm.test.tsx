@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FieldForm } from '@/components/settings/FieldForm';
 
@@ -95,6 +95,7 @@ describe('FieldForm', () => {
 
   it('renders all four field type options', () => {
     render(<FieldForm onSubmit={vi.fn()} />);
+    fireEvent.click(screen.getByRole('combobox', { name: 'Field type' }));
     expect(screen.getByRole('option', { name: 'Text' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Number' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Date' })).toBeInTheDocument();
@@ -110,7 +111,7 @@ describe('FieldForm', () => {
     );
     expect(screen.getByLabelText('Field label')).toHaveValue('Size');
     expect(screen.getByLabelText(/Token/)).toHaveValue('size');
-    expect(screen.getByLabelText('Field type')).toHaveValue('text');
+    expect(screen.getByRole('combobox', { name: 'Field type' })).toHaveTextContent('Text');
     expect(screen.getByRole('checkbox', { name: /Required/ })).toBeChecked();
   });
 });

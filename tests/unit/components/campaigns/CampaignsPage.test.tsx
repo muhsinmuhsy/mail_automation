@@ -23,7 +23,7 @@ describe('campaign option loading', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByRole('status', { name: 'Preparing campaign choices' })).toBeInTheDocument();
     await act(async () => { finish({ success: true, data: options }); });
-    expect(await screen.findByLabelText('Sending account')).toHaveValue('account');
+    expect(await screen.findByRole('combobox', { name: 'Sending account' })).toHaveTextContent('me@gmail.com');
     expect(fetcher.mock.calls.filter(([url]) => url === '/api/campaigns/options')).toHaveLength(1);
     await act(async () => { window.dispatchEvent(new Event('focus')); });
     expect(fetcher.mock.calls.filter(([url]) => url === '/api/campaigns/options')).toHaveLength(2);
