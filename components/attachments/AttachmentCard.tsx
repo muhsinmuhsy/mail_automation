@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
+
 interface Attachment {
   id: string;
   filename: string;
@@ -8,7 +10,14 @@ interface Attachment {
   created_at?: string;
 }
 
-export function AttachmentCard({ attachment }: { attachment: Attachment }) {
+interface AttachmentCardProps {
+  attachment: Attachment;
+  onDownload?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  deleting?: boolean;
+}
+
+export function AttachmentCard({ attachment, onDownload, onDelete, deleting = false }: AttachmentCardProps) {
   return (
     <div className="rounded-[var(--radius-md)] border border-neutral-200 bg-background p-4">
       <p className="font-medium text-text-primary">{attachment.filename}</p>
@@ -20,6 +29,16 @@ export function AttachmentCard({ attachment }: { attachment: Attachment }) {
           </span>
         )}
       </div>
+      {(onDownload || onDelete) && (
+        <div className="mt-3 flex gap-2">
+          {onDownload && (
+            <Button variant="secondary" size="sm" onClick={() => onDownload(attachment.id)}>Download</Button>
+          )}
+          {onDelete && (
+            <Button variant="destructive" size="sm" onClick={() => onDelete(attachment.id)} disabled={deleting}>Delete</Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

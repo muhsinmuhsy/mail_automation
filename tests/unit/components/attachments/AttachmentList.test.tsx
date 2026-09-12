@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { AttachmentList } from '@/components/attachments/AttachmentList';
 
 const attachments = [
@@ -66,5 +67,57 @@ describe('AttachmentList', () => {
     const { container } = render(<AttachmentList attachments={many} />);
     expect(rows(container)).toHaveLength(15);
     expect(screen.getByText('15.0 KB')).toBeInTheDocument();
+  });
+
+  describe('download', () => {
+    it('passes onDownload to each card', () => {
+      const onDownload = vi.fn();
+      render(<AttachmentList attachments={attachments} onDownload={onDownload} />);
+      expect(screen.getAllByRole('button', { name: 'Download' })).toHaveLength(3);
+    });
+
+    it('calls onDownload with the correct id when a download button is clicked', async () => {
+      const user = userEvent.setup();
+      const onDownload = vi.fn();
+      render(<AttachmentList attachments={attachments} onDownload={onDownload} />);
+
+      const buttons = screen.getAllByRole('button', { name: 'Download' });
+      await user.click(buttons[1]);
+
+      expect(onDownload).toHaveBeenCalledWith('r2');
+    });
+  });
+
+  describe('delete', () => {
+    it('passes onDelete to each card', () => {
+      render(<AttachmentList attachments={attachments} onDelete={vi.fn()} />);
+      expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(3);
+    });
+
+    it('calls onDelete with the correct id when a delete button is clicked', async () => {
+      const user = userEvent.setup();
+      const onDelete = vi.fn();
+      render(<AttachmentList attachments={attachments} onDelete={onDelete} />);
+
+      const buttons = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(buttons[2]);
+
+      expect(onDelete).toHaveBeenCalledWith('r3');
+    });
+
+    it('only disables the delete button for the targeted attachment', () => {
+      render(
+        <AttachmentList
+          attachments={attachments}
+          onDelete={vi.fn()}
+          deleting
+          deletingId="r2"
+        />
+      );
+      const buttons = screen.getAllByRole('button', { name: 'Delete' });
+      expect(buttons[0]).not.toBeDisabled();
+      expect(buttons[1]).toBeDisabled();
+      expect(buttons[2]).not.toBeDisabled();
+    });
   });
 });

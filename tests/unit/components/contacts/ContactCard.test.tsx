@@ -77,6 +77,62 @@ describe('ContactCard', () => {
     });
   });
 
+  describe('view', () => {
+    it('does not render a view button when onView is not provided', () => {
+      render(<ContactCard contact={contact} />);
+      expect(screen.queryByRole('button', { name: 'View' })).not.toBeInTheDocument();
+    });
+
+    it('renders a view button when onView is provided', () => {
+      render(<ContactCard contact={contact} onView={vi.fn()} />);
+      expect(screen.getByRole('button', { name: 'View' })).toBeInTheDocument();
+    });
+
+    it('calls onView with the contact id when clicked', async () => {
+      const user = userEvent.setup();
+      const onView = vi.fn();
+      render(<ContactCard contact={contact} onView={onView} />);
+
+      await user.click(screen.getByRole('button', { name: 'View' }));
+
+      expect(onView).toHaveBeenCalledWith('k1');
+    });
+  });
+
+  describe('edit', () => {
+    it('does not render an edit button when onEdit is not provided', () => {
+      render(<ContactCard contact={contact} />);
+      expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    });
+
+    it('renders an edit button when onEdit is provided', () => {
+      render(<ContactCard contact={contact} onEdit={vi.fn()} />);
+      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    });
+
+    it('calls onEdit with the contact id when clicked', async () => {
+      const user = userEvent.setup();
+      const onEdit = vi.fn();
+      render(<ContactCard contact={contact} onEdit={onEdit} />);
+
+      await user.click(screen.getByRole('button', { name: 'Edit' }));
+
+      expect(onEdit).toHaveBeenCalledWith('k1');
+    });
+  });
+
+  describe('action button layout', () => {
+    it('renders action buttons in a horizontal row', () => {
+      render(<ContactCard contact={contact} onView={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />);
+      const viewButton = screen.getByRole('button', { name: 'View' });
+      const editButton = screen.getByRole('button', { name: 'Edit' });
+      const deleteButton = screen.getByRole('button', { name: 'Delete' });
+      expect(viewButton.parentElement).toHaveClass('flex', 'gap-2');
+      expect(editButton.parentElement).toBe(viewButton.parentElement);
+      expect(deleteButton.parentElement).toBe(viewButton.parentElement);
+    });
+  });
+
   describe('custom fields', () => {
     it('renders custom field label/value pairs', () => {
       render(

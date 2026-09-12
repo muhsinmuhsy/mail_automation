@@ -10,11 +10,25 @@ interface Attachment {
   created_at?: string;
 }
 
-export function AttachmentList({ attachments }: { attachments: Attachment[] }) {
+interface AttachmentListProps {
+  attachments: Attachment[];
+  onDownload?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  deleting?: boolean;
+  deletingId?: string | null;
+}
+
+export function AttachmentList({ attachments, onDownload, onDelete, deleting = false, deletingId }: AttachmentListProps) {
   return (
     <div className="flex flex-col gap-4">
       {attachments.map((attachment) => (
-        <AttachmentCard key={attachment.id} attachment={attachment} />
+        <AttachmentCard
+          key={attachment.id}
+          attachment={attachment}
+          onDownload={onDownload}
+          onDelete={onDelete}
+          deleting={deleting && deletingId === attachment.id}
+        />
       ))}
     </div>
   );

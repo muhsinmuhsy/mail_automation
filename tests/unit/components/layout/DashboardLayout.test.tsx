@@ -51,7 +51,7 @@ describe('DashboardLayout', () => {
       </DashboardLayout>
     );
     expect(screen.getByRole('banner')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
   });
 
   it('marks the Dashboard item active for a nested dashboard route via prefix match', () => {
@@ -104,8 +104,8 @@ describe('DashboardLayout', () => {
         <span>x</span>
       </DashboardLayout>
     );
-    await user.click(screen.getByRole('button', { name: 'Account' }));
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(mockSignOut).toHaveBeenCalled();
   });
 
   it('wraps the sidebar before the content column on desktop', () => {

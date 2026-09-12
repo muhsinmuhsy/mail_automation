@@ -33,22 +33,20 @@ export function ContactCard({ contact, onDelete, onView, onEdit, deleting = fals
 
   return (
     <div className="rounded-[var(--radius-md)] border border-neutral-200 bg-background p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="font-medium text-text-primary">{contact.name}</p>
-          <p className="text-sm text-text-secondary">{contact.email}</p>
-          {customEntries.length > 0 && (
-            <dl className="mt-2 flex flex-col gap-1">
-              {customEntries.map(([token, value]) => (
-                <div key={token} className="flex gap-2 text-sm">
-                  <dt className="text-text-secondary">{fieldLabels?.[token] ?? token}:</dt>
-                  <dd className="text-text-primary">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
+      <p className="font-medium text-text-primary">{contact.name}</p>
+      <p className="text-sm text-text-secondary">{contact.email}</p>
+      {customEntries.length > 0 && (
+        <dl className="mt-2 flex flex-col gap-1">
+          {customEntries.map(([token, value]) => (
+            <div key={token} className="flex gap-2 text-sm">
+              <dt className="text-text-secondary">{fieldLabels?.[token] ?? token}:</dt>
+              <dd className="text-text-primary">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {(onView || onEdit || onDelete) && (
+        <div className="mt-3 flex gap-2">
           {onView && (
             <Button variant="secondary" size="sm" onClick={() => onView(contact.id)}>View</Button>
           )}
@@ -59,7 +57,7 @@ export function ContactCard({ contact, onDelete, onView, onEdit, deleting = fals
             <Button variant="destructive" size="sm" onClick={() => onDelete(contact.id)} disabled={deleting}>Delete</Button>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

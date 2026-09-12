@@ -3,6 +3,7 @@
 import { ATTACHMENT_TYPE_DESCRIPTION } from '@/lib/attachments/file-types';
 import { AttachmentList } from '@/components/attachments/AttachmentList';
 import { AttachmentUpload } from '@/components/attachments/AttachmentUpload';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
@@ -33,6 +34,8 @@ export default function AttachmentsPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<Attachment | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sortOrder });
@@ -64,6 +67,27 @@ export default function AttachmentsPage() {
   const handleSortOrderChange = (value: 'desc' | 'asc') => {
     setSortOrder(value);
     setPage(1);
+  };
+
+  const handleDownload = (id: string) => {
+    window.open(`/api/attachments/${id}`, '_blank');
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/attachments/${deleteTarget.id}`, { method: 'DELETE' });
+      const payload = (await response.json()) as ApiResponse<null>;
+      if (!response.ok) { setError(payload.error?.message || payload.message || 'Unable to delete attachment.'); return; }
+      setDeleteTarget(null);
+      await load();
+    } catch {
+      setError('Unable to delete attachment.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -102,7 +126,13 @@ export default function AttachmentsPage() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <AttachmentList attachments={attachments} />
+          <AttachmentList
+            attachments={attachments}
+            onDownload={handleDownload}
+            onDelete={(id) => setDeleteTarget(attachments.find((a) => a.id === id) ?? null)}
+            deleting={deleting}
+            deletingId={deleteTarget?.id}
+          />
 
           {meta && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -116,6 +146,22 @@ export default function AttachmentsPage() {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title="Delete attachment"
+        description={
+          deleteTarget
+            ? `Are you sure you want to delete "${deleteTarget.filename}"? This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        loading={deleting}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

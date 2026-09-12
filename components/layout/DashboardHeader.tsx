@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
-import { Dropdown } from '@/components/ui/Dropdown';
 import { signOut } from '@/app/(auth)/logout/actions';
 
 export function DashboardHeader() {
@@ -13,17 +12,9 @@ export function DashboardHeader() {
           Welcome. Here&apos;s what&apos;s happening today.
         </p>
       </div>
-      <Dropdown
-        trigger={
-          <Button variant="secondary" size="sm">
-            Account
-          </Button>
-        }
-        items={[
-          { label: 'Profile', href: '/profile' },
-          { label: 'Sign out', onClick: () => { void signOut(); } },
-        ]}
-      />
+      <Button variant="secondary" size="sm" onClick={() => { void signOut(); }}>
+        Sign out
+      </Button>
     </header>
   );
 }

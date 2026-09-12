@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { TemplateCard } from '@/components/templates/TemplateCard';
 
 describe('TemplateCard', () => {
@@ -50,5 +51,59 @@ describe('TemplateCard', () => {
       <TemplateCard template={{ id: 'b', name: 'Dup', subject: 'Two' }} />
     );
     expect(screen.getAllByText('Dup')).toHaveLength(2);
+  });
+
+  describe('edit', () => {
+    it('does not render an edit button when onEdit is not provided', () => {
+      render(<TemplateCard template={template} />);
+      expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    });
+
+    it('renders an edit button when onEdit is provided', () => {
+      render(<TemplateCard template={template} onEdit={vi.fn()} />);
+      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    });
+
+    it('calls onEdit with the template when clicked', async () => {
+      const user = userEvent.setup();
+      const onEdit = vi.fn();
+      render(<TemplateCard template={template} onEdit={onEdit} />);
+
+      await user.click(screen.getByRole('button', { name: 'Edit' }));
+
+      expect(onEdit).toHaveBeenCalledWith(template);
+    });
+  });
+
+  describe('preview', () => {
+    it('does not render a preview button when onPreview is not provided', () => {
+      render(<TemplateCard template={template} />);
+      expect(screen.queryByRole('button', { name: 'Preview' })).not.toBeInTheDocument();
+    });
+
+    it('renders a preview button when onPreview is provided', () => {
+      render(<TemplateCard template={template} onPreview={vi.fn()} />);
+      expect(screen.getByRole('button', { name: 'Preview' })).toBeInTheDocument();
+    });
+
+    it('calls onPreview with the template when clicked', async () => {
+      const user = userEvent.setup();
+      const onPreview = vi.fn();
+      render(<TemplateCard template={template} onPreview={onPreview} />);
+
+      await user.click(screen.getByRole('button', { name: 'Preview' }));
+
+      expect(onPreview).toHaveBeenCalledWith(template);
+    });
+  });
+
+  describe('action button layout', () => {
+    it('renders action buttons in a horizontal row', () => {
+      render(<TemplateCard template={template} onEdit={vi.fn()} onPreview={vi.fn()} />);
+      const editButton = screen.getByRole('button', { name: 'Edit' });
+      const previewButton = screen.getByRole('button', { name: 'Preview' });
+      expect(editButton.parentElement).toHaveClass('flex', 'gap-2');
+      expect(previewButton.parentElement).toBe(editButton.parentElement);
+    });
   });
 });

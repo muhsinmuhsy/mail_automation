@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
+
 interface Template {
   id: string;
   name: string;
@@ -21,22 +23,10 @@ export function TemplateCard({ template, onEdit, onPreview }: TemplateCardProps)
       {(onEdit || onPreview) && (
         <div className="mt-3 flex gap-2">
           {onEdit && (
-            <button
-              type="button"
-              onClick={() => onEdit(template)}
-              className="rounded-[var(--radius-md)] bg-information px-3 py-1.5 text-xs font-medium text-white hover:bg-information/90"
-            >
-              Edit
-            </button>
+            <Button variant="secondary" size="sm" onClick={() => onEdit(template)}>Edit</Button>
           )}
           {onPreview && (
-            <button
-              type="button"
-              onClick={() => onPreview(template)}
-              className="rounded-[var(--radius-md)] border border-neutral-200 px-3 py-1.5 text-xs font-medium text-text-primary hover:bg-selected"
-            >
-              Preview
-            </button>
+            <Button variant="secondary" size="sm" onClick={() => onPreview(template)}>Preview</Button>
           )}
         </div>
       )}
