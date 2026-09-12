@@ -8,6 +8,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
 
 const PAGE_SIZE = 20;
@@ -104,10 +105,7 @@ export default function EmailsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-page-title font-semibold">Emails</h1>
-        <p className="mt-2 text-body text-text-secondary">View your email sending history.</p>
-      </div>
+      <PageHeader title="Emails" description="View your email sending history." />
 
       <ListToolbar
         search={search}

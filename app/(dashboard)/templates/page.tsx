@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useCallback, useEffect, useState } from 'react';
 
 const PAGE_SIZE = 20;
@@ -88,19 +89,20 @@ export default function TemplatesPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-semibold">Templates</h1>
-        <p className="mt-2 text-text-secondary">Create and manage email templates.</p>
-      </div>
+      <PageHeader
+        title="Templates"
+        description="Create and manage email templates."
+        actions={
+          <button
+            onClick={handleNew}
+            className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
+          >
+            New template
+          </button>
+        }
+      />
 
-      <ListToolbar search={search} onSearchChange={handleSearchChange} sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange}>
-        <button
-          onClick={handleNew}
-          className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
-        >
-          New template
-        </button>
-      </ListToolbar>
+      <ListToolbar search={search} onSearchChange={handleSearchChange} sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange} />
 
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
 

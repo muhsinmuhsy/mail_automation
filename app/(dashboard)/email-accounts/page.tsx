@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Toast } from '@/components/ui/Toast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { ProviderSelector } from '@/components/email-accounts/ProviderSelector';
 
 interface EmailAccount {
@@ -209,10 +210,7 @@ export default function EmailAccountsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-semibold">Email Accounts</h1>
-        <p className="mt-2 text-text-secondary">Manage your email sending accounts.</p>
-      </div>
+      <PageHeader title="Email Accounts" description="Manage your email sending accounts." />
 
       <div className="flex flex-col gap-4">
         <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">

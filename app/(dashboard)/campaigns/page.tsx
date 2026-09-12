@@ -17,6 +17,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
 import { Toast } from '@/components/ui/Toast';
 
@@ -243,15 +244,15 @@ export default function CampaignsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-page-title font-semibold">Campaigns</h1>
-          <p className="mt-2 text-body text-text-secondary">Create and manage your email campaigns.</p>
-        </div>
-        <Button variant="primary" onClick={toggleWizard}>
-          {showWizard ? 'Cancel' : 'Create campaign'}
-        </Button>
-      </div>
+      <PageHeader
+        title="Campaigns"
+        description="Create and manage your email campaigns."
+        actions={
+          <Button variant="primary" onClick={toggleWizard}>
+            {showWizard ? 'Cancel' : 'Create campaign'}
+          </Button>
+        }
+      />
 
       {showWizard && (
         <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">

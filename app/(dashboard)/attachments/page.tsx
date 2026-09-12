@@ -9,6 +9,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useCallback, useEffect, useState } from 'react';
 
 const PAGE_SIZE = 20;
@@ -67,14 +68,13 @@ export default function AttachmentsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-semibold">Attachments</h1>
-        <p className="mt-2 text-text-secondary">Upload and manage your attachments.</p>
-      </div>
+      <PageHeader
+        title="Attachments"
+        description="Upload and manage your attachments."
+        actions={<Button onClick={() => setUploadOpen(true)}>Upload Attachment</Button>}
+      />
 
-      <ListToolbar search={search} onSearchChange={handleSearchChange} sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange}>
-        <Button onClick={() => setUploadOpen(true)}>Upload Attachment</Button>
-      </ListToolbar>
+      <ListToolbar search={search} onSearchChange={handleSearchChange} sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange} />
 
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen} title="Upload attachment" description={`${ATTACHMENT_TYPE_DESCRIPTION}. Up to 5 MB per file.`}>
         <AttachmentUpload onUpload={async (file) => {

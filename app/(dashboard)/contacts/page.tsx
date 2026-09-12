@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -183,31 +184,34 @@ export default function ContactsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-semibold">Contacts</h1>
-        <p className="mt-2 text-text-secondary">Manage your contacts for campaigns.</p>
-      </div>
+      <PageHeader
+        title="Contacts"
+        description="Manage your contacts for campaigns."
+        actions={
+          <>
+            <button
+              onClick={() => { setShowAddContact(!showAddContact); setShowImport(false); }}
+              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
+            >
+              {showAddContact ? 'Cancel' : 'Add contact'}
+            </button>
+            <button
+              onClick={() => { setShowImport(!showImport); setShowAddContact(false); }}
+              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-neutral-300 bg-background px-4 py-2 text-sm font-medium text-text-primary hover:bg-neutral-50"
+            >
+              {showImport ? 'Cancel' : 'Import'}
+            </button>
+            <button
+              onClick={() => router.push('/contacts/fields')}
+              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-neutral-300 bg-background px-4 py-2 text-sm font-medium text-text-primary hover:bg-neutral-50"
+            >
+              Custom Fields
+            </button>
+          </>
+        }
+      />
 
-      <ListToolbar search={search} onSearchChange={handleSearchChange} sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange}>
-        <button
-          onClick={() => { setShowAddContact(!showAddContact); setShowImport(false); }}
-          className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
-        >
-          {showAddContact ? 'Cancel' : 'Add contact'}
-        </button>
-        <button
-          onClick={() => { setShowImport(!showImport); setShowAddContact(false); }}
-          className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-neutral-300 bg-background px-4 py-2 text-sm font-medium text-text-primary hover:bg-neutral-50"
-        >
-          {showImport ? 'Cancel' : 'Import'}
-        </button>
-        <button
-          onClick={() => router.push('/contacts/fields')}
-          className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-neutral-300 bg-background px-4 py-2 text-sm font-medium text-text-primary hover:bg-neutral-50"
-        >
-          Custom Fields
-        </button>
-      </ListToolbar>
+      <ListToolbar search={search} onSearchChange={handleSearchChange} sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange} />
 
       {showAddContact && (
         <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
