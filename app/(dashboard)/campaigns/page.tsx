@@ -8,7 +8,6 @@ import {
   type CampaignSelectOption,
   type CampaignSubmitData,
 } from '@/components/campaigns/CampaignWizard';
-import { CampaignDetails } from '@/components/campaigns/CampaignDetails';
 import { formatScheduledTime } from '@/lib/scheduling/time';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -83,7 +82,6 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<ApiRespo
 
 export default function CampaignsPage() {
   const router = useRouter();
-  const [detailsId, setDetailsId] = useState<string | null>(null);
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [page, setPage] = useState(1);
@@ -370,7 +368,7 @@ export default function CampaignsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={campaign.status} />
-                    <Button variant="secondary" size="sm" onClick={() => setDetailsId(campaign.id)}>View details</Button>
+                    <Button variant="secondary" size="sm" onClick={() => router.push(`/campaigns/${campaign.id}`)}>View details</Button>
                     {campaign.status === 'ACTIVE' && (
                       <Button
                         variant="secondary"
@@ -420,17 +418,11 @@ export default function CampaignsPage() {
         </div>
       )}
 
-      {detailsId && <CampaignDetails campaignId={detailsId} onClose={() => setDetailsId(null)} />}
-
       <ConfirmDialog
         open={cancelTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setCancelTarget(null);
-        }}
+        onOpenChange={(open) => { if (!open) setCancelTarget(null); }}
         title="Cancel campaign"
-        description={
-          cancelTarget ? `"${cancelTarget.name}" will stop sending and cannot be resumed.` : ''
-        }
+        description={cancelTarget ? `Are you sure you want to cancel "${cancelTarget.name}"? This action cannot be undone.` : ''}
         confirmLabel="Cancel campaign"
         cancelLabel="Keep campaign"
         variant="destructive"
