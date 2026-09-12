@@ -148,6 +148,53 @@ describe('ContactForm', () => {
       expect(vipCheckbox).not.toBeChecked();
     });
 
+    it('renders dropdown fields as combobox selects', () => {
+      const dropdownFields = [
+        {
+          id: 'f5',
+          name: 'tier',
+          label: 'Tier',
+          field_type: 'dropdown' as const,
+          is_required: false,
+          options: [
+            { value: 'free', label: 'Free' },
+            { value: 'pro', label: 'Pro' },
+          ],
+        },
+      ];
+      render(<ContactForm onSubmit={vi.fn()} fields={dropdownFields} />);
+      expect(screen.getByRole('combobox', { name: 'Tier' })).toBeInTheDocument();
+    });
+
+    it('includes dropdown field values in the submit payload', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const dropdownFields = [
+        {
+          id: 'f5',
+          name: 'tier',
+          label: 'Tier',
+          field_type: 'dropdown' as const,
+          is_required: false,
+          options: [
+            { value: 'free', label: 'Free' },
+            { value: 'pro', label: 'Pro' },
+          ],
+        },
+      ];
+      render(<ContactForm onSubmit={onSubmit} fields={dropdownFields} />);
+      await user.type(screen.getByLabelText('Name'), 'Jane');
+      await user.type(screen.getByLabelText('Email'), 'jane@example.com');
+      fireEvent.click(screen.getByRole('combobox', { name: 'Tier' }));
+      await user.click(screen.getByRole('option', { name: 'Pro' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).toHaveBeenCalledWith({
+        name: 'Jane',
+        email: 'jane@example.com',
+        customFields: { tier: 'pro' },
+      });
+    });
+
     it('includes custom field values in the submit payload', async () => {
       const user = userEvent.setup();
       const onSubmit = vi.fn().mockResolvedValue(undefined);

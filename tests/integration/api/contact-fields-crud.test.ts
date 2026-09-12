@@ -250,6 +250,48 @@ describe('POST /api/contact-fields', () => {
     expect(body.error?.type).toBe('VALIDATION_ERROR');
     expect(mockPrisma.contactField.create).not.toHaveBeenCalled();
   });
+
+  it('creates a dropdown field with options and returns 201', async () => {
+    mockPrisma.contactField.count.mockResolvedValue(0);
+    const response = await createField(jsonRequest({
+      name: 'tier',
+      label: 'Tier',
+      field_type: 'dropdown',
+      options: [
+        { value: 'free', label: 'Free' },
+        { value: 'pro', label: 'Pro' },
+      ],
+    }));
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(201);
+    expect(body.success).toBe(true);
+    expect(mockPrisma.contactField.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        user_id: 'user-1',
+        name: 'tier',
+        label: 'Tier',
+        field_type: 'dropdown',
+        options: [
+          { value: 'free', label: 'Free' },
+          { value: 'pro', label: 'Pro' },
+        ],
+      }),
+    });
+  });
+
+  it('returns 400 VALIDATION_ERROR when dropdown is missing options', async () => {
+    const response = await createField(jsonRequest({
+      name: 'tier',
+      label: 'Tier',
+      field_type: 'dropdown',
+    }));
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(400);
+    expect(body.error?.type).toBe('VALIDATION_ERROR');
+    expect(mockPrisma.contactField.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('PATCH /api/contact-fields/[id]', () => {

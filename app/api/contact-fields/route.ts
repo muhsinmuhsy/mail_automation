@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { Prisma } from '@/lib/generated/prisma/client';
 import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk, respondList } from '@/lib/api/respond';
@@ -79,6 +80,7 @@ const _POST = defineRoute(async (req, ctx) => {
         name: parsed.data.name,
         label: parsed.data.label,
         field_type: parsed.data.field_type,
+        options: parsed.data.field_type === 'dropdown' ? parsed.data.options : Prisma.DbNull,
         sort_order: parsed.data.sort_order,
         is_required: parsed.data.is_required,
       },

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { Prisma } from '@/lib/generated/prisma/client';
 import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
@@ -88,11 +89,13 @@ const _PATCH = defineRoute(async (req, ctx) => {
         }
 
         // Increment version on PATCH (§11.24).
-        const { version: _, ...patchData } = updateParsed.data;
+        const { version: _, options: _options, ...patchData } = updateParsed.data;
         void _;
+        void _options;
+        const optionsValue = targetType === 'dropdown' ? updateParsed.data.options : Prisma.DbNull;
         const updated = await tx.contactField.update({
           where: { id: fieldId },
-          data: { ...patchData, version: { increment: 1 } },
+          data: { ...patchData, options: optionsValue, version: { increment: 1 } },
         });
         return updated;
       });
@@ -111,6 +114,9 @@ const _PATCH = defineRoute(async (req, ctx) => {
           : {}),
         ...(updateParsed.data.is_required !== undefined
           ? { is_required: updateParsed.data.is_required }
+          : {}),
+        ...(updateParsed.data.options !== undefined
+          ? { options: updateParsed.data.options }
           : {}),
         version: { increment: 1 },
       },

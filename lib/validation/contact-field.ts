@@ -5,10 +5,14 @@ import {
   validateFieldName,
 } from './merge-field-names';
 
-/**
- * Validation schemas for the contact-fields API (Path C, Phase 4).
- * See docs/CUSTOM_MERGE_FIELDS.md §4 Phase 4 and §11.10 (authorization).
- */
+const FIELD_TYPES = ['text', 'number', 'date', 'boolean', 'dropdown'] as const;
+
+const fieldOptionSchema = z.object({
+  value: z.string().min(1).max(100),
+  label: z.string().min(1).max(100),
+});
+
+const optionsSchema = z.array(fieldOptionSchema).min(1).max(50);
 
 export const createContactFieldSchema = z.object({
   name: z
@@ -19,24 +23,30 @@ export const createContactFieldSchema = z.object({
       message: validateFieldName(val) ?? 'Invalid token.',
     })),
   label: nonEmptyString.max(LIMITS.MAX_FIELD_LABEL_LENGTH),
-  field_type: z.enum(['text', 'number', 'date', 'boolean']).default('text'),
+  field_type: z.enum(FIELD_TYPES).default('text'),
+  options: optionsSchema.optional(),
   sort_order: z.number().int().default(0),
   is_required: z.boolean().default(false),
-});
+}).refine(
+  (data) => data.field_type !== 'dropdown' || (data.options !== undefined && data.options.length > 0),
+  { message: 'Dropdown fields require at least one option.' }
+);
 
 export const updateContactFieldSchema = z.object({
   label: nonEmptyString.max(LIMITS.MAX_FIELD_LABEL_LENGTH).optional(),
   sort_order: z.number().int().optional(),
   is_required: z.boolean().optional(),
-  field_type: z.enum(['text', 'number', 'date', 'boolean']).optional(),
-  /// Optimistic concurrency version (§11.24). Required on PATCH.
+  field_type: z.enum(FIELD_TYPES).optional(),
+  options: optionsSchema.optional(),
   version: z.number().int(),
-});
+}).refine(
+  (data) => data.field_type !== 'dropdown' || (data.options !== undefined && data.options.length > 0),
+  { message: 'Dropdown fields require at least one option.' }
+);
 
 export type CreateContactFieldInput = z.infer<typeof createContactFieldSchema>;
 export type UpdateContactFieldInput = z.infer<typeof updateContactFieldSchema>;
 
-/** Reorder request: the new ordered list of field IDs. */
 export const reorderContactFieldsSchema = z.object({
   ordered_ids: z.array(uuid).min(1),
 });

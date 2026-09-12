@@ -93,13 +93,87 @@ describe('FieldForm', () => {
     });
   });
 
-  it('renders all four field type options', () => {
+  it('renders all five field type options', () => {
     render(<FieldForm onSubmit={vi.fn()} />);
     fireEvent.click(screen.getByRole('combobox', { name: 'Field type' }));
     expect(screen.getByRole('option', { name: 'Text' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Number' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Date' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Boolean (Yes/No)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Dropdown' })).toBeInTheDocument();
+  });
+
+  it('shows options editor when dropdown type is selected', async () => {
+    const user = userEvent.setup();
+    render(<FieldForm onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Field label'), 'Shirt size');
+    fireEvent.click(screen.getByRole('combobox', { name: 'Field type' }));
+    await user.click(screen.getByRole('option', { name: 'Dropdown' }));
+    expect(screen.getByText('Options')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add option' })).toBeInTheDocument();
+  });
+
+  it('does not show options editor for non-dropdown types', () => {
+    render(<FieldForm onSubmit={vi.fn()} />);
+    expect(screen.queryByText('Options')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add option' })).not.toBeInTheDocument();
+  });
+
+  it('allows adding and removing options', async () => {
+    const user = userEvent.setup();
+    render(<FieldForm onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Field label'), 'Shirt size');
+    fireEvent.click(screen.getByRole('combobox', { name: 'Field type' }));
+    await user.click(screen.getByRole('option', { name: 'Dropdown' }));
+    await user.click(screen.getByRole('button', { name: 'Add option' }));
+    expect(screen.getByPlaceholderText('Option 1')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add option' }));
+    expect(screen.getByPlaceholderText('Option 2')).toBeInTheDocument();
+    const removeButtons = screen.getAllByRole('button', { name: 'Remove' });
+    await user.click(removeButtons[0]);
+    expect(screen.queryByPlaceholderText('Option 2')).not.toBeInTheDocument();
+  });
+
+  it('submits options when dropdown type is selected', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<FieldForm onSubmit={onSubmit} />);
+    await user.type(screen.getByLabelText('Field label'), 'Shirt size');
+    fireEvent.click(screen.getByRole('combobox', { name: 'Field type' }));
+    await user.click(screen.getByRole('option', { name: 'Dropdown' }));
+    await user.click(screen.getByRole('button', { name: 'Add option' }));
+    await user.type(screen.getByPlaceholderText('Option 1'), 'Small');
+    await user.click(screen.getByRole('button', { name: 'Add option' }));
+    await user.type(screen.getByPlaceholderText('Option 2'), 'Large');
+    await user.click(screen.getByRole('button', { name: 'Save field' }));
+    expect(onSubmit).toHaveBeenCalledWith({
+      label: 'Shirt size',
+      name: 'shirt_size',
+      field_type: 'dropdown',
+      is_required: false,
+      options: [
+        { value: 'Small', label: 'Small' },
+        { value: 'Large', label: 'Large' },
+      ],
+    });
+  });
+
+  it('supports initial values with options for edit mode', () => {
+    render(
+      <FieldForm
+        onSubmit={vi.fn()}
+        initialValues={{
+          label: 'Size',
+          name: 'size',
+          field_type: 'dropdown',
+          is_required: false,
+          options: [{ value: 'S', label: 'Small' }],
+        }}
+      />
+    );
+    expect(screen.getByLabelText('Field label')).toHaveValue('Size');
+    expect(screen.getByRole('combobox', { name: 'Field type' })).toHaveTextContent('Dropdown');
+    expect(screen.getByText('Options')).toBeInTheDocument();
   });
 
   it('supports initial values for edit mode', () => {

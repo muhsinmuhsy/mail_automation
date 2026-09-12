@@ -11,22 +11,21 @@ import {
   LIMITS,
 } from '@/lib/validation/merge-field-names';
 
-export type FieldFormType = 'text' | 'number' | 'date' | 'boolean';
+export type FieldFormType = 'text' | 'number' | 'date' | 'boolean' | 'dropdown';
 
 export interface FieldFormValues {
   label: string;
   name: string;
   field_type: FieldFormType;
   is_required: boolean;
+  options?: Array<{ value: string; label: string }>;
 }
 
 interface FieldFormProps {
   onSubmit: (values: FieldFormValues) => void | Promise<void>;
   saving?: boolean;
   error?: string | null;
-  /** Existing field tokens to avoid collisions when generating. */
   existingTokens?: readonly string[];
-  /** Optional initial values (for edit mode). */
   initialValues?: Partial<FieldFormValues>;
 }
 
@@ -35,15 +34,9 @@ const TYPE_OPTIONS = [
   { value: 'number', label: 'Number' },
   { value: 'date', label: 'Date' },
   { value: 'boolean', label: 'Boolean (Yes/No)' },
+  { value: 'dropdown', label: 'Dropdown' },
 ];
 
-/**
- * Field creation/edit form (§11.15).
- *
- * Label-first UX: the primary input is the human-readable label. The token is
- * auto-generated from the label and shown read-only below. An "Edit token"
- * toggle reveals an advanced input for users who want to override.
- */
 export function FieldForm({
   onSubmit,
   saving = false,
@@ -62,6 +55,9 @@ export function FieldForm({
     initialValues?.is_required ?? false
   );
   const [editToken, setEditToken] = useState(false);
+  const [options, setOptions] = useState<Array<{ value: string; label: string }>>(
+    initialValues?.options ?? []
+  );
 
   const autoToken = useMemo(() => {
     const generated = generateTokenFromLabel(label);
@@ -87,16 +83,36 @@ export function FieldForm({
     setEditToken(!editToken);
   };
 
+  const handleAddOption = () => {
+    setOptions((prev) => [...prev, { value: '', label: '' }]);
+  };
+
+  const handleRemoveOption = (index: number) => {
+    setOptions((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleOptionChange = (index: number, text: string) => {
+    setOptions((prev) =>
+      prev.map((opt, i) =>
+        i === index ? { value: text, label: text } : opt
+      )
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!label.trim()) return;
     const err = validateFieldName(name);
     if (err) return;
+    if (fieldType === 'dropdown' && options.filter((o) => o.value.trim()).length === 0) return;
     await onSubmit({
       label: label.trim(),
       name,
       field_type: fieldType,
       is_required: isRequired,
+      ...(fieldType === 'dropdown'
+        ? { options: options.filter((o) => o.value.trim()) }
+        : {}),
     });
   };
 
@@ -148,6 +164,37 @@ export function FieldForm({
         onChange={(e) => setFieldType(e.target.value as FieldFormType)}
         options={TYPE_OPTIONS}
       />
+      {fieldType === 'dropdown' && (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-text-primary">Options</label>
+          {options.map((opt, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={opt.label}
+                onChange={(e) => handleOptionChange(index, e.target.value)}
+                maxLength={100}
+                placeholder={`Option ${index + 1}`}
+                className="flex h-10 flex-1 rounded-[var(--radius-md)] border border-neutral-200 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-information"
+              />
+              <button
+                type="button"
+                onClick={() => handleRemoveOption(index)}
+                className="text-sm text-error hover:underline"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={handleAddOption}
+            className="text-sm text-information hover:underline"
+          >
+            Add option
+          </button>
+        </div>
+      )}
       <label className="flex items-center gap-2 text-sm font-medium text-text-primary">
         <input
           type="checkbox"

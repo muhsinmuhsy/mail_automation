@@ -80,6 +80,23 @@ describe('lib/validation/contact — dynamic schemas (Path C, Phase 3)', () => {
     { id: 'f4', name: 'birthdate', field_type: 'date', is_required: false },
     { id: 'f5', name: 'is_vip', field_type: 'boolean', is_required: false },
     { id: 'f6', name: 'required_number', field_type: 'number', is_required: true },
+    {
+      id: 'f7',
+      name: 'tier',
+      field_type: 'dropdown',
+      is_required: false,
+      options: [
+        { value: 'free', label: 'Free' },
+        { value: 'pro', label: 'Pro' },
+      ],
+    },
+    {
+      id: 'f8',
+      name: 'required_tier',
+      field_type: 'dropdown',
+      is_required: true,
+      options: [{ value: 'a', label: 'A' }],
+    },
   ];
 
   describe('buildCreateContactSchema', () => {
@@ -100,6 +117,7 @@ describe('lib/validation/contact — dynamic schemas (Path C, Phase 3)', () => {
         size: 'M',
         plan: 'Pro',
         required_number: 42,
+        required_tier: 'a',
       });
       expect(parsed.success).toBe(true);
     });
@@ -122,6 +140,7 @@ describe('lib/validation/contact — dynamic schemas (Path C, Phase 3)', () => {
         plan: 'Pro',
         age: 0,
         required_number: 0,
+        required_tier: 'a',
       });
       expect(parsed.success).toBe(true);
       if (parsed.success) {
@@ -138,6 +157,7 @@ describe('lib/validation/contact — dynamic schemas (Path C, Phase 3)', () => {
         plan: 'Pro',
         required_number: 1,
         is_vip: false,
+        required_tier: 'a',
       });
       expect(parsed.success).toBe(true);
       if (parsed.success) {
@@ -153,6 +173,7 @@ describe('lib/validation/contact — dynamic schemas (Path C, Phase 3)', () => {
         plan: 'Pro',
         required_number: 1,
         birthdate: '2026-09-08',
+        required_tier: 'a',
       });
       expect(parsed.success).toBe(true);
     });
@@ -184,6 +205,54 @@ describe('lib/validation/contact — dynamic schemas (Path C, Phase 3)', () => {
     it('rejects an invalid email', () => {
       const schema = buildCreateContactSchema(fields);
       const parsed = schema.safeParse({ name: 'Jane', email: 'not-an-email' });
+      expect(parsed.success).toBe(false);
+    });
+
+    it('accepts a valid dropdown value', () => {
+      const schema = buildCreateContactSchema(fields);
+      const parsed = schema.safeParse({
+        name: 'Jane',
+        email: 'jane@example.com',
+        plan: 'Pro',
+        required_number: 1,
+        tier: 'free',
+        required_tier: 'a',
+      });
+      expect(parsed.success).toBe(true);
+    });
+
+    it('rejects a dropdown value not in options', () => {
+      const schema = buildCreateContactSchema(fields);
+      const parsed = schema.safeParse({
+        name: 'Jane',
+        email: 'jane@example.com',
+        plan: 'Pro',
+        required_number: 1,
+        tier: 'invalid',
+      });
+      expect(parsed.success).toBe(false);
+    });
+
+    it('accepts a required dropdown value', () => {
+      const schema = buildCreateContactSchema(fields);
+      const parsed = schema.safeParse({
+        name: 'Jane',
+        email: 'jane@example.com',
+        plan: 'Pro',
+        required_number: 1,
+        required_tier: 'a',
+      });
+      expect(parsed.success).toBe(true);
+    });
+
+    it('rejects when a required dropdown is missing', () => {
+      const schema = buildCreateContactSchema(fields);
+      const parsed = schema.safeParse({
+        name: 'Jane',
+        email: 'jane@example.com',
+        plan: 'Pro',
+        required_number: 1,
+      });
       expect(parsed.success).toBe(false);
     });
   });
@@ -221,6 +290,24 @@ describe('lib/validation/contact — dynamic schemas (Path C, Phase 3)', () => {
       const schema = buildUpdateContactSchema(fields);
       const parsed = schema.safeParse({ birthdate: '2026-02-31' });
       expect(parsed.success).toBe(false);
+    });
+
+    it('accepts a valid dropdown value on PATCH', () => {
+      const schema = buildUpdateContactSchema(fields);
+      const parsed = schema.safeParse({ tier: 'pro' });
+      expect(parsed.success).toBe(true);
+    });
+
+    it('rejects an invalid dropdown value on PATCH', () => {
+      const schema = buildUpdateContactSchema(fields);
+      const parsed = schema.safeParse({ tier: 'invalid' });
+      expect(parsed.success).toBe(false);
+    });
+
+    it('allows clearing a dropdown field by setting it to null on PATCH', () => {
+      const schema = buildUpdateContactSchema(fields);
+      const parsed = schema.safeParse({ tier: null });
+      expect(parsed.success).toBe(true);
     });
   });
 
@@ -286,6 +373,16 @@ describe('lib/validation/contact — dynamic schemas (Path C, Phase 3)', () => {
     it('text → boolean: rejects non-allowlist values', () => {
       expect(coerceValue('maybe', 'boolean').ok).toBe(false);
       expect(coerceValue('yes', 'boolean').ok).toBe(false);
+    });
+
+    it('text → dropdown: passes through any string', () => {
+      expect(coerceValue('free', 'dropdown')).toEqual({ ok: true, newValue: 'free' });
+      expect(coerceValue('pro', 'dropdown')).toEqual({ ok: true, newValue: 'pro' });
+    });
+
+    it('text → dropdown: empty string → null', () => {
+      expect(coerceValue('', 'dropdown')).toEqual({ ok: true, newValue: null });
+      expect(coerceValue(null, 'dropdown')).toEqual({ ok: true, newValue: null });
     });
   });
 

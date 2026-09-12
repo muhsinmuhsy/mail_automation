@@ -75,7 +75,8 @@ export const FieldType = {
   text: 'text',
   number: 'number',
   date: 'date',
-  boolean: 'boolean'
+  boolean: 'boolean',
+  dropdown: 'dropdown'
 } as const
 
 export type FieldType = (typeof FieldType)[keyof typeof FieldType]

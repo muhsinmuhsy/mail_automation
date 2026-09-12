@@ -32,7 +32,7 @@ export default function ContactEditPage() {
     const timer = setTimeout(() => {
       Promise.all([
         fetch(`/api/contacts/${contactId}`).then((r) => r.json()) as Promise<ApiResponse<ContactDetail>>,
-        fetch('/api/contact-fields').then((r) => r.json()) as Promise<{ success: boolean; data?: Array<{ id: string; name: string; label: string; field_type: string; is_required: boolean }> }>,
+        fetch('/api/contact-fields').then((r) => r.json()) as Promise<{ success: boolean; data?: Array<{ id: string; name: string; label: string; field_type: string; is_required: boolean; options?: Array<{ value: string; label: string }> | null }> }>,
       ])
         .then(([contactRes, fieldsRes]) => {
           if (!contactRes.data) throw new Error(contactRes.message || 'Contact not found.');
@@ -42,6 +42,7 @@ export default function ContactEditPage() {
               id: f.id, name: f.name, label: f.label,
               field_type: f.field_type as ContactFieldDef['field_type'],
               is_required: f.is_required,
+              ...(f.options ? { options: f.options } : {}),
             })));
           }
         })

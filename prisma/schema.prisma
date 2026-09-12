@@ -59,6 +59,7 @@ enum FieldType {
   number
   date
   boolean
+  dropdown
 }
 
 model User {
@@ -172,6 +173,9 @@ model ContactField {
   /// Display label, e.g. "T-shirt size". Mutable.
   label      String   @db.VarChar(100)
   field_type FieldType @default(text)
+  /// Options for dropdown fields. Stored as JSON array of {value, label}.
+  /// Null for non-dropdown field types.
+  options     Json?
   sort_order Int      @default(0)
   is_required Boolean @default(false)
   /// Reserved for future seeded defaults; not used in the hybrid model.

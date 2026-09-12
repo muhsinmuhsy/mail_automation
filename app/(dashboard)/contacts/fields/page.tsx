@@ -17,13 +17,14 @@ interface PaginationMeta {
   totalPages: number;
 }
 
-type FieldType = 'text' | 'number' | 'date' | 'boolean';
+type FieldType = 'text' | 'number' | 'date' | 'boolean' | 'dropdown';
 
 interface ContactField {
   id: string;
   name: string;
   label: string;
   field_type: FieldType;
+  options?: Array<{ value: string; label: string }> | null;
   sort_order: number;
   is_required: boolean;
   version: number;
@@ -96,6 +97,7 @@ export default function CustomFieldsPage() {
           field_type: values.field_type,
           is_required: values.is_required,
           sort_order: fields.length,
+          ...(values.options ? { options: values.options } : {}),
         }),
       });
       const payload = (await response.json()) as ApiEnvelope<ContactField>;

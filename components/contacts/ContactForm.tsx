@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 
-export type ContactFieldType = 'text' | 'number' | 'date' | 'boolean';
+export type ContactFieldType = 'text' | 'number' | 'date' | 'boolean' | 'dropdown';
 
 export interface ContactFieldDef {
   id: string;
@@ -12,6 +13,7 @@ export interface ContactFieldDef {
   label: string;
   field_type: ContactFieldType;
   is_required: boolean;
+  options?: Array<{ value: string; label: string }>;
 }
 
 interface ContactFormProps {
@@ -47,6 +49,17 @@ function CustomFieldInput({
         />
         {field.label}
       </label>
+    );
+  }
+  if (field.field_type === 'dropdown') {
+    return (
+      <Select
+        label={field.label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        options={(field.options ?? []).map((o) => ({ value: o.value, label: o.label }))}
+        required={field.is_required}
+      />
     );
   }
   const inputType = field.field_type === 'text' ? 'text' : field.field_type;

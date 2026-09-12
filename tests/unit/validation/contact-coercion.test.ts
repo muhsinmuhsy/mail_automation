@@ -15,6 +15,7 @@ describe('coerceValue', () => {
       expect(coerceValue('', 'number')).toEqual({ ok: true, newValue: null });
       expect(coerceValue('', 'date')).toEqual({ ok: true, newValue: null });
       expect(coerceValue('', 'boolean')).toEqual({ ok: true, newValue: null });
+      expect(coerceValue('', 'dropdown')).toEqual({ ok: true, newValue: null });
     });
   });
 
@@ -116,6 +117,19 @@ describe('coerceValue', () => {
       expect(coerceValue('2', 'boolean').ok).toBe(false);
     });
   });
+
+  describe('target: dropdown', () => {
+    it('passes through any string as a dropdown value', () => {
+      expect(coerceValue('free', 'dropdown')).toEqual({ ok: true, newValue: 'free' });
+      expect(coerceValue('pro', 'dropdown')).toEqual({ ok: true, newValue: 'pro' });
+      expect(coerceValue('any_value', 'dropdown')).toEqual({ ok: true, newValue: 'any_value' });
+    });
+
+    it('returns null for null or empty input', () => {
+      expect(coerceValue(null, 'dropdown')).toEqual({ ok: true, newValue: null });
+      expect(coerceValue('', 'dropdown')).toEqual({ ok: true, newValue: null });
+    });
+  });
 });
 
 describe('coerceValues', () => {
@@ -212,6 +226,23 @@ describe('coerceValues', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.errors[0]).toContain('Cannot convert "maybe" to a boolean');
+    }
+  });
+
+  it('works with dropdown target type (passthrough)', () => {
+    const values = [
+      { id: '1', value: 'free' },
+      { id: '2', value: 'pro' },
+      { id: '3', value: null },
+    ];
+    const result = coerceValues(values, 'dropdown');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.updates).toEqual([
+        { id: '1', value: 'free' },
+        { id: '2', value: 'pro' },
+        { id: '3', value: null },
+      ]);
     }
   });
 });

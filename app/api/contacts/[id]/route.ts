@@ -34,7 +34,7 @@ const _GET = defineRoute(async (_req, ctx) => {
   const fieldDefs = await getPrisma().contactField.findMany({
     where: { user_id: ctx.user.id },
     orderBy: { sort_order: 'asc' },
-    select: { id: true, name: true, label: true, field_type: true, is_required: true },
+    select: { id: true, name: true, label: true, field_type: true, is_required: true, options: true },
   });
 
   const fieldValues = await getPrisma().contactFieldValue.findMany({
@@ -63,7 +63,7 @@ const _PATCH = defineRoute(async (req, ctx) => {
   // Fetch the user's field definitions to build the dynamic schema.
   const fieldDefs = await getPrisma().contactField.findMany({
     where: { user_id: ctx.user.id },
-    select: { id: true, name: true, field_type: true, is_required: true },
+    select: { id: true, name: true, field_type: true, is_required: true, options: true },
   });
   const schema = buildUpdateContactSchema(fieldDefs as ContactFieldDefinition[]);
   const updateParsed = schema.safeParse(body);

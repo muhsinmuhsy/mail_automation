@@ -32,8 +32,9 @@ export type UpdateContactInput = z.infer<typeof updateContactSchema>;
 export type ContactFieldDefinition = {
   id: string;
   name: string;
-  field_type: 'text' | 'number' | 'date' | 'boolean';
+  field_type: 'text' | 'number' | 'date' | 'boolean' | 'dropdown';
   is_required: boolean;
+  options?: Array<{ value: string; label: string }>;
 };
 
 /** Per-field Zod schema based on its type and required-ness. */
@@ -59,10 +60,20 @@ function fieldSchema(field: ContactFieldDefinition): z.ZodTypeAny {
         .optional()
         .nullable();
     case 'boolean':
-      // `false` is a legitimate value — do not use truthiness.
       return field.is_required
         ? z.boolean()
         : z.boolean().optional().nullable();
+    case 'dropdown': {
+      const optionValues = (field.options ?? []).map((o) => o.value);
+      const base = z
+        .string()
+        .max(LIMITS.MAX_FIELD_VALUE_LENGTH)
+        .refine(
+          (val) => optionValues.includes(val),
+          `Value must be one of: ${optionValues.join(', ')}`
+        );
+      return field.is_required ? base : base.optional().nullable();
+    }
     default:
       return maxValue.optional().nullable();
   }
@@ -143,7 +154,7 @@ export type CoercionResult =
 /** Coerces a single stored text value to the target field type. */
 export function coerceValue(
   value: string | null,
-  targetType: 'text' | 'number' | 'date' | 'boolean'
+  targetType: 'text' | 'number' | 'date' | 'boolean' | 'dropdown'
 ): CoercionResult {
   if (value === null || value === '') return { ok: true, newValue: null };
 
@@ -165,6 +176,8 @@ export function coerceValue(
         return { ok: false, error: `Cannot convert "${value}" to a boolean.` };
       }
       return { ok: true, newValue: value };
+    case 'dropdown':
+      return { ok: true, newValue: value };
     default:
       return { ok: false, error: `Unknown target type "${targetType}".` };
   }
@@ -176,7 +189,7 @@ export function coerceValue(
  */
 export function coerceValues(
   values: Array<{ id: string; value: string | null }>,
-  targetType: 'text' | 'number' | 'date' | 'boolean'
+  targetType: 'text' | 'number' | 'date' | 'boolean' | 'dropdown'
 ):
   | { ok: true; updates: Array<{ id: string; value: string | null }> }
   | { ok: false; errors: string[] } {

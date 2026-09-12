@@ -71,6 +71,7 @@ export type ContactFieldCountAggregateOutputType = {
   name: number
   label: number
   field_type: number
+  options: number
   sort_order: number
   is_required: number
   is_default: number
@@ -125,6 +126,7 @@ export type ContactFieldCountAggregateInputType = {
   name?: true
   label?: true
   field_type?: true
+  options?: true
   sort_order?: true
   is_required?: true
   is_default?: true
@@ -226,6 +228,7 @@ export type ContactFieldGroupByOutputType = {
   name: string
   label: string
   field_type: $Enums.FieldType
+  options: runtime.JsonValue | null
   sort_order: number
   is_required: boolean
   is_default: boolean
@@ -263,6 +266,7 @@ export type ContactFieldWhereInput = {
   name?: Prisma.StringFilter<"ContactField"> | string
   label?: Prisma.StringFilter<"ContactField"> | string
   field_type?: Prisma.EnumFieldTypeFilter<"ContactField"> | $Enums.FieldType
+  options?: Prisma.JsonNullableFilter<"ContactField">
   sort_order?: Prisma.IntFilter<"ContactField"> | number
   is_required?: Prisma.BoolFilter<"ContactField"> | boolean
   is_default?: Prisma.BoolFilter<"ContactField"> | boolean
@@ -279,6 +283,7 @@ export type ContactFieldOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   label?: Prisma.SortOrder
   field_type?: Prisma.SortOrder
+  options?: Prisma.SortOrderInput | Prisma.SortOrder
   sort_order?: Prisma.SortOrder
   is_required?: Prisma.SortOrder
   is_default?: Prisma.SortOrder
@@ -299,6 +304,7 @@ export type ContactFieldWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"ContactField"> | string
   label?: Prisma.StringFilter<"ContactField"> | string
   field_type?: Prisma.EnumFieldTypeFilter<"ContactField"> | $Enums.FieldType
+  options?: Prisma.JsonNullableFilter<"ContactField">
   sort_order?: Prisma.IntFilter<"ContactField"> | number
   is_required?: Prisma.BoolFilter<"ContactField"> | boolean
   is_default?: Prisma.BoolFilter<"ContactField"> | boolean
@@ -315,6 +321,7 @@ export type ContactFieldOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   label?: Prisma.SortOrder
   field_type?: Prisma.SortOrder
+  options?: Prisma.SortOrderInput | Prisma.SortOrder
   sort_order?: Prisma.SortOrder
   is_required?: Prisma.SortOrder
   is_default?: Prisma.SortOrder
@@ -337,6 +344,7 @@ export type ContactFieldScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"ContactField"> | string
   label?: Prisma.StringWithAggregatesFilter<"ContactField"> | string
   field_type?: Prisma.EnumFieldTypeWithAggregatesFilter<"ContactField"> | $Enums.FieldType
+  options?: Prisma.JsonNullableWithAggregatesFilter<"ContactField">
   sort_order?: Prisma.IntWithAggregatesFilter<"ContactField"> | number
   is_required?: Prisma.BoolWithAggregatesFilter<"ContactField"> | boolean
   is_default?: Prisma.BoolWithAggregatesFilter<"ContactField"> | boolean
@@ -350,6 +358,7 @@ export type ContactFieldCreateInput = {
   name: string
   label: string
   field_type?: $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: number
   is_required?: boolean
   is_default?: boolean
@@ -366,6 +375,7 @@ export type ContactFieldUncheckedCreateInput = {
   name: string
   label: string
   field_type?: $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: number
   is_required?: boolean
   is_default?: boolean
@@ -380,6 +390,7 @@ export type ContactFieldUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
   field_type?: Prisma.EnumFieldTypeFieldUpdateOperationsInput | $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   is_required?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -396,6 +407,7 @@ export type ContactFieldUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
   field_type?: Prisma.EnumFieldTypeFieldUpdateOperationsInput | $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   is_required?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -411,6 +423,7 @@ export type ContactFieldCreateManyInput = {
   name: string
   label: string
   field_type?: $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: number
   is_required?: boolean
   is_default?: boolean
@@ -424,6 +437,7 @@ export type ContactFieldUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
   field_type?: Prisma.EnumFieldTypeFieldUpdateOperationsInput | $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   is_required?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -438,6 +452,7 @@ export type ContactFieldUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
   field_type?: Prisma.EnumFieldTypeFieldUpdateOperationsInput | $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   is_required?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -467,6 +482,7 @@ export type ContactFieldCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   label?: Prisma.SortOrder
   field_type?: Prisma.SortOrder
+  options?: Prisma.SortOrder
   sort_order?: Prisma.SortOrder
   is_required?: Prisma.SortOrder
   is_default?: Prisma.SortOrder
@@ -591,6 +607,7 @@ export type ContactFieldCreateWithoutUserInput = {
   name: string
   label: string
   field_type?: $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: number
   is_required?: boolean
   is_default?: boolean
@@ -605,6 +622,7 @@ export type ContactFieldUncheckedCreateWithoutUserInput = {
   name: string
   label: string
   field_type?: $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: number
   is_required?: boolean
   is_default?: boolean
@@ -649,6 +667,7 @@ export type ContactFieldScalarWhereInput = {
   name?: Prisma.StringFilter<"ContactField"> | string
   label?: Prisma.StringFilter<"ContactField"> | string
   field_type?: Prisma.EnumFieldTypeFilter<"ContactField"> | $Enums.FieldType
+  options?: Prisma.JsonNullableFilter<"ContactField">
   sort_order?: Prisma.IntFilter<"ContactField"> | number
   is_required?: Prisma.BoolFilter<"ContactField"> | boolean
   is_default?: Prisma.BoolFilter<"ContactField"> | boolean
@@ -662,6 +681,7 @@ export type ContactFieldCreateWithoutContact_field_valuesInput = {
   name: string
   label: string
   field_type?: $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: number
   is_required?: boolean
   is_default?: boolean
@@ -677,6 +697,7 @@ export type ContactFieldUncheckedCreateWithoutContact_field_valuesInput = {
   name: string
   label: string
   field_type?: $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: number
   is_required?: boolean
   is_default?: boolean
@@ -706,6 +727,7 @@ export type ContactFieldUpdateWithoutContact_field_valuesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
   field_type?: Prisma.EnumFieldTypeFieldUpdateOperationsInput | $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   is_required?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -721,6 +743,7 @@ export type ContactFieldUncheckedUpdateWithoutContact_field_valuesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
   field_type?: Prisma.EnumFieldTypeFieldUpdateOperationsInput | $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   is_required?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -734,6 +757,7 @@ export type ContactFieldCreateManyUserInput = {
   name: string
   label: string
   field_type?: $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: number
   is_required?: boolean
   is_default?: boolean
@@ -747,6 +771,7 @@ export type ContactFieldUpdateWithoutUserInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
   field_type?: Prisma.EnumFieldTypeFieldUpdateOperationsInput | $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   is_required?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -761,6 +786,7 @@ export type ContactFieldUncheckedUpdateWithoutUserInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
   field_type?: Prisma.EnumFieldTypeFieldUpdateOperationsInput | $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   is_required?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -775,6 +801,7 @@ export type ContactFieldUncheckedUpdateManyWithoutUserInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   label?: Prisma.StringFieldUpdateOperationsInput | string
   field_type?: Prisma.EnumFieldTypeFieldUpdateOperationsInput | $Enums.FieldType
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   sort_order?: Prisma.IntFieldUpdateOperationsInput | number
   is_required?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_default?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -820,6 +847,7 @@ export type ContactFieldSelect<ExtArgs extends runtime.Types.Extensions.Internal
   name?: boolean
   label?: boolean
   field_type?: boolean
+  options?: boolean
   sort_order?: boolean
   is_required?: boolean
   is_default?: boolean
@@ -837,6 +865,7 @@ export type ContactFieldSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   name?: boolean
   label?: boolean
   field_type?: boolean
+  options?: boolean
   sort_order?: boolean
   is_required?: boolean
   is_default?: boolean
@@ -852,6 +881,7 @@ export type ContactFieldSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   name?: boolean
   label?: boolean
   field_type?: boolean
+  options?: boolean
   sort_order?: boolean
   is_required?: boolean
   is_default?: boolean
@@ -867,6 +897,7 @@ export type ContactFieldSelectScalar = {
   name?: boolean
   label?: boolean
   field_type?: boolean
+  options?: boolean
   sort_order?: boolean
   is_required?: boolean
   is_default?: boolean
@@ -875,7 +906,7 @@ export type ContactFieldSelectScalar = {
   updated_at?: boolean
 }
 
-export type ContactFieldOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "name" | "label" | "field_type" | "sort_order" | "is_required" | "is_default" | "version" | "created_at" | "updated_at", ExtArgs["result"]["contactField"]>
+export type ContactFieldOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "name" | "label" | "field_type" | "options" | "sort_order" | "is_required" | "is_default" | "version" | "created_at" | "updated_at", ExtArgs["result"]["contactField"]>
 export type ContactFieldInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   contact_field_values?: boolean | Prisma.ContactField$contact_field_valuesArgs<ExtArgs>
@@ -908,6 +939,11 @@ export type $ContactFieldPayload<ExtArgs extends runtime.Types.Extensions.Intern
      */
     label: string
     field_type: $Enums.FieldType
+    /**
+     * Options for dropdown fields. Stored as JSON array of {value, label}.
+     * Null for non-dropdown field types.
+     */
+    options: runtime.JsonValue | null
     sort_order: number
     is_required: boolean
     /**
@@ -1351,6 +1387,7 @@ export interface ContactFieldFieldRefs {
   readonly name: Prisma.FieldRef<"ContactField", 'String'>
   readonly label: Prisma.FieldRef<"ContactField", 'String'>
   readonly field_type: Prisma.FieldRef<"ContactField", 'FieldType'>
+  readonly options: Prisma.FieldRef<"ContactField", 'Json'>
   readonly sort_order: Prisma.FieldRef<"ContactField", 'Int'>
   readonly is_required: Prisma.FieldRef<"ContactField", 'Boolean'>
   readonly is_default: Prisma.FieldRef<"ContactField", 'Boolean'>
