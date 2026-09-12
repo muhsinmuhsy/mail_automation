@@ -4,6 +4,7 @@ import { TemplateList } from '@/components/templates/TemplateList';
 import { TemplateEditorDialog } from '@/components/templates/TemplateEditorDialog';
 import { TemplatePreviewDialog } from '@/components/templates/TemplatePreviewDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { NoticeDialog } from '@/components/ui/NoticeDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
@@ -40,6 +41,7 @@ export default function TemplatesPage() {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Template | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sortOrder });
@@ -47,9 +49,7 @@ export default function TemplatesPage() {
     try {
       const response = await fetch(`/api/templates?${params.toString()}`);
       const payload = (await response.json()) as ApiEnvelope<Template[]>;
-      if (!payload.success) {
-        throw new Error(payload.error.message);
-      }
+      if (!payload.success) throw new Error(payload.error.message);
       setTemplates(payload.data);
       setMeta(payload.pagination ?? null);
       setError(null);
@@ -70,6 +70,27 @@ export default function TemplatesPage() {
     setPage(1);
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/templates/${deleteTarget.id}`, { method: 'DELETE' });
+      const payload = (await response.json()) as ApiEnvelope<null>;
+      if (!payload.success) {
+        if (response.status === 409) { setDeleteError(payload.error.message); setDeleteTarget(null); }
+        else { setError(payload.error.message); }
+        return;
+      }
+      setDeleteTarget(null);
+      await load();
+    } catch {
+      setError('Unable to delete template.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleSortOrderChange = (value: 'desc' | 'asc') => {
     setSortOrder(value);
     setPage(1);
@@ -88,23 +109,6 @@ export default function TemplatesPage() {
   const handlePreview = (template: Template) => {
     setPreviewId(template.id);
     setPreviewOpen(true);
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/templates/${deleteTarget.id}`, { method: 'DELETE' });
-      const payload = (await response.json()) as ApiEnvelope<null>;
-      if (!payload.success) { setError(payload.error.message); return; }
-      setDeleteTarget(null);
-      await load();
-    } catch {
-      setError('Unable to delete template.');
-    } finally {
-      setDeleting(false);
-    }
   };
 
   return (
@@ -186,6 +190,13 @@ export default function TemplatesPage() {
         variant="destructive"
         loading={deleting}
         onConfirm={handleDelete}
+      />
+
+      <NoticeDialog
+        open={deleteError !== null}
+        onOpenChange={(open) => { if (!open) setDeleteError(null); }}
+        title="Cannot delete"
+        description={deleteError ?? ''}
       />
     </div>
   );

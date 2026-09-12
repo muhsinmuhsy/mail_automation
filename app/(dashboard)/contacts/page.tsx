@@ -4,6 +4,7 @@ import { ContactList } from '@/components/contacts/ContactList';
 import { ContactForm, type ContactFieldDef } from '@/components/contacts/ContactForm';
 import { ContactImport } from '@/components/contacts/ContactImport';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { NoticeDialog } from '@/components/ui/NoticeDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
@@ -162,6 +163,7 @@ export default function ContactsPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -170,7 +172,12 @@ export default function ContactsPage() {
     try {
       const response = await fetch(`/api/contacts/${deleteTarget.id}`, { method: 'DELETE' });
       const payload = (await response.json()) as ApiResponse<null>;
-      if (!response.ok) { setError(payload.error?.message || payload.message || 'Unable to delete contact.'); return; }
+      if (!response.ok) {
+        const message = payload.error?.message || payload.message || 'Unable to delete contact.';
+        if (response.status === 409) { setDeleteError(message); setDeleteTarget(null); }
+        else { setError(message); }
+        return;
+      }
       setDeleteTarget(null);
       await load();
     } catch {
@@ -291,6 +298,13 @@ export default function ContactsPage() {
         variant="destructive"
         loading={deleting}
         onConfirm={handleDelete}
+      />
+
+      <NoticeDialog
+        open={deleteError !== null}
+        onOpenChange={(open) => { if (!open) setDeleteError(null); }}
+        title="Cannot delete"
+        description={deleteError ?? ''}
       />
     </div>
   );

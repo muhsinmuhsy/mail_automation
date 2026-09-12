@@ -4,6 +4,7 @@ import { ATTACHMENT_TYPE_DESCRIPTION } from '@/lib/attachments/file-types';
 import { AttachmentList } from '@/components/attachments/AttachmentList';
 import { AttachmentUpload } from '@/components/attachments/AttachmentUpload';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { NoticeDialog } from '@/components/ui/NoticeDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
@@ -36,6 +37,7 @@ export default function AttachmentsPage() {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<Attachment | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sortOrder });
@@ -80,7 +82,12 @@ export default function AttachmentsPage() {
     try {
       const response = await fetch(`/api/attachments/${deleteTarget.id}`, { method: 'DELETE' });
       const payload = (await response.json()) as ApiResponse<null>;
-      if (!response.ok) { setError(payload.error?.message || payload.message || 'Unable to delete attachment.'); return; }
+      if (!response.ok) {
+        const message = payload.error?.message || payload.message || 'Unable to delete attachment.';
+        if (response.status === 409) { setDeleteError(message); setDeleteTarget(null); }
+        else { setError(message); }
+        return;
+      }
       setDeleteTarget(null);
       await load();
     } catch {
@@ -161,6 +168,13 @@ export default function AttachmentsPage() {
         variant="destructive"
         loading={deleting}
         onConfirm={handleDelete}
+      />
+
+      <NoticeDialog
+        open={deleteError !== null}
+        onOpenChange={(open) => { if (!open) setDeleteError(null); }}
+        title="Cannot delete"
+        description={deleteError ?? ''}
       />
     </div>
   );
