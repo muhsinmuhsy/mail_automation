@@ -121,8 +121,18 @@ const _DELETE = defineRoute(async (_req, ctx) => {
     return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
   }
 
-  await getPrisma().template.deleteMany({
-    where: { id: parsed.data.id, user_id: ctx.user.id },
+  await getPrisma().$transaction(async (tx) => {
+    await tx.emailJob.deleteMany({
+      where: { template_id: parsed.data.id, user_id: ctx.user.id },
+    });
+
+    await tx.campaign.deleteMany({
+      where: { template_id: parsed.data.id, user_id: ctx.user.id },
+    });
+
+    await tx.template.deleteMany({
+      where: { id: parsed.data.id, user_id: ctx.user.id },
+    });
   });
 
   return respondOk(null, ctx.requestId, 'Template deleted.');

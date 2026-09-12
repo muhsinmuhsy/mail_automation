@@ -38,6 +38,12 @@ const mockPrisma = {
     updateMany: vi.fn(),
     deleteMany: vi.fn(),
   },
+  emailJob: {
+    deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+  },
+  campaign: {
+    deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+  },
   contact: {
     findFirst: vi.fn(),
   },
@@ -51,6 +57,7 @@ const mockPrisma = {
     findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
     upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
   },
+  $transaction: vi.fn(async (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma)),
   $disconnect: vi.fn(),
 };
 
@@ -502,6 +509,12 @@ describe('DELETE /api/templates/[id]', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.message).toBe('Template deleted.');
+    expect(mockPrisma.emailJob.deleteMany).toHaveBeenCalledWith({
+      where: { template_id: TEMPLATE_ID, user_id: 'user-1' },
+    });
+    expect(mockPrisma.campaign.deleteMany).toHaveBeenCalledWith({
+      where: { template_id: TEMPLATE_ID, user_id: 'user-1' },
+    });
     expect(mockPrisma.template.deleteMany).toHaveBeenCalledWith({
       where: { id: TEMPLATE_ID, user_id: 'user-1' },
     });

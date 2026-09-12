@@ -97,13 +97,44 @@ describe('TemplateCard', () => {
     });
   });
 
+  describe('delete', () => {
+    it('does not render a delete button when onDelete is not provided', () => {
+      render(<TemplateCard template={template} />);
+      expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+    });
+
+    it('renders a destructive delete button when onDelete is provided', () => {
+      render(<TemplateCard template={template} onDelete={vi.fn()} />);
+      const button = screen.getByRole('button', { name: 'Delete' });
+      expect(button).toBeInTheDocument();
+      expect(button).toHaveClass('bg-error');
+    });
+
+    it('calls onDelete with the template id when clicked', async () => {
+      const user = userEvent.setup();
+      const onDelete = vi.fn();
+      render(<TemplateCard template={template} onDelete={onDelete} />);
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+      expect(onDelete).toHaveBeenCalledWith('t1');
+    });
+
+    it('disables the delete button while deleting', () => {
+      render(<TemplateCard template={template} onDelete={vi.fn()} deleting />);
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+    });
+  });
+
   describe('action button layout', () => {
     it('renders action buttons in a horizontal row', () => {
-      render(<TemplateCard template={template} onEdit={vi.fn()} onPreview={vi.fn()} />);
+      render(<TemplateCard template={template} onEdit={vi.fn()} onPreview={vi.fn()} onDelete={vi.fn()} />);
       const editButton = screen.getByRole('button', { name: 'Edit' });
       const previewButton = screen.getByRole('button', { name: 'Preview' });
+      const deleteButton = screen.getByRole('button', { name: 'Delete' });
       expect(editButton.parentElement).toHaveClass('flex', 'gap-2');
       expect(previewButton.parentElement).toBe(editButton.parentElement);
+      expect(deleteButton.parentElement).toBe(editButton.parentElement);
     });
   });
 });

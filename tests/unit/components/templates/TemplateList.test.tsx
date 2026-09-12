@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { TemplateList } from '@/components/templates/TemplateList';
 
 const templates = [
@@ -77,5 +78,38 @@ describe('TemplateList', () => {
     const { container } = render(<TemplateList templates={many} />);
     expect(rows(container)).toHaveLength(25);
     expect(screen.getByText('Template 24')).toBeInTheDocument();
+  });
+
+  describe('delete', () => {
+    it('passes onDelete to each card', () => {
+      render(<TemplateList templates={templates} onDelete={vi.fn()} />);
+      expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(3);
+    });
+
+    it('calls onDelete with the correct id when a delete button is clicked', async () => {
+      const user = userEvent.setup();
+      const onDelete = vi.fn();
+      render(<TemplateList templates={templates} onDelete={onDelete} />);
+
+      const buttons = screen.getAllByRole('button', { name: 'Delete' });
+      await user.click(buttons[1]);
+
+      expect(onDelete).toHaveBeenCalledWith('t2');
+    });
+
+    it('only disables the delete button for the targeted template', () => {
+      render(
+        <TemplateList
+          templates={templates}
+          onDelete={vi.fn()}
+          deleting
+          deletingId="t2"
+        />
+      );
+      const buttons = screen.getAllByRole('button', { name: 'Delete' });
+      expect(buttons[0]).not.toBeDisabled();
+      expect(buttons[1]).toBeDisabled();
+      expect(buttons[2]).not.toBeDisabled();
+    });
   });
 });

@@ -3,6 +3,7 @@
 import { TemplateList } from '@/components/templates/TemplateList';
 import { TemplateEditorDialog } from '@/components/templates/TemplateEditorDialog';
 import { TemplatePreviewDialog } from '@/components/templates/TemplatePreviewDialog';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
@@ -37,6 +38,8 @@ export default function TemplatesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Template | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sortOrder });
@@ -87,6 +90,23 @@ export default function TemplatesPage() {
     setPreviewOpen(true);
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/templates/${deleteTarget.id}`, { method: 'DELETE' });
+      const payload = (await response.json()) as ApiEnvelope<null>;
+      if (!payload.success) { setError(payload.error.message); return; }
+      setDeleteTarget(null);
+      await load();
+    } catch {
+      setError('Unable to delete template.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
@@ -121,6 +141,9 @@ export default function TemplatesPage() {
             templates={templates}
             onEdit={handleEdit}
             onPreview={handlePreview}
+            onDelete={(id) => setDeleteTarget(templates.find((t) => t.id === id) ?? null)}
+            deleting={deleting}
+            deletingId={deleteTarget?.id}
           />
 
           {meta && (
@@ -147,6 +170,22 @@ export default function TemplatesPage() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         templateId={previewId}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title="Delete template"
+        description={
+          deleteTarget
+            ? `Are you sure you want to delete "${deleteTarget.name}"? This will also delete all campaigns and email jobs using this template. This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        loading={deleting}
+        onConfirm={handleDelete}
       />
     </div>
   );

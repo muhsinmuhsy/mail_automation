@@ -13,9 +13,12 @@ interface TemplateListProps {
   templates: Template[];
   onEdit?: (template: Template) => void;
   onPreview?: (template: Template) => void;
+  onDelete?: (id: string) => void;
+  deleting?: boolean;
+  deletingId?: string | null;
 }
 
-export function TemplateList({ templates, onEdit, onPreview }: TemplateListProps) {
+export function TemplateList({ templates, onEdit, onPreview, onDelete, deleting = false, deletingId }: TemplateListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {templates.map((template) => (
@@ -24,6 +27,8 @@ export function TemplateList({ templates, onEdit, onPreview }: TemplateListProps
           template={template}
           onEdit={onEdit}
           onPreview={onPreview}
+          onDelete={onDelete}
+          deleting={deleting && deletingId === template.id}
         />
       ))}
     </div>
