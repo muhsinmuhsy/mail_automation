@@ -21,7 +21,7 @@ interface PaginationMeta {
   totalPages: number;
 }
 
-type ApiResponse<T> = { data: T; message?: string; pagination?: PaginationMeta };
+type ApiResponse<T> = { data: T; message?: string; error?: { message: string }; pagination?: PaginationMeta };
 type Contact = { id: string; name: string; email: string; custom_fields?: Record<string, string | null> };
 
 export default function ContactsPage() {
@@ -170,7 +170,7 @@ export default function ContactsPage() {
     try {
       const response = await fetch(`/api/contacts/${deleteTarget.id}`, { method: 'DELETE' });
       const payload = (await response.json()) as ApiResponse<null>;
-      if (!response.ok) { setError(payload.message || 'Unable to delete contact.'); return; }
+      if (!response.ok) { setError(payload.error?.message || payload.message || 'Unable to delete contact.'); return; }
       setDeleteTarget(null);
       await load();
     } catch {

@@ -4,7 +4,7 @@ import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
 import { updateTemplateSchema } from '@/lib/validation/template';
-import { NotFoundError, ValidationError, fromPrismaError } from '@/lib/errors';
+import { NotFoundError, ValidationError, ConflictError, fromPrismaError } from '@/lib/errors';
 import { renderTemplate } from '@/lib/email/render';
 
 const _GET = defineRoute(async (_req, ctx) => {
@@ -121,12 +121,21 @@ const _DELETE = defineRoute(async (_req, ctx) => {
     return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
   }
 
+  const campaignCount = await getPrisma().campaign.count({
+    where: { template_id: parsed.data.id, user_id: ctx.user.id },
+  });
+
+  if (campaignCount > 0) {
+    return respondError(
+      new ConflictError(
+        `This template is used by ${campaignCount} campaign(s) and cannot be deleted. Remove it from those campaigns first.`
+      ),
+      ctx.requestId
+    );
+  }
+
   await getPrisma().$transaction(async (tx) => {
     await tx.emailJob.deleteMany({
-      where: { template_id: parsed.data.id, user_id: ctx.user.id },
-    });
-
-    await tx.campaign.deleteMany({
       where: { template_id: parsed.data.id, user_id: ctx.user.id },
     });
 

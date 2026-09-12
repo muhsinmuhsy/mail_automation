@@ -8,7 +8,7 @@ import {
   splitContactPayload,
   type ContactFieldDefinition,
 } from '@/lib/validation/contact';
-import { NotFoundError, ValidationError, fromPrismaError } from '@/lib/errors';
+import { NotFoundError, ValidationError, ConflictError, fromPrismaError } from '@/lib/errors';
 
 /**
  * Per-contact operations (Path C, Phase 4).
@@ -151,6 +151,19 @@ const _DELETE = defineRoute(async (_req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
   if (!parsed.success) {
     return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
+  }
+
+  const emailJobCount = await getPrisma().emailJob.count({
+    where: { contact_id: parsed.data.id, user_id: ctx.user.id },
+  });
+
+  if (emailJobCount > 0) {
+    return respondError(
+      new ConflictError(
+        `This contact is used by ${emailJobCount} email job(s) and cannot be deleted. Remove it from those campaigns first.`
+      ),
+      ctx.requestId
+    );
   }
 
   await getPrisma().contact.deleteMany({

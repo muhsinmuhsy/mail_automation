@@ -51,6 +51,9 @@ const mockPrisma = {
   template: {
     findMany: vi.fn().mockResolvedValue([]),
   },
+  emailJob: {
+    count: vi.fn().mockResolvedValue(0),
+  },
   user: {
     findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
     upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
@@ -521,5 +524,19 @@ describe('DELETE /api/contacts/[id]', () => {
 
     expect(response.status).toBe(500);
     expect(body.error?.type).toBe('INTERNAL_ERROR');
+  });
+
+  it('returns 409 when the contact is used by email jobs', async () => {
+    mockPrisma.emailJob.count.mockResolvedValue(5);
+
+    const response = await deleteContact(new NextRequest(url, { method: 'DELETE' }), {
+      params: Promise.resolve({ id: CONTACT_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(409);
+    expect(body.error?.type).toBe('CONFLICT');
+    expect(body.error?.message).toContain('used by 5 email job(s)');
+    expect(mockPrisma.contact.deleteMany).not.toHaveBeenCalled();
   });
 });

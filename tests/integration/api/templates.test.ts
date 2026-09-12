@@ -42,6 +42,7 @@ const mockPrisma = {
     deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   },
   campaign: {
+    count: vi.fn().mockResolvedValue(0),
     deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   },
   contact: {
@@ -145,6 +146,7 @@ beforeEach(() => {
   });
   mockPrisma.template.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.template.deleteMany.mockResolvedValue({ count: 1 });
+  mockPrisma.campaign.count.mockResolvedValue(0);
 });
 
 describe('GET /api/templates', () => {
@@ -509,15 +511,30 @@ describe('DELETE /api/templates/[id]', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.message).toBe('Template deleted.');
-    expect(mockPrisma.emailJob.deleteMany).toHaveBeenCalledWith({
+    expect(mockPrisma.campaign.count).toHaveBeenCalledWith({
       where: { template_id: TEMPLATE_ID, user_id: 'user-1' },
     });
-    expect(mockPrisma.campaign.deleteMany).toHaveBeenCalledWith({
+    expect(mockPrisma.emailJob.deleteMany).toHaveBeenCalledWith({
       where: { template_id: TEMPLATE_ID, user_id: 'user-1' },
     });
     expect(mockPrisma.template.deleteMany).toHaveBeenCalledWith({
       where: { id: TEMPLATE_ID, user_id: 'user-1' },
     });
+  });
+
+  it('returns 409 when the template is used by campaigns', async () => {
+    mockPrisma.campaign.count.mockResolvedValue(2);
+
+    const response = await deleteTemplate(new NextRequest(url, { method: 'DELETE' }), {
+      params: Promise.resolve({ id: TEMPLATE_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(409);
+    expect(body.error?.type).toBe('CONFLICT');
+    expect(body.error?.message).toContain('used by 2 campaign(s)');
+    expect(mockPrisma.template.deleteMany).not.toHaveBeenCalled();
+    expect(mockPrisma.emailJob.deleteMany).not.toHaveBeenCalled();
   });
 
   it('returns 400 for a non-uuid id', async () => {

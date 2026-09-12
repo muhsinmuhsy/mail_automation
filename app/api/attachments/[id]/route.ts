@@ -4,7 +4,7 @@ import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
 import { createStorageService } from '@/lib/storage/storage.factory';
-import { NotFoundError, ValidationError } from '@/lib/errors';
+import { NotFoundError, ValidationError, ConflictError } from '@/lib/errors';
 
 const _GET = defineRoute(async (_req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
@@ -60,6 +60,22 @@ const _DELETE = defineRoute(async (_req, ctx) => {
     return respondError(new NotFoundError('Attachment not found.'), ctx.requestId);
   }
 
+  const campaignCount = await getPrisma().campaign.count({
+    where: {
+      user_id: ctx.user.id,
+      OR: [{ attachment_id: parsed.data.id }, { attachment_ids: { has: parsed.data.id } }],
+    },
+  });
+
+  if (campaignCount > 0) {
+    return respondError(
+      new ConflictError(
+        `This attachment is used by ${campaignCount} campaign(s) and cannot be deleted. Remove it from those campaigns first.`
+      ),
+      ctx.requestId
+    );
+  }
+
   const pendingJobCount = await getPrisma().emailJob.count({
     where: {
       OR: [{ attachment_id: parsed.data.id }, { attachment_ids: { has: parsed.data.id } }],
@@ -68,11 +84,12 @@ const _DELETE = defineRoute(async (_req, ctx) => {
   });
 
   if (pendingJobCount > 0) {
-    await getPrisma().attachment.update({
-      where: { id: attachment.id },
-      data: { deleted_at: new Date(), is_default: false },
-    });
-    return respondOk(null, ctx.requestId, 'Attachment removed and retained for pending emails.');
+    return respondError(
+      new ConflictError(
+        `This attachment is used by ${pendingJobCount} pending email job(s) and cannot be deleted. Wait for them to complete or cancel them first.`
+      ),
+      ctx.requestId
+    );
   }
 
   await createStorageService(process.env).delete(attachment.storage_key);

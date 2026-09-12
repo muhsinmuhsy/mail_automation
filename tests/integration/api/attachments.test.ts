@@ -41,6 +41,9 @@ const mockPrisma = {
   emailJob: {
     count: vi.fn(),
   },
+  campaign: {
+    count: vi.fn().mockResolvedValue(0),
+  },
   $transaction: vi.fn(),
   $disconnect: vi.fn(),
 };
@@ -152,6 +155,7 @@ beforeEach(() => {
   mockPrisma.attachment.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.attachment.delete.mockResolvedValue({ id: ATTACHMENT_ID });
   mockPrisma.emailJob.count.mockResolvedValue(0);
+  mockPrisma.campaign.count.mockResolvedValue(0);
   mockPrisma.$transaction.mockResolvedValue([]);
 });
 
@@ -420,7 +424,7 @@ describe('DELETE /api/attachments/[id]', () => {
     expect(mockPrisma.attachment.update).not.toHaveBeenCalled();
   });
 
-  it('soft-deletes the attachment when pending jobs still need it', async () => {
+  it('returns 409 when pending jobs still reference the attachment', async () => {
     mockPrisma.emailJob.count.mockResolvedValue(3);
 
     const response = await deleteAttachment(new NextRequest(url, { method: 'DELETE' }), {
@@ -428,14 +432,25 @@ describe('DELETE /api/attachments/[id]', () => {
     });
     const body = (await response.json()) as ApiBody;
 
-    expect(response.status).toBe(200);
-    expect(body.message).toBe('Attachment removed and retained for pending emails.');
-    expect(mockPrisma.attachment.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: ATTACHMENT_ID },
-        data: expect.objectContaining({ is_default: false, deleted_at: expect.any(Date) }),
-      })
-    );
+    expect(response.status).toBe(409);
+    expect(body.error?.type).toBe('CONFLICT');
+    expect(body.error?.message).toContain('pending email job(s)');
+    expect(mockPrisma.attachment.delete).not.toHaveBeenCalled();
+    expect(mockPrisma.attachment.update).not.toHaveBeenCalled();
+    expect(storageDelete).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when campaigns reference the attachment', async () => {
+    mockPrisma.campaign.count.mockResolvedValue(1);
+
+    const response = await deleteAttachment(new NextRequest(url, { method: 'DELETE' }), {
+      params: Promise.resolve({ id: ATTACHMENT_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(409);
+    expect(body.error?.type).toBe('CONFLICT');
+    expect(body.error?.message).toContain('used by 1 campaign(s)');
     expect(mockPrisma.attachment.delete).not.toHaveBeenCalled();
     expect(storageDelete).not.toHaveBeenCalled();
   });
