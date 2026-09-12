@@ -1,7 +1,7 @@
 'use client';
 
 import { ATTACHMENT_TYPE_DESCRIPTION } from '@/lib/attachments/file-types';
-import { AttachmentCard } from '@/components/attachments/AttachmentCard';
+import { AttachmentList } from '@/components/attachments/AttachmentList';
 import { AttachmentUpload } from '@/components/attachments/AttachmentUpload';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -102,9 +102,7 @@ export default function AttachmentsPage() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          {attachments.map((attachment) => (
-            <AttachmentCard key={attachment.id} attachment={attachment} />
-          ))}
+          <AttachmentList attachments={attachments} />
 
           {meta && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -125,4 +125,38 @@ describe('ListToolbar', () => {
     );
     expect(container.firstChild).toHaveClass('flex', 'sm:flex-row', 'sm:justify-between');
   });
+
+  it('does not render sort select when sortOrder is not provided', () => {
+    render(
+      <ListToolbar
+        search=""
+        onSearchChange={vi.fn()}
+      />
+    );
+    expect(screen.queryByLabelText('Sort')).not.toBeInTheDocument();
+  });
+
+  it('renders filters slot when provided', () => {
+    render(
+      <ListToolbar
+        search=""
+        onSearchChange={vi.fn()}
+        filters={<div data-testid="status-filter">Status</div>}
+      />
+    );
+    expect(screen.getByTestId('status-filter')).toBeInTheDocument();
+  });
+
+  it('renders both search and filters without sort', () => {
+    render(
+      <ListToolbar
+        search="test"
+        onSearchChange={vi.fn()}
+        filters={<select data-testid="my-filter"><option value="">All</option></select>}
+      />
+    );
+    expect(screen.getByRole('searchbox', { name: 'Search' })).toHaveValue('test');
+    expect(screen.getByTestId('my-filter')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Sort')).not.toBeInTheDocument();
+  });
 });

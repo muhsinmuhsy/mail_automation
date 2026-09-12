@@ -8,16 +8,16 @@ import {
   type CampaignSelectOption,
   type CampaignSubmitData,
 } from '@/components/campaigns/CampaignWizard';
-import { formatScheduledTime } from '@/lib/scheduling/time';
+import { CampaignList } from '@/components/campaigns/CampaignList';
+import type { CampaignRow } from '@/components/campaigns/CampaignCard';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
-import { SearchInput } from '@/components/ui/SearchInput';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 import { Select } from '@/components/ui/Select';
-import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Toast } from '@/components/ui/Toast';
 
 const PAGE_SIZE = 20;
@@ -30,8 +30,6 @@ const STATUS_OPTIONS = [
   { value: 'COMPLETED', label: 'Completed' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
-
-const CLOSED_STATUSES = ['CANCELLED', 'COMPLETED'];
 
 interface PaginationMeta {
   total: number;
@@ -47,18 +45,6 @@ type Envelope<T> =
 interface ApiResponse<T> {
   status: number;
   body: Envelope<T>;
-}
-
-interface CampaignRow {
-  _count?: { email_jobs: number };
-  id: string;
-  name: string;
-  status: string;
-  created_at: string;
-  start_at: string;
-  timezone: string;
-  interval_minutes: number;
-  daily_limit: number | null;
 }
 
 interface CampaignOptions {
@@ -297,29 +283,26 @@ export default function CampaignsPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="sm:max-w-sm sm:flex-1">
-          <SearchInput
-            value={search}
-            onChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            placeholder="Search by campaign name"
-          />
-        </div>
-        <div className="sm:w-64">
-          <Select
-            label="Status"
-            options={STATUS_OPTIONS}
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value);
-              setPage(1);
-            }}
-          />
-        </div>
-      </div>
+      <ListToolbar
+        search={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        filters={
+          <div className="sm:w-64">
+            <Select
+              label="Status"
+              options={STATUS_OPTIONS}
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+        }
+      />
 
       {loading ? (
         <div className="py-12">
@@ -351,59 +334,14 @@ export default function CampaignsPage() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="divide-y divide-neutral-200 rounded-[var(--radius-lg)] border border-neutral-200 bg-background">
-            {campaigns.map((campaign) => {
-              const busy = busyCampaignId === campaign.id;
-              return (
-                <div
-                  key={campaign.id}
-                  className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-text-primary">{campaign.name}</p>
-                    <p className="text-caption text-text-secondary">
-                      Starts {formatScheduledTime(campaign.start_at, campaign.timezone)}
-                      <br />{campaign._count?.email_jobs === 1 ? '1 scheduled email' : <>One email every {campaign.interval_minutes} minutes. Emails per day: {campaign.daily_limit ?? 'No campaign limit'}</>}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={campaign.status} />
-                    <Button variant="secondary" size="sm" onClick={() => router.push(`/campaigns/${campaign.id}`)}>View details</Button>
-                    {campaign.status === 'ACTIVE' && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={busy}
-                        onClick={() => void runAction(campaign, 'pause')}
-                      >
-                        Pause
-                      </Button>
-                    )}
-                    {campaign.status === 'PAUSED' && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={busy}
-                        onClick={() => void runAction(campaign, 'resume')}
-                      >
-                        Resume
-                      </Button>
-                    )}
-                    {!CLOSED_STATUSES.includes(campaign.status) && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        disabled={busy}
-                        onClick={() => setCancelTarget(campaign)}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <CampaignList
+            campaigns={campaigns}
+            busyId={busyCampaignId}
+            onView={(id) => router.push(`/campaigns/${id}`)}
+            onPause={(campaign) => void runAction(campaign, 'pause')}
+            onResume={(campaign) => void runAction(campaign, 'resume')}
+            onCancel={(campaign) => setCancelTarget(campaign)}
+          />
 
           {meta && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

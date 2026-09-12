@@ -1,19 +1,37 @@
 'use client';
 
+import { ContactCard } from './ContactCard';
+
 interface Contact {
   id: string;
   name: string;
   email: string;
+  custom_fields?: Record<string, string | null>;
 }
 
-export function ContactList({ contacts }: { contacts: Contact[] }) {
+interface ContactListProps {
+  contacts: Contact[];
+  onDelete?: (id: string) => void;
+  onView?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  deleting?: boolean;
+  deletingId?: string | null;
+  fieldLabels?: Record<string, string>;
+}
+
+export function ContactList({ contacts, onDelete, onView, onEdit, deleting = false, deletingId, fieldLabels }: ContactListProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {contacts.map((contact) => (
-        <div key={contact.id} className="rounded-[var(--radius-md)] border border-neutral-200 bg-background p-4">
-          <p className="font-medium text-text-primary">{contact.name}</p>
-          <p className="text-sm text-text-secondary">{contact.email}</p>
-        </div>
+        <ContactCard
+          key={contact.id}
+          contact={contact}
+          onDelete={onDelete}
+          onView={onView}
+          onEdit={onEdit}
+          deleting={deleting && deletingId === contact.id}
+          fieldLabels={fieldLabels}
+        />
       ))}
     </div>
   );

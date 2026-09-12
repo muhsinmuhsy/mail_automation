@@ -414,8 +414,6 @@ describe('POST /api/templates with bodyJson', () => {
     const response = await createTemplate(
       jsonRequest({ name: 'Bad', subject: 'Hi', bodyJson: 'invalid' })
     );
-    const _body = (await response.json()) as ApiBody;
-
     expect(response.status).toBe(500);
     expect(mockPrisma.template.create).not.toHaveBeenCalled();
   });

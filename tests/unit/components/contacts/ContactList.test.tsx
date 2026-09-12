@@ -28,10 +28,10 @@ describe('ContactList', () => {
     expect(screen.getByText('cara@example.com')).toBeInTheDocument();
   });
 
-  it('renders an empty container for an empty list', () => {
+  it('renders an empty grid container for an empty list', () => {
     const { container } = render(<ContactList contacts={[]} />);
     expect(container.firstChild).toBeEmptyDOMElement();
-    expect(container.firstChild).toHaveClass('flex', 'flex-col', 'gap-4');
+    expect(container.firstChild).toHaveClass('grid');
   });
 
   it('renders a single contact', () => {

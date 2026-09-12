@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ProviderConnectionDialog } from '@/components/email-accounts/ProviderConnectionDialog';
-import { EmailAccountCard } from '@/components/email-accounts/EmailAccountCard';
+import { EmailAccountList } from '@/components/email-accounts/EmailAccountList';
 import { EmailAccountEditDialog } from '@/components/email-accounts/EmailAccountEditDialog';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -241,20 +241,14 @@ export default function EmailAccountsPage() {
               No email accounts connected yet.
             </div>
           ) : (
-            <div className="divide-y divide-neutral-200">
-              {accounts.map((account) => (
-                <EmailAccountCard
-                  key={account.id}
-                  account={account}
-                  onTest={() => handleTest(account.id)}
-                  onDeactivate={() => openDeactivateConfirm(account.id)}
-                  onReactivate={() => openReactivateConfirm(account.id)}
-                  /* App password disabled — onEdit={() => openEdit(account)} */
-                  onReconnect={() => void reconnect(account.id)}
-                  onDisconnect={() => setDisconnectId(account.id)}
-                />
-              ))}
-            </div>
+            <EmailAccountList
+              accounts={accounts}
+              onTest={handleTest}
+              onDeactivate={openDeactivateConfirm}
+              onReactivate={openReactivateConfirm}
+              onReconnect={(id) => void reconnect(id)}
+              onDisconnect={(id) => setDisconnectId(id)}
+            />
           )}
         </div>
       </div>

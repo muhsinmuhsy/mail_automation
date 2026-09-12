@@ -1,19 +1,30 @@
 'use client';
 
+import { TemplateCard } from './TemplateCard';
+
 interface Template {
   id: string;
   name: string;
   subject: string;
+  created_at?: string;
 }
 
-export function TemplateList({ templates }: { templates: Template[] }) {
+interface TemplateListProps {
+  templates: Template[];
+  onEdit?: (template: Template) => void;
+  onPreview?: (template: Template) => void;
+}
+
+export function TemplateList({ templates, onEdit, onPreview }: TemplateListProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {templates.map((template) => (
-        <div key={template.id} className="rounded-[var(--radius-md)] border border-neutral-200 bg-background p-4">
-          <p className="font-medium text-text-primary">{template.name}</p>
-          <p className="text-sm text-text-secondary">{template.subject}</p>
-        </div>
+        <TemplateCard
+          key={template.id}
+          template={template}
+          onEdit={onEdit}
+          onPreview={onPreview}
+        />
       ))}
     </div>
   );

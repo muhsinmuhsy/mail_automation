@@ -28,23 +28,6 @@ describe('AttachmentList', () => {
     expect(screen.getByText('0.5 KB')).toBeInTheDocument();
   });
 
-  it('renders a Default marker only for the default attachment', () => {
-    render(<AttachmentList attachments={attachments} />);
-    const markers = screen.getAllByText('Default');
-    expect(markers).toHaveLength(1);
-    expect(markers[0]).toHaveClass('text-xs', 'font-medium', 'text-information');
-  });
-
-  it('renders no Default marker when none is default', () => {
-    render(<AttachmentList attachments={attachments.map((r) => ({ ...r, is_default: false }))} />);
-    expect(screen.queryByText('Default')).not.toBeInTheDocument();
-  });
-
-  it('renders a Default marker for every default attachment', () => {
-    render(<AttachmentList attachments={attachments.map((r) => ({ ...r, is_default: true }))} />);
-    expect(screen.getAllByText('Default')).toHaveLength(3);
-  });
-
   it('renders an empty container when there are no attachments', () => {
     const { container } = render(<AttachmentList attachments={[]} />);
     expect(container.firstChild).toBeEmptyDOMElement();
@@ -57,9 +40,9 @@ describe('AttachmentList', () => {
     expect(screen.getByText('backend-cv.pdf')).toBeInTheDocument();
   });
 
-  it('uses a space-between row layout', () => {
+  it('renders each row as a bordered card', () => {
     const { container } = render(<AttachmentList attachments={[attachments[0]]} />);
-    expect(rows(container)[0]).toHaveClass('flex', 'items-center', 'justify-between');
+    expect(rows(container)[0]).toHaveClass('border', 'border-neutral-200', 'bg-background', 'p-4');
   });
 
   it('preserves the provided order', () => {
@@ -82,7 +65,6 @@ describe('AttachmentList', () => {
     }));
     const { container } = render(<AttachmentList attachments={many} />);
     expect(rows(container)).toHaveLength(15);
-    expect(screen.getAllByText('Default')).toHaveLength(1);
     expect(screen.getByText('15.0 KB')).toBeInTheDocument();
   });
 });

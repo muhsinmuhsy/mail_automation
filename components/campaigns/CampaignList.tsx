@@ -1,21 +1,29 @@
 'use client';
 
-interface Campaign {
-  id: string;
-  name: string;
-  status: string;
+import { CampaignCard, type CampaignRow } from './CampaignCard';
+
+interface CampaignListProps {
+  campaigns: CampaignRow[];
+  busyId?: string | null;
+  onView?: (id: string) => void;
+  onPause?: (campaign: CampaignRow) => void;
+  onResume?: (campaign: CampaignRow) => void;
+  onCancel?: (campaign: CampaignRow) => void;
 }
 
-export function CampaignList({ campaigns }: { campaigns: Campaign[] }) {
+export function CampaignList({ campaigns, busyId, onView, onPause, onResume, onCancel }: CampaignListProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="divide-y divide-neutral-200 rounded-[var(--radius-lg)] border border-neutral-200 bg-background">
       {campaigns.map((campaign) => (
-        <div key={campaign.id} className="rounded-[var(--radius-md)] border border-neutral-200 bg-background p-4 flex items-center justify-between">
-          <div>
-            <p className="font-medium text-text-primary">{campaign.name}</p>
-            <p className="text-sm text-text-secondary">Status: {campaign.status}</p>
-          </div>
-        </div>
+        <CampaignCard
+          key={campaign.id}
+          campaign={campaign}
+          busy={busyId === campaign.id}
+          onView={onView}
+          onPause={onPause}
+          onResume={onResume}
+          onCancel={onCancel}
+        />
       ))}
     </div>
   );

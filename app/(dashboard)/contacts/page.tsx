@@ -1,6 +1,6 @@
 'use client';
 
-import { ContactCard } from '@/components/contacts/ContactCard';
+import { ContactList } from '@/components/contacts/ContactList';
 import { ContactForm, type ContactFieldDef } from '@/components/contacts/ContactForm';
 import { ContactImport } from '@/components/contacts/ContactImport';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -248,19 +248,15 @@ export default function ContactsPage() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {contacts.map((contact) => (
-              <ContactCard
-                key={contact.id}
-                contact={contact}
-                onDelete={(id) => setDeleteTarget(contacts.find((c) => c.id === id) ?? null)}
-                onView={(id) => router.push(`/contacts/${id}`)}
-                onEdit={(id) => router.push(`/contacts/${id}/edit`)}
-                deleting={deleting && deleteTarget?.id === contact.id}
-                fieldLabels={fieldLabels}
-              />
-            ))}
-          </div>
+          <ContactList
+            contacts={contacts}
+            onDelete={(id) => setDeleteTarget(contacts.find((c) => c.id === id) ?? null)}
+            onView={(id) => router.push(`/contacts/${id}`)}
+            onEdit={(id) => router.push(`/contacts/${id}/edit`)}
+            deleting={deleting}
+            deletingId={deleteTarget?.id}
+            fieldLabels={fieldLabels}
+          />
 
           {meta && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

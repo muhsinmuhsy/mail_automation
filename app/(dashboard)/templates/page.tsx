@@ -1,6 +1,6 @@
 'use client';
 
-import { TemplateCard } from '@/components/templates/TemplateCard';
+import { TemplateList } from '@/components/templates/TemplateList';
 import { TemplateEditorDialog } from '@/components/templates/TemplateEditorDialog';
 import { TemplatePreviewDialog } from '@/components/templates/TemplatePreviewDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -115,16 +115,11 @@ export default function TemplatesPage() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {templates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onEdit={handleEdit}
-                onPreview={handlePreview}
-              />
-            ))}
-          </div>
+          <TemplateList
+            templates={templates}
+            onEdit={handleEdit}
+            onPreview={handlePreview}
+          />
 
           {meta && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

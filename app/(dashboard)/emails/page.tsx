@@ -2,15 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatScheduledTime } from '@/lib/scheduling/time';
-import { DataTable } from '@/components/ui/DataTable';
+import { EmailList, type EmailRow } from '@/components/emails/EmailList';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
-import { SearchInput } from '@/components/ui/SearchInput';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 import { Select } from '@/components/ui/Select';
-import { StatusBadge } from '@/components/ui/StatusBadge';
 
 const PAGE_SIZE = 20;
 
@@ -36,25 +34,6 @@ interface PaginationMeta {
 type Envelope<T> =
   | { success: true; data: T; message?: string; pagination?: PaginationMeta }
   | { success: false; error: { type?: string; message: string } };
-
-interface EmailRow {
-  id: string;
-  to_email: string;
-  subject: string;
-  status: string;
-  scheduled_at: string;
-  next_attempt_at: string | null;
-  error_message: string | null;
-  campaign: { timezone: string; name: string } | null;
-  sent_at: string | null;
-  created_at: string;
-}
-
-function formatDateTime(value: string | null): string {
-  if (!value) return '—';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString();
-}
 
 export default function EmailsPage() {
   const router = useRouter();
@@ -130,29 +109,26 @@ export default function EmailsPage() {
         <p className="mt-2 text-body text-text-secondary">View your email sending history.</p>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="sm:max-w-sm sm:flex-1">
-          <SearchInput
-            value={search}
-            onChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            placeholder="Search by recipient"
-          />
-        </div>
-        <div className="sm:w-64">
-          <Select
-            label="Status"
-            options={STATUS_OPTIONS}
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value);
-              setPage(1);
-            }}
-          />
-        </div>
-      </div>
+      <ListToolbar
+        search={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        filters={
+          <div className="sm:w-64">
+            <Select
+              label="Status"
+              options={STATUS_OPTIONS}
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+        }
+      />
 
       {loading ? (
         <div className="py-12">
@@ -171,45 +147,7 @@ export default function EmailsPage() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <DataTable
-            data={emails}
-            columns={[
-              {
-                key: 'to_email',
-                header: 'To',
-                render: (email) => <span className="text-text-primary">{email.to_email}</span>,
-              },
-              {
-                key: 'subject',
-                header: 'Subject',
-                render: (email) => <span className="text-text-primary">{email.subject}</span>,
-              },
-              {
-                key: 'status',
-                header: 'Status',
-                render: (email) => <div><StatusBadge status={email.status} />{email.error_message && <p className="mt-1 text-caption text-text-secondary">{email.error_message}</p>}{email.next_attempt_at && email.status === 'RETRY_WAIT' && <p className="text-caption">Retry: {formatScheduledTime(email.next_attempt_at, email.campaign?.timezone)}</p>}</div>,
-              },
-              {
-                key: 'scheduled_at',
-                header: 'Scheduled for',
-                render: (email) => <span>{formatScheduledTime(email.scheduled_at, email.campaign?.timezone)}</span>,
-              },
-              {
-                key: 'created_at',
-                header: 'Created',
-                render: (email) => (
-                  <span className="text-text-secondary">{formatDateTime(email.created_at)}</span>
-                ),
-              },
-              {
-                key: 'sent_at',
-                header: 'Sent',
-                render: (email) => (
-                  <span className="text-text-secondary">{formatDateTime(email.sent_at)}</span>
-                ),
-              },
-            ]}
-          />
+          <EmailList emails={emails} />
 
           {meta && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

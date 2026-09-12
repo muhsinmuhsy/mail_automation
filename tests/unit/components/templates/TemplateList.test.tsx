@@ -28,10 +28,10 @@ describe('TemplateList', () => {
     expect(screen.getByText('Thanks for applying')).toBeInTheDocument();
   });
 
-  it('renders an empty container for no templates', () => {
+  it('renders an empty grid container for no templates', () => {
     const { container } = render(<TemplateList templates={[]} />);
     expect(container.firstChild).toBeEmptyDOMElement();
-    expect(container.firstChild).toHaveClass('flex', 'flex-col', 'gap-4');
+    expect(container.firstChild).toHaveClass('grid');
   });
 
   it('renders a single template', () => {

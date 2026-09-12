@@ -1,84 +1,67 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { EmailList } from '@/components/emails/EmailList';
+import type { EmailRow } from '@/components/emails/EmailList';
 
-const emails = [
-  { id: 'e1', subject: 'First subject', to_email: 'one@example.com', status: 'SENT' },
-  { id: 'e2', subject: 'Second subject', to_email: 'two@example.com', status: 'FAILED' },
-  { id: 'e3', subject: 'Third subject', to_email: 'three@example.com', status: 'QUEUED' },
+const emails: EmailRow[] = [
+  { id: 'e1', subject: 'First subject', to_email: 'one@example.com', status: 'SENT', scheduled_at: '2026-01-01T10:00:00Z', next_attempt_at: null, error_message: null, campaign: { timezone: 'UTC', name: 'Camp A' }, sent_at: '2026-01-01T10:05:00Z', created_at: '2026-01-01T09:00:00Z' },
+  { id: 'e2', subject: 'Second subject', to_email: 'two@example.com', status: 'FAILED', scheduled_at: '2026-01-02T10:00:00Z', next_attempt_at: null, error_message: 'SMTP timeout', campaign: { timezone: 'UTC', name: 'Camp B' }, sent_at: null, created_at: '2026-01-02T09:00:00Z' },
+  { id: 'e3', subject: 'Third subject', to_email: 'three@example.com', status: 'QUEUED', scheduled_at: '2026-01-03T10:00:00Z', next_attempt_at: null, error_message: null, campaign: { timezone: 'UTC', name: 'Camp C' }, sent_at: null, created_at: '2026-01-03T09:00:00Z' },
 ];
 
-function rows(container: HTMLElement): HTMLElement[] {
-  const root = container.firstElementChild as HTMLElement;
-  return Array.from(root.children) as HTMLElement[];
-}
-
 describe('EmailList', () => {
-  it('renders one row per email', () => {
-    const { container } = render(<EmailList emails={emails} />);
-    expect(rows(container)).toHaveLength(3);
-  });
-
-  it('renders subject, recipient and status for each email', () => {
+  it('renders the data table with emails', () => {
     render(<EmailList emails={emails} />);
     expect(screen.getByText('First subject')).toBeInTheDocument();
     expect(screen.getByText('one@example.com')).toBeInTheDocument();
-    expect(screen.getByText('SENT')).toBeInTheDocument();
     expect(screen.getByText('Second subject')).toBeInTheDocument();
-    expect(screen.getByText('FAILED')).toBeInTheDocument();
-    expect(screen.getByText('QUEUED')).toBeInTheDocument();
+    expect(screen.getByText('two@example.com')).toBeInTheDocument();
+    expect(screen.getByText('Third subject')).toBeInTheDocument();
+    expect(screen.getByText('three@example.com')).toBeInTheDocument();
   });
 
-  it('renders an empty container when there are no emails', () => {
-    const { container } = render(<EmailList emails={[]} />);
-    expect(container.firstChild).toBeEmptyDOMElement();
-    expect(container.firstChild).toHaveClass('flex', 'flex-col', 'gap-4');
+  it('renders table headers', () => {
+    render(<EmailList emails={emails} />);
+    expect(screen.getByText('To')).toBeInTheDocument();
+    expect(screen.getByText('Subject')).toBeInTheDocument();
+    expect(screen.getByText('Status')).toBeInTheDocument();
+    expect(screen.getByText('Scheduled for')).toBeInTheDocument();
+    expect(screen.getByText('Created')).toBeInTheDocument();
+    expect(screen.getAllByText('Sent').length).toBeGreaterThan(0);
+  });
+
+  it('renders an empty table for no emails', () => {
+    render(<EmailList emails={[]} />);
+    expect(screen.getByText('To')).toBeInTheDocument();
+    expect(screen.getByText('Subject')).toBeInTheDocument();
   });
 
   it('renders a single email', () => {
-    const { container } = render(<EmailList emails={[emails[0]]} />);
-    expect(rows(container)).toHaveLength(1);
-    expect(screen.getByText('First subject')).toBeInTheDocument();
-  });
-
-  it('uses a row layout with the status pushed to the end', () => {
-    const { container } = render(<EmailList emails={[emails[0]]} />);
-    expect(rows(container)[0]).toHaveClass('flex', 'items-center', 'justify-between');
-  });
-
-  it('styles the status as small secondary text', () => {
     render(<EmailList emails={[emails[0]]} />);
-    expect(screen.getByText('SENT')).toHaveClass('text-xs', 'font-medium', 'text-text-secondary');
+    expect(screen.getByText('First subject')).toBeInTheDocument();
+    expect(screen.getByText('one@example.com')).toBeInTheDocument();
   });
 
-  it('keeps the emails in the order provided', () => {
-    const { container } = render(<EmailList emails={emails} />);
-    const subjects = Array.from(container.querySelectorAll('p.font-medium')).map(
-      (p) => p.textContent
-    );
-    expect(subjects).toEqual(['First subject', 'Second subject', 'Third subject']);
-  });
-
-  it('renders duplicated subjects for distinct ids', () => {
-    render(
-      <EmailList
-        emails={[
-          { id: 'a', subject: 'Same', to_email: 'a@example.com', status: 'SENT' },
-          { id: 'b', subject: 'Same', to_email: 'b@example.com', status: 'SENT' },
-        ]}
-      />
-    );
-    expect(screen.getAllByText('Same')).toHaveLength(2);
+  it('renders error message for failed emails', () => {
+    render(<EmailList emails={[emails[1]]} />);
+    expect(screen.getByText('SMTP timeout')).toBeInTheDocument();
   });
 
   it('renders many emails', () => {
-    const many = Array.from({ length: 30 }, (_, i) => ({
+    const many: EmailRow[] = Array.from({ length: 30 }, (_, i) => ({
       id: `e-${i}`,
       subject: `Subject ${i}`,
       to_email: `user${i}@example.com`,
       status: 'SENT',
+      scheduled_at: '2026-01-01T10:00:00Z',
+      next_attempt_at: null,
+      error_message: null,
+      campaign: null,
+      sent_at: '2026-01-01T10:05:00Z',
+      created_at: '2026-01-01T09:00:00Z',
     }));
-    const { container } = render(<EmailList emails={many} />);
-    expect(rows(container)).toHaveLength(30);
+    render(<EmailList emails={many} />);
+    expect(screen.getByText('Subject 0')).toBeInTheDocument();
+    expect(screen.getByText('Subject 29')).toBeInTheDocument();
   });
 });

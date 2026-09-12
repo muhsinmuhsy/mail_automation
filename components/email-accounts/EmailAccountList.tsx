@@ -1,20 +1,38 @@
 'use client';
 
+import { EmailAccountCard } from './EmailAccountCard';
+
 interface EmailAccount {
   id: string;
   provider: string;
   email: string;
   is_active: boolean;
+  auth_method?: string;
+  connection_error?: string | null;
 }
 
-export function EmailAccountList({ accounts }: { accounts: EmailAccount[] }) {
+interface EmailAccountListProps {
+  accounts: EmailAccount[];
+  onTest: (id: string) => void;
+  onDeactivate: (id: string) => void;
+  onReactivate: (id: string) => void;
+  onReconnect?: (id: string) => void;
+  onDisconnect?: (id: string) => void;
+}
+
+export function EmailAccountList({ accounts, onTest, onDeactivate, onReactivate, onReconnect, onDisconnect }: EmailAccountListProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="divide-y divide-neutral-200">
       {accounts.map((account) => (
-        <div key={account.id} className="rounded-[var(--radius-md)] border border-neutral-200 bg-background p-4">
-          <p className="font-medium text-text-primary">{account.email}</p>
-          <p className="text-sm text-text-secondary">{account.provider}</p>
-        </div>
+        <EmailAccountCard
+          key={account.id}
+          account={account}
+          onTest={() => onTest(account.id)}
+          onDeactivate={() => onDeactivate(account.id)}
+          onReactivate={() => onReactivate(account.id)}
+          onReconnect={onReconnect ? () => onReconnect(account.id) : undefined}
+          onDisconnect={onDisconnect ? () => onDisconnect(account.id) : undefined}
+        />
       ))}
     </div>
   );
