@@ -46,7 +46,12 @@ const _POST = defineRoute(async (req, ctx) => {
 
   try {
     if (bodyJson !== undefined) {
-      const rendered = await renderTemplate(bodyJson);
+      let rendered;
+      try {
+        rendered = await renderTemplate(bodyJson);
+      } catch {
+        return respondError(new ValidationError('The template content is invalid. Please add at least one block.'), ctx.requestId);
+      }
 
       const template = await getPrisma().template.create({
         data: {

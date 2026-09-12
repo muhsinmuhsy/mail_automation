@@ -170,6 +170,13 @@ export function TemplateEditorDialog({
       setFieldErrors(errors);
       return;
     }
+    if (mode === 'visual') {
+      const currentContent = contentRef.current ?? content;
+      if (!currentContent || !currentContent.blocks || currentContent.blocks.length === 0) {
+        setError('Please add at least one block to your email.');
+        return;
+      }
+    }
     setSaving(true);
     setError(null);
     setFieldErrors({});
@@ -219,7 +226,7 @@ export function TemplateEditorDialog({
             <button
               role="tab"
               aria-selected={mode === 'visual'}
-              onClick={() => setMode('visual')}
+              onClick={() => { setMode('visual'); setError(null); }}
               className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium ${
                 mode === 'visual'
                   ? 'bg-information text-white'
@@ -231,7 +238,7 @@ export function TemplateEditorDialog({
             <button
               role="tab"
               aria-selected={mode === 'plaintext'}
-              onClick={() => setMode('plaintext')}
+              onClick={() => { setMode('plaintext'); setError(null); }}
               className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium ${
                 mode === 'plaintext'
                   ? 'bg-information text-white'
@@ -270,13 +277,14 @@ export function TemplateEditorDialog({
       </div>
 
       <div className="flex-1 overflow-hidden px-6 py-4">
+        {error && (
+          <div className="mb-4 flex items-center gap-2 rounded-[var(--radius-md)] border border-error/30 bg-error/10 px-4 py-3">
+            <p role="alert" className="text-sm text-error">{error}</p>
+          </div>
+        )}
         {loading ? (
           <div className="flex h-full items-center justify-center">
             <LoadingSpinner size="lg" />
-          </div>
-        ) : error ? (
-          <div className="flex h-full items-center justify-center">
-            <p role="alert" className="text-sm text-error">{error}</p>
           </div>
         ) : mode === 'visual' ? (
           <div className="h-full">

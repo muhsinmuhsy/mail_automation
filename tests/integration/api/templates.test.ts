@@ -417,13 +417,15 @@ describe('POST /api/templates with bodyJson', () => {
     });
   });
 
-  it('returns 500 when renderTemplate throws (no partial write)', async () => {
+  it('returns 400 VALIDATION_ERROR when renderTemplate throws (no partial write)', async () => {
     mockRenderTemplate.mockRejectedValue(new Error('Invalid template content.'));
 
     const response = await createTemplate(
       jsonRequest({ name: 'Bad', subject: 'Hi', bodyJson: 'invalid' })
     );
-    expect(response.status).toBe(500);
+    const body = (await response.json()) as ApiBody;
+    expect(response.status).toBe(400);
+    expect(body.error?.type).toBe('VALIDATION_ERROR');
     expect(mockPrisma.template.create).not.toHaveBeenCalled();
   });
 });
