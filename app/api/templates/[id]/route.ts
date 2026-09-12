@@ -83,6 +83,9 @@ const _PATCH = defineRoute(async (req, ctx) => {
     if (legacyBody !== undefined) {
       data.body = legacyBody;
       data.body_text = legacyBody;
+      data.body_json = null;
+      data.body_mjml = null;
+      data.body_html = null;
     }
 
     const result = await getPrisma().template.updateMany({

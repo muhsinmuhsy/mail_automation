@@ -499,6 +499,31 @@ describe('PATCH /api/templates/[id] with bodyJson', () => {
   });
 });
 
+describe('PATCH /api/templates/[id] switching from visual to plain text', () => {
+  const url = `http://localhost/api/templates/${TEMPLATE_ID}`;
+
+  it('clears body_json, body_mjml, and body_html when saving plain text', async () => {
+    const response = await patchTemplate(
+      jsonRequest({ body: 'Just plain text now' }, 'PATCH', url),
+      { params: Promise.resolve({ id: TEMPLATE_ID }) }
+    );
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(mockPrisma.template.updateMany).toHaveBeenCalledWith({
+      where: { id: TEMPLATE_ID, user_id: 'user-1' },
+      data: {
+        body: 'Just plain text now',
+        body_text: 'Just plain text now',
+        body_json: null,
+        body_mjml: null,
+        body_html: null,
+      },
+    });
+  });
+});
+
 describe('DELETE /api/templates/[id]', () => {
   const url = `http://localhost/api/templates/${TEMPLATE_ID}`;
 
