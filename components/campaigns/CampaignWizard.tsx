@@ -144,6 +144,11 @@ export function CampaignWizard({
   const [unknownTokenAction, setUnknownTokenAction] = useState<'fix' | 'continue'>('fix');
   const [idempotencyKey, setIdempotencyKey] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [recipientStatuses, setRecipientStatuses] = useState<Map<string, { classification: string; lastSentAt?: string }>>(new Map());
+  const [followUpNotice, setFollowUpNotice] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement | null>(null);
+  const recipientStatusAbort = useRef<AbortController | null>(null);
+  const recipientStatusDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const effectiveEmailAccountId = emailAccountId || emailAccounts[0]?.id || '';
   const selectedAttachments = attachments.filter(item => attachmentIds.includes(item.id));
@@ -320,6 +325,57 @@ export function CampaignWizard({
     return () => { if (contactSearchDebounce.current) clearTimeout(contactSearchDebounce.current); };
   }, [usePaginatedContacts, step, contactPage, contactSearch]);
 
+  useEffect(() => {
+    if (step !== 2 || !effectiveTemplateId || !effectiveEmailAccountId) {
+      const timer = setTimeout(() => setRecipientStatuses(new Map()), 0);
+      return () => clearTimeout(timer);
+    }
+    const visibleIds = displayContacts.slice(0, 100).map(c => c.id);
+    if (visibleIds.length === 0) {
+      const timer = setTimeout(() => setRecipientStatuses(new Map()), 0);
+      return () => clearTimeout(timer);
+    }
+    if (recipientStatusDebounce.current) clearTimeout(recipientStatusDebounce.current);
+    recipientStatusDebounce.current = setTimeout(() => {
+      recipientStatusAbort.current?.abort();
+      const controller = new AbortController();
+      recipientStatusAbort.current = controller;
+      fetch('/api/campaigns/recipient-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ templateId: effectiveTemplateId, emailAccountId: effectiveEmailAccountId, contactIds: visibleIds }),
+        signal: controller.signal,
+      })
+        .then(async res => {
+          if (controller.signal.aborted) return;
+          const body = await res.json() as { success: boolean; data?: { statuses: Array<{ contactId: string; classification: string; lastSentAt: string | null }> } };
+          if (!body.success || !body.data) return;
+          const map = new Map<string, { classification: string; lastSentAt?: string }>();
+          for (const s of body.data.statuses) {
+            if (s.classification !== 'ELIGIBLE') {
+              map.set(s.contactId, { classification: s.classification, lastSentAt: s.lastSentAt ?? undefined });
+            }
+          }
+          setRecipientStatuses(map);
+        })
+        .catch(() => { if (!controller.signal.aborted) return; });
+    }, 300);
+    return () => { if (recipientStatusDebounce.current) clearTimeout(recipientStatusDebounce.current); };
+  }, [step, effectiveTemplateId, effectiveEmailAccountId, displayContacts]);
+
+  useEffect(() => {
+    if (!followUpNotice) return;
+    const timer = setTimeout(() => setFollowUpNotice(null), 4000);
+    return () => clearTimeout(timer);
+  }, [followUpNotice]);
+
+  useEffect(() => {
+    if ((submitError || eligibility.status === 'error') && errorRef.current) {
+      errorRef.current.focus();
+    }
+  }, [submitError, eligibility.status]);
+
   const excludedReasons = eligibility.result?.excludedByReason;
   const hasExclusions = eligibility.isReady && (eligibility.result?.excludedCount ?? 0) > 0;
   const hasFollowUpCandidates = eligibility.isReady && (eligibility.result?.recipients ?? []).some(r => r.canSelectFollowUp);
@@ -360,7 +416,13 @@ export function CampaignWizard({
             <Select
               label="Sending account"
               value={effectiveEmailAccountId}
-              onChange={(event) => { setEmailAccountId(event.target.value); setResendRecipients([]); }}
+              onChange={(event) => {
+                setEmailAccountId(event.target.value);
+                if (resendRecipients.length > 0) {
+                  setResendRecipients([]);
+                  setFollowUpNotice('Follow-up choices cleared because the sending account changed.');
+                }
+              }}
               options={optionList('Select account', emailAccounts)}
               error={errors.emailAccountId}
               required
@@ -368,7 +430,13 @@ export function CampaignWizard({
             <Select
               label="Template"
               value={effectiveTemplateId}
-              onChange={(event) => { setTemplateId(event.target.value); setResendRecipients([]); }}
+              onChange={(event) => {
+                setTemplateId(event.target.value);
+                if (resendRecipients.length > 0) {
+                  setResendRecipients([]);
+                  setFollowUpNotice('Follow-up choices cleared because the template changed.');
+                }
+              }}
               options={optionList('Select template', templates)}
               error={errors.templateId}
               required
@@ -468,6 +536,12 @@ export function CampaignWizard({
               </div>
             )}
 
+            {followUpNotice && (
+              <p role="status" className="rounded-[var(--radius-sm)] border border-information/20 bg-surface p-2 text-sm text-text-secondary">
+                {followUpNotice}
+              </p>
+            )}
+
             {showFollowUps && eligibility.result && (
               <div className="rounded-[var(--radius-md)] border border-neutral-200 bg-surface p-4">
                 <div className="flex items-center justify-between">
@@ -496,9 +570,13 @@ export function CampaignWizard({
                 </div>
                 <div className="mt-2 flex gap-2">
                   <Button variant="secondary" size="sm" onClick={() => {
-                    const candidates = eligibility.result?.recipients.filter(r => r.canSelectFollowUp) ?? [];
-                    setResendRecipients(candidates.map(r => ({ contactId: r.contactId, recipientEmail: r.recipientEmail ?? '' })));
-                  }}>Select all eligible</Button>
+                    const visibleIds = new Set(displayContacts.map(c => c.id));
+                    const candidates = eligibility.result?.recipients.filter(r => r.canSelectFollowUp && visibleIds.has(r.contactId)) ?? [];
+                    setResendRecipients(prev => {
+                      const existing = prev.filter(r => !visibleIds.has(r.contactId));
+                      return [...existing, ...candidates.map(r => ({ contactId: r.contactId, recipientEmail: r.recipientEmail ?? '' }))];
+                    });
+                  }}>Select this page for follow-up</Button>
                   <Button variant="secondary" size="sm" onClick={() => setResendRecipients([])} disabled={!followUpSelectedCount}>Clear follow-ups</Button>
                 </div>
               </div>
@@ -519,6 +597,11 @@ export function CampaignWizard({
                 {displayContacts.map((contact) => {
                   const recipient = eligibility.result?.recipients.find(r => r.contactId === contact.id);
                   const badgeReason = recipient?.primaryReason;
+                  const preSelectStatus = !badgeReason && !contactIds.includes(contact.id) ? recipientStatuses.get(contact.id) : null;
+                  const preSelectReason = preSelectStatus?.classification === 'PREVIOUSLY_SENT' ? 'PREVIOUSLY_SENT'
+                    : preSelectStatus?.classification === 'PENDING' ? 'PENDING'
+                    : preSelectStatus?.classification === 'DELIVERY_UNKNOWN' ? 'DELIVERY_UNKNOWN'
+                    : null;
                   return (
                     <label
                       key={contact.id}
@@ -537,6 +620,9 @@ export function CampaignWizard({
                         )}
                         {badgeReason && (
                           <Badge variant={reasonBadgeVariant(badgeReason)}>{reasonLabel(badgeReason)}</Badge>
+                        )}
+                        {!badgeReason && preSelectReason && (
+                          <Badge variant={reasonBadgeVariant(preSelectReason)}>{reasonLabel(preSelectReason)}</Badge>
                         )}
                       </span>
                     </label>
@@ -601,17 +687,21 @@ export function CampaignWizard({
             {eligibility.isChecking && (
               <p className="text-sm text-text-secondary" aria-live="polite">Updating recipient summary…</p>
             )}
-            {eligibility.status === 'error' && (
-              <p className="text-sm text-error" role="alert">
-                {eligibility.errorMessage}
-                <button type="button" onClick={eligibility.retry} className="ml-2 text-information hover:underline">Try again</button>
-              </p>
-            )}
-            {hasUnknownTokens && unknownTokenAction === 'fix' && (
-              <p className="text-sm text-error" role="alert">Unknown tokens must be fixed or explicitly continued: {eligibility.result!.unknownTokens.join(', ')}</p>
-            )}
-            {submitError && (
-              <p className="text-sm text-error" role="alert">{submitError}</p>
+            {(eligibility.status === 'error' || submitError || (hasUnknownTokens && unknownTokenAction === 'fix')) && (
+              <div ref={errorRef} tabIndex={-1} role="alert" className="space-y-1">
+                {eligibility.status === 'error' && (
+                  <p className="text-sm text-error">
+                    {eligibility.errorMessage}
+                    <button type="button" onClick={eligibility.retry} className="ml-2 text-information hover:underline">Try again</button>
+                  </p>
+                )}
+                {hasUnknownTokens && unknownTokenAction === 'fix' && (
+                  <p className="text-sm text-error">Unknown tokens must be fixed or explicitly continued: {eligibility.result!.unknownTokens.join(', ')}</p>
+                )}
+                {submitError && (
+                  <p className="text-sm text-error">{submitError}</p>
+                )}
+              </div>
             )}
             <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
