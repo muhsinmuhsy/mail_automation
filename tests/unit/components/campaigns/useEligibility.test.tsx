@@ -45,10 +45,10 @@ const baseParams = {
   templateId: 'template-1',
   emailAccountId: 'account-1',
   contactIds: ['c1'],
-  attachmentIds: [],
-  resendRecipients: [],
-  missingValueAction: 'exclude' as const,
-  unknownTokenAction: 'fix' as const,
+  attachmentIds: [] as string[],
+  resendRecipients: [] as { contactId: string; recipientEmail: string }[],
+  missingValueAction: 'exclude' as 'exclude' | 'continue',
+  unknownTokenAction: 'fix' as 'fix' | 'continue',
   enabled: true,
 };
 
@@ -79,7 +79,18 @@ describe('useEligibility — initial state', () => {
   });
 });
 
-describe('useEligibility — immediate trigger on enable', () => {
+describe('useEligibility — fires immediately (no debounce)', () => {
+  it('fires check immediately when enabled is already true on first render', async () => {
+    const mockFetch = mockFetchSuccess();
+    const { result } = renderHook(() => useEligibility(baseParams));
+
+    await act(async () => { vi.advanceTimersByTime(0); });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe('ready');
+    expect(result.current.isReady).toBe(true);
+  });
+
   it('fires check immediately when enabled transitions from false to true', async () => {
     const mockFetch = mockFetchSuccess();
     const { result, rerender } = renderHook(({ enabled }) => useEligibility({ ...baseParams, enabled }), {
@@ -96,19 +107,6 @@ describe('useEligibility — immediate trigger on enable', () => {
     expect(result.current.isReady).toBe(true);
   });
 
-  it('fires check immediately when enabled is already true on first render', async () => {
-    const mockFetch = mockFetchSuccess();
-    const { result } = renderHook(() => useEligibility(baseParams));
-
-    await act(async () => { vi.advanceTimersByTime(0); });
-
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(result.current.status).toBe('ready');
-    expect(result.current.isReady).toBe(true);
-  });
-});
-
-describe('useEligibility — immediate trigger on sender/template/attachment change', () => {
   it('fires immediately when templateId changes (no debounce)', async () => {
     const mockFetch = mockFetchSuccess();
     const { rerender } = renderHook(({ templateId }) => useEligibility({ ...baseParams, templateId }), {
@@ -153,10 +151,8 @@ describe('useEligibility — immediate trigger on sender/template/attachment cha
 
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
-});
 
-describe('useEligibility — debounced trigger on contact/resend/action change', () => {
-  it('debounces contact changes by 250ms', async () => {
+  it('fires immediately when contactIds change (no debounce)', async () => {
     const mockFetch = mockFetchSuccess();
     const { rerender } = renderHook(({ contactIds }) => useEligibility({ ...baseParams, contactIds }), {
       initialProps: { contactIds: ['c1'] },
@@ -166,17 +162,12 @@ describe('useEligibility — debounced trigger on contact/resend/action change',
     expect(mockFetch).toHaveBeenCalledTimes(1);
 
     rerender({ contactIds: ['c1', 'c2'] });
+    await act(async () => { vi.advanceTimersByTime(0); });
 
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-
-    await act(async () => { vi.advanceTimersByTime(249); });
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-
-    await act(async () => { vi.advanceTimersByTime(1); });
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
-  it('debounces resendRecipients changes by 250ms', async () => {
+  it('fires immediately when resendRecipients change (no debounce)', async () => {
     const mockFetch = mockFetchSuccess();
     const { rerender } = renderHook(({ resendRecipients }) => useEligibility({ ...baseParams, resendRecipients }), {
       initialProps: { resendRecipients: [] as { contactId: string; recipientEmail: string }[] },
@@ -186,15 +177,12 @@ describe('useEligibility — debounced trigger on contact/resend/action change',
     expect(mockFetch).toHaveBeenCalledTimes(1);
 
     rerender({ resendRecipients: [{ contactId: 'c1', recipientEmail: 'ada@example.com' }] });
+    await act(async () => { vi.advanceTimersByTime(0); });
 
-    await act(async () => { vi.advanceTimersByTime(249); });
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-
-    await act(async () => { vi.advanceTimersByTime(1); });
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
-  it('debounces missingValueAction changes by 250ms', async () => {
+  it('fires immediately when missingValueAction changes (no debounce)', async () => {
     const mockFetch = mockFetchSuccess();
     const { rerender } = renderHook(({ missingValueAction }) => useEligibility({ ...baseParams, missingValueAction }), {
       initialProps: { missingValueAction: 'exclude' as 'exclude' | 'continue' },
@@ -203,18 +191,15 @@ describe('useEligibility — debounced trigger on contact/resend/action change',
     await act(async () => { vi.advanceTimersByTime(0); });
     expect(mockFetch).toHaveBeenCalledTimes(1);
 
-    rerender({ missingValueAction: 'continue' as const });
+    rerender({ missingValueAction: 'continue' });
+    await act(async () => { vi.advanceTimersByTime(0); });
 
-    await act(async () => { vi.advanceTimersByTime(249); });
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-
-    await act(async () => { vi.advanceTimersByTime(1); });
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });
 
 describe('useEligibility — abort behavior', () => {
-  it('aborts previous request when a new immediate trigger fires', async () => {
+  it('aborts previous request when a new trigger fires', async () => {
     const abortSpy = vi.spyOn(AbortController.prototype, 'abort');
     mockFetchSuccess();
 
@@ -328,7 +313,7 @@ describe('useEligibility — derived state', () => {
   });
 });
 
-describe('useEligibility — no trigger when disabled', () => {
+describe('useEligibility — no trigger when disabled or missing required fields', () => {
   it('does not fire when enabled is false', async () => {
     const mockFetch = mockFetchSuccess();
     renderHook(() => useEligibility({ ...baseParams, enabled: false }));
@@ -367,20 +352,16 @@ describe('useEligibility — no trigger when disabled', () => {
 });
 
 describe('useEligibility — cleanup', () => {
-  it('clears debounce timer on unmount', async () => {
-    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
-    mockFetchSuccess();
+  it('aborts pending request on unmount', async () => {
+    const abortSpy = vi.spyOn(AbortController.prototype, 'abort');
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Promise(() => {})));
 
-    const { rerender, unmount } = renderHook(({ contactIds }) => useEligibility({ ...baseParams, contactIds }), {
-      initialProps: { contactIds: ['c1'] },
-    });
+    const { unmount } = renderHook(() => useEligibility(baseParams));
 
     await act(async () => { vi.advanceTimersByTime(0); });
-
-    rerender({ contactIds: ['c1', 'c2'] });
     unmount();
 
-    expect(clearTimeoutSpy).toHaveBeenCalled();
-    clearTimeoutSpy.mockRestore();
+    expect(abortSpy).toHaveBeenCalled();
+    abortSpy.mockRestore();
   });
 });
