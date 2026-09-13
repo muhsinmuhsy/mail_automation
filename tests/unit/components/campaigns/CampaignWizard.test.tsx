@@ -470,4 +470,107 @@ describe('CampaignWizard', () => {
       expect(screen.getByText('Already scheduled')).toBeInTheDocument();
     }, { timeout: 5000 });
   });
+
+  it('shows loading skeleton during initial eligibility check', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string) => {
+      if (url === '/api/campaigns/pre-check') {
+        return new Promise(() => {});
+      }
+      if (url === '/api/campaigns/recipient-status') {
+        return { ok: true, json: async () => ({ success: true, data: { statuses: [] } }) };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+
+    await waitFor(() => {
+      expect(screen.getByText('Checking recipients…')).toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
+
+  it('shows skeleton badges on contacts while recipient-status is loading', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/recipient-status') {
+        return new Promise(() => {});
+      }
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        const count = body.contactIds?.length ?? 0;
+        return {
+          ok: true,
+          json: async () => mockPreCheckResponse({
+            selectedCount: count,
+            eligibleCount: count,
+            totalContactCount: count,
+            recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      const skeletons = screen.getAllByLabelText('Checking status');
+      expect(skeletons.length).toBeGreaterThan(0);
+    }, { timeout: 5000 });
+  });
+
+  it('shows Updating spinner during stale refetch', async () => {
+    let preCheckCallCount = 0;
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        preCheckCallCount++;
+        if (preCheckCallCount === 1) {
+          const body = JSON.parse(init.body as string);
+          const count = body.contactIds?.length ?? 0;
+          return {
+            ok: true,
+            json: async () => mockPreCheckResponse({
+              selectedCount: count,
+              eligibleCount: count,
+              totalContactCount: count,
+              recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+            }),
+          };
+        }
+        return new Promise(() => {});
+      }
+      if (url === '/api/campaigns/recipient-status') {
+        return { ok: true, json: async () => ({ success: true, data: { statuses: [] } }) };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+
+    await waitFor(() => {
+      expect(screen.getByText(/emails? will be scheduled/)).toBeInTheDocument();
+    }, { timeout: 5000 });
+
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+
+    await waitFor(() => {
+      expect(screen.getByText('Updating…')).toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
 });

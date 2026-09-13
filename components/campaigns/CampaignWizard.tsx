@@ -145,6 +145,7 @@ export function CampaignWizard({
   const [idempotencyKey, setIdempotencyKey] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [recipientStatuses, setRecipientStatuses] = useState<Map<string, { classification: string; lastSentAt?: string }>>(new Map());
+  const [recipientStatusLoading, setRecipientStatusLoading] = useState(false);
   const [followUpNotice, setFollowUpNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement | null>(null);
   const recipientStatusAbort = useRef<AbortController | null>(null);
@@ -331,12 +332,12 @@ export function CampaignWizard({
 
   useEffect(() => {
     if (step !== 2 || !effectiveTemplateId || !effectiveEmailAccountId) {
-      const timer = setTimeout(() => setRecipientStatuses(new Map()), 0);
+      const timer = setTimeout(() => { setRecipientStatuses(new Map()); setRecipientStatusLoading(false); }, 0);
       return () => clearTimeout(timer);
     }
     const visibleIds = displayContacts.slice(0, 100).map(c => c.id);
     if (visibleIds.length === 0) {
-      const timer = setTimeout(() => setRecipientStatuses(new Map()), 0);
+      const timer = setTimeout(() => { setRecipientStatuses(new Map()); setRecipientStatusLoading(false); }, 0);
       return () => clearTimeout(timer);
     }
     if (recipientStatusDebounce.current) clearTimeout(recipientStatusDebounce.current);
@@ -344,6 +345,7 @@ export function CampaignWizard({
       recipientStatusAbort.current?.abort();
       const controller = new AbortController();
       recipientStatusAbort.current = controller;
+      setRecipientStatusLoading(true);
       fetch('/api/campaigns/recipient-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -363,7 +365,8 @@ export function CampaignWizard({
           }
           setRecipientStatuses(map);
         })
-        .catch(() => { if (!controller.signal.aborted) return; });
+        .catch(() => { if (!controller.signal.aborted) return; })
+        .finally(() => { if (!controller.signal.aborted) setRecipientStatusLoading(false); });
     }, 300);
     return () => { if (recipientStatusDebounce.current) clearTimeout(recipientStatusDebounce.current); };
   }, [step, effectiveTemplateId, effectiveEmailAccountId, displayContacts]);
@@ -467,6 +470,15 @@ export function CampaignWizard({
           <fieldset className="flex flex-col gap-3">
             <legend className="text-sm font-medium text-text-primary">Contacts</legend>
 
+            {eligibility.isFetching && !eligibility.isReady && (
+              <div aria-live="polite" className="rounded-[var(--radius-md)] border border-neutral-200 bg-surface p-4">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+                  <p className="text-sm text-text-secondary">Checking recipients…</p>
+                </div>
+              </div>
+            )}
+
             {eligibility.isReady && (
               <div aria-live="polite" className="rounded-[var(--radius-md)] border border-neutral-200 bg-surface p-4">
                 <p className="font-medium text-text-primary">
@@ -490,8 +502,14 @@ export function CampaignWizard({
                     {eligibility.result!.includedWithoutPreviousSendCount} new {eligibility.result!.includedPreviousCount === 1 ? 'recipient' : 'recipients'} + {eligibility.result!.includedPreviousCount} {eligibility.result!.includedPreviousCount === 1 ? 'follow-up' : 'follow-ups'}
                   </p>
                 )}
-                {eligibility.isFetching && (
-                  <p className="mt-1 text-sm text-text-secondary">{eligibility.isChecking ? 'Checking recipients…' : 'Updating…'}</p>
+                {eligibility.isFetching && eligibility.isStale && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+                    <p className="text-sm text-text-secondary">Updating…</p>
+                  </div>
+                )}
+                {eligibility.isFetching && eligibility.isChecking && eligibility.isReady && (
+                  <p className="mt-1 text-sm text-text-secondary">Checking recipients…</p>
                 )}
                 {eligibility.status === 'error' && (
                   <p className="mt-1 text-sm text-error">
@@ -627,6 +645,9 @@ export function CampaignWizard({
                         )}
                         {!badgeReason && preSelectReason && (
                           <Badge variant={reasonBadgeVariant(preSelectReason)}>{reasonLabel(preSelectReason)}</Badge>
+                        )}
+                        {!badgeReason && !preSelectReason && recipientStatusLoading && (
+                          <span className="inline-block h-5 w-24 animate-pulse rounded-full bg-neutral-200" aria-label="Checking status" />
                         )}
                       </span>
                     </label>
