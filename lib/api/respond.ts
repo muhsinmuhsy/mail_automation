@@ -8,14 +8,14 @@ import { fromAppError, success, type ApiSuccessResponse } from '@/lib/errors/err
  */
 
 export function respondOk<T>(data: T, requestId: string, message?: string, status = 200): NextResponse {
-  const headers: Record<string, string> = { 'X-Request-ID': requestId };
+  const headers: Record<string, string> = { 'X-Request-ID': requestId, 'Cache-Control': 'private, no-store' };
   return NextResponse.json(success(data, message), { status, headers });
 }
 
 export function respondError(err: unknown, requestId?: string): NextResponse {
   const requestIdVal = requestId ?? globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}`;
   const { status, body } = fromAppError(err);
-  const headers: Record<string, string> = { 'X-Request-ID': requestIdVal };
+  const headers: Record<string, string> = { 'X-Request-ID': requestIdVal, 'Cache-Control': 'private, no-store' };
   if (body.error.retryAfter !== undefined) {
     headers['Retry-After'] = String(body.error.retryAfter);
   }
@@ -35,7 +35,7 @@ export function respondList<T>(
   requestId: string,
   message?: string
 ): NextResponse {
-  const headers: Record<string, string> = { 'X-Request-ID': requestId };
+  const headers: Record<string, string> = { 'X-Request-ID': requestId, 'Cache-Control': 'private, no-store' };
   return NextResponse.json(
     {
       success: true,

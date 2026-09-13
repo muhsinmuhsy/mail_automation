@@ -281,7 +281,6 @@ export default function CampaignsPage() {
             emailAccounts={options.emailAccounts}
             attachments={options.attachments}
             templates={options.templates}
-            contacts={options.contacts}
             loading={optionsLoading}
             onSubmit={createCampaign}
           />

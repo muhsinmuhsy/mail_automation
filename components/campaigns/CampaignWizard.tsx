@@ -5,17 +5,19 @@ import { SchedulePreview } from './SchedulePreview';
 import { useEligibility, type EligibilityResult } from './useEligibility';
 import Link from 'next/link';
 import { attachmentSelectionError, MAX_FILE_BYTES } from '@/lib/email/attachment-limits';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { localDateTimeInZone, zonedDateTimeToIso, formatScheduledTime } from '@/lib/scheduling/time';
 import { Button } from '@/components/ui/Button';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
+import { Pagination } from '@/components/ui/Pagination';
 
 const steps = ['Campaign', 'Content', 'Contacts', 'Schedule', 'Review'];
 
 const MAX_CAMPAIGN_CONTACTS = 1000;
+const CONTACT_PAGE_SIZE = 50;
 
 function generateUuid(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -117,6 +119,13 @@ export function CampaignWizard({
   const [templateId, setTemplateId] = useState('');
   const [contactIds, setContactIds] = useState<string[]>([]);
   const [contactSearch, setContactSearch] = useState('');
+  const [contactPage, setContactPage] = useState(1);
+  const [fetchedContacts, setFetchedContacts] = useState<CampaignSelectOption[]>([]);
+  const [contactTotal, setContactTotal] = useState(0);
+  const [contactTotalPages, setContactTotalPages] = useState(1);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const contactAbortRef = useRef<AbortController | null>(null);
+  const contactSearchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [startAt, setStartAt] = useState(defaultLocalDateTime);
   const [timezone, setTimezone] = useState(() => {
     try {
@@ -281,9 +290,35 @@ export function CampaignWizard({
     });
   };
 
-  const filteredContacts = contacts.filter(contact =>
+  const usePaginatedContacts = contacts.length === 0;
+  const displayContacts = usePaginatedContacts ? fetchedContacts : contacts.filter(contact =>
     `${contact.label} ${contact.description ?? ''}`.toLowerCase().includes(contactSearch.toLowerCase())
   );
+
+  useEffect(() => {
+    if (!usePaginatedContacts || step !== 2) return;
+    if (contactSearchDebounce.current) clearTimeout(contactSearchDebounce.current);
+    contactSearchDebounce.current = setTimeout(() => {
+      contactAbortRef.current?.abort();
+      const controller = new AbortController();
+      contactAbortRef.current = controller;
+      setContactsLoading(true);
+      const params = new URLSearchParams({ page: String(contactPage), limit: String(CONTACT_PAGE_SIZE) });
+      if (contactSearch.trim()) params.set('search', contactSearch.trim());
+      fetch(`/api/contacts?${params.toString()}`, { credentials: 'include', signal: controller.signal })
+        .then(async res => {
+          if (controller.signal.aborted) return;
+          const body = await res.json() as { success: boolean; data?: { id: string; name: string | null; email: string }[]; pagination?: { total: number; totalPages: number } };
+          if (!body.success || !body.data) return;
+          setFetchedContacts(body.data.map(c => ({ id: c.id, label: c.name ?? c.email, description: c.email })));
+          setContactTotal(body.pagination?.total ?? body.data.length);
+          setContactTotalPages(body.pagination?.totalPages ?? 1);
+        })
+        .catch(() => { if (!controller.signal.aborted) return; })
+        .finally(() => { if (!controller.signal.aborted) setContactsLoading(false); });
+    }, usePaginatedContacts ? 250 : 0);
+    return () => { if (contactSearchDebounce.current) clearTimeout(contactSearchDebounce.current); };
+  }, [usePaginatedContacts, step, contactPage, contactSearch]);
 
   const excludedReasons = eligibility.result?.excludedByReason;
   const hasExclusions = eligibility.isReady && (eligibility.result?.excludedCount ?? 0) > 0;
@@ -469,17 +504,19 @@ export function CampaignWizard({
               </div>
             )}
 
-            <Input label="Search contacts" value={contactSearch} onChange={event => setContactSearch(event.target.value)} />
+            <Input label="Search contacts" value={contactSearch} onChange={event => { setContactSearch(event.target.value); if (usePaginatedContacts) setContactPage(1); }} />
             <div className="flex flex-wrap items-center gap-3 text-sm">
-              <span>{contactIds.length} of {contacts.length} contacts selected</span>
-              <Button variant="secondary" size="sm" onClick={() => setContactIds(contacts.slice(0, MAX_CAMPAIGN_CONTACTS).map(contact => contact.id))} disabled={contacts.length === 0}>Select all contacts</Button>
+              <span>{contactIds.length} selected{usePaginatedContacts ? ` · ${contactTotal} total` : ` of ${contacts.length}`}</span>
+              <Button variant="secondary" size="sm" onClick={() => setContactIds(prev => { const pageIds = displayContacts.map(c => c.id); const merged = [...new Set([...prev, ...pageIds])]; return merged.slice(0, MAX_CAMPAIGN_CONTACTS); })} disabled={displayContacts.length === 0}>Select this page</Button>
               <Button variant="secondary" size="sm" onClick={() => { setContactIds([]); setResendRecipients([]); }} disabled={!contactIds.length}>Clear contacts</Button>
             </div>
-            {contacts.length === 0 ? (
-              <p className="text-supporting text-text-secondary">Add at least one contact before launching a campaign.</p>
+            {contactsLoading ? (
+              <p className="text-supporting text-text-secondary">Loading contacts…</p>
+            ) : displayContacts.length === 0 ? (
+              <p className="text-supporting text-text-secondary">{usePaginatedContacts ? 'No contacts found. Try a different search.' : 'Add at least one contact before launching a campaign.'}</p>
             ) : (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {filteredContacts.map((contact) => {
+                {displayContacts.map((contact) => {
                   const recipient = eligibility.result?.recipients.find(r => r.contactId === contact.id);
                   const badgeReason = recipient?.primaryReason;
                   return (
@@ -506,6 +543,9 @@ export function CampaignWizard({
                   );
                 })}
               </div>
+            )}
+            {usePaginatedContacts && contactTotalPages > 1 && (
+              <Pagination page={contactPage} totalPages={contactTotalPages} onPageChange={setContactPage} />
             )}
             {errors.contactIds && <p className="text-xs text-error">{errors.contactIds}</p>}
           </fieldset>
@@ -615,7 +655,7 @@ export function CampaignWizard({
       </div>
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        <Button variant="secondary" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0 || submitting || eligibility.isChecking}>
+        <Button variant="secondary" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0 || submitting}>
           Back
         </Button>
         {step === steps.length - 1 ? (

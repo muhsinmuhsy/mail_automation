@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server';
 import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondList } from '@/lib/api/respond';
-import { idParamSchema, paginationSchema } from '@/lib/validation/common';
+import { parseListQuery } from '@/lib/api/list';
+import { idParamSchema } from '@/lib/validation/common';
 import { NotFoundError } from '@/lib/errors';
 
 /**
@@ -21,12 +22,7 @@ const _GET = defineRoute(async (req, ctx) => {
     );
   }
 
-  const { searchParams } = new URL(req.url);
-  const pagination = paginationSchema.parse({
-    page: searchParams.get('page') ?? undefined,
-    limit: searchParams.get('limit') ?? undefined,
-  });
-  const { page, limit } = pagination;
+  const { page, limit } = parseListQuery(req);
 
   // Verify the contact exists and belongs to the user.
   const contact = await getPrisma().contact.findFirst({

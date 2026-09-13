@@ -117,23 +117,29 @@ export function useEligibility(params: UseEligibilityParams) {
     }
   }, [templateId, emailAccountId, contactIds, attachmentIds, resendRecipients, missingValueAction, unknownTokenAction]);
 
-  const triggerCheck = useCallback((immediate: boolean) => {
+  const triggerImmediate = useCallback(() => {
     if (!enabled) return;
     requestIdRef.current += 1;
     const reqId = requestIdRef.current;
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    void check(controller.signal, reqId);
+  }, [check, enabled]);
 
-    if (immediate) {
+  const triggerDebounced = useCallback(() => {
+    if (!enabled) return;
+    requestIdRef.current += 1;
+    const reqId = requestIdRef.current;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    setStatus(prev => prev === 'ready' ? 'stale' : prev);
+    debounceTimer.current = setTimeout(() => {
       void check(controller.signal, reqId);
-    } else {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      setStatus(prev => prev === 'ready' ? 'stale' : prev);
-      debounceTimer.current = setTimeout(() => {
-        void check(controller.signal, reqId);
-      }, DEBOUNCE_MS);
-    }
+    }, DEBOUNCE_MS);
   }, [check, enabled]);
 
   useEffect(() => {
@@ -143,8 +149,14 @@ export function useEligibility(params: UseEligibilityParams) {
       requestIdRef.current += 1;
       return;
     }
-    triggerCheck(false);
-  }, [hasRequired, templateId, emailAccountId, contactIdsKey, attachmentIdsKey, resendKey, missingValueAction, unknownTokenAction, triggerCheck]);
+    triggerImmediate();
+  }, [hasRequired, templateId, emailAccountId, attachmentIdsKey, triggerImmediate]);
+
+  useEffect(() => {
+    if (!hasRequired) return;
+    const timer = setTimeout(() => triggerDebounced(), 0);
+    return () => clearTimeout(timer);
+  }, [hasRequired, contactIdsKey, resendKey, missingValueAction, unknownTokenAction, triggerDebounced]);
 
   useEffect(() => {
     if (!hasRequired && status !== 'idle') {
@@ -165,27 +177,27 @@ export function useEligibility(params: UseEligibilityParams) {
     pollTimer.current = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
       if (Date.now() - lastSuccessAt.current > FRESHNESS_MS) {
-        triggerCheck(false);
+        triggerDebounced();
       }
     }, POLL_MS);
     return () => { if (pollTimer.current) clearInterval(pollTimer.current); };
-  }, [enabled, status, triggerCheck]);
+  }, [enabled, status, triggerDebounced]);
 
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible' && enabled && hasRequired) {
         if (Date.now() - lastSuccessAt.current > FRESHNESS_MS) {
-          triggerCheck(true);
+          triggerImmediate();
         }
       }
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [enabled, hasRequired, triggerCheck]);
+  }, [enabled, hasRequired, triggerImmediate]);
 
   const retry = useCallback(() => {
-    triggerCheck(true);
-  }, [triggerCheck]);
+    triggerImmediate();
+  }, [triggerImmediate]);
 
   const effectiveCount = result?.eligibleCount ?? contactIds.length;
   const isReady = status === 'ready' && result !== null;
