@@ -160,10 +160,12 @@ export function useEligibility(params: UseEligibilityParams) {
   const retry = () => setRetryCount(c => c + 1);
 
   const effectiveCount = result?.eligibleCount ?? contactIds.length;
-  const isReady = status === 'ready' && result !== null;
-  const isChecking = status === 'checking' || status === 'stale';
+  const isReady = result !== null;
+  const isChecking = status === 'checking';
+  const isStale = status === 'stale';
+  const isFetching = status === 'checking' || status === 'stale';
   const isBlocked = isReady && result.blockedByUnknownTokens;
-  const canSchedule = isReady && !isBlocked && result.eligibleCount > 0 && !result.unknownTokens.length;
+  const canSchedule = status === 'ready' && result !== null && !isBlocked && result.eligibleCount > 0 && !result.unknownTokens.length;
 
-  return { status, result, errorMessage, effectiveCount, isReady, isChecking, isBlocked, canSchedule, retry };
+  return { status, result, errorMessage, effectiveCount, isReady, isChecking, isStale, isFetching, isBlocked, canSchedule, retry };
 }

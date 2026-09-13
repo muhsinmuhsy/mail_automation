@@ -362,3 +362,63 @@ describe('computeEligibility — followUpSentJobIds collection (Fix #3)', () => 
     expect(result.followUpSentJobIds).toContain('job-bob');
   });
 });
+
+describe('computeEligibility — no PG normalization query (Fix #4 revert)', () => {
+  const template: MockTemplate = {
+    id: 'template-1',
+    subject: 'Hello {{name}}',
+    body: 'Body',
+    body_text: 'Body',
+    body_html: null,
+  };
+
+  it('uses JS normalizeEmail instead of a $queryRaw normalization query', async () => {
+    const contacts: MockContact[] = [
+      { id: 'c1', name: 'Alice', email: 'Alice@Example.COM', user_id: 'user-1', contact_field_values: [] },
+      { id: 'c2', name: 'Bob', email: '  bob@test.com  ', user_id: 'user-1', contact_field_values: [] },
+    ];
+    const db = makeMockDb({ contacts, template });
+
+    const result = await computeEligibility(db, {
+      ...baseInput,
+      contactIds: ['c1', 'c2'],
+      resendRecipients: [],
+    });
+
+    const $queryRawCalls = (db as unknown as { $queryRaw: { mock: { calls: unknown[][] } } }).$queryRaw.mock.calls;
+    const normalizationCalls = $queryRawCalls.filter((call) => {
+      const sql = (call[0] as TemplateStringsArray).join('?');
+      return sql.includes('lower(btrim(original))') && sql.includes('unnest');
+    });
+    expect(normalizationCalls).toHaveLength(0);
+
+    expect(result.summary.eligibleCount).toBe(2);
+  });
+
+  it('still makes history $queryRaw but not normalization $queryRaw', async () => {
+    const contacts: MockContact[] = [
+      { id: 'c1', name: 'Alice', email: 'alice@test.com', user_id: 'user-1', contact_field_values: [] },
+    ];
+    const db = makeMockDb({
+      contacts,
+      template,
+      historyRows: [
+        { normalized_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-01-01'), scheduled_at: null, id: 'job-1' },
+      ],
+    });
+
+    await computeEligibility(db, {
+      ...baseInput,
+      contactIds: ['c1'],
+      resendRecipients: [],
+    });
+
+    const $queryRawCalls = (db as unknown as { $queryRaw: { mock: { calls: unknown[][] } } }).$queryRaw.mock.calls;
+    expect($queryRawCalls.length).toBeGreaterThanOrEqual(1);
+
+    for (const call of $queryRawCalls) {
+      const sql = (call[0] as TemplateStringsArray).join('?');
+      expect(sql).not.toContain('unnest');
+    }
+  });
+});

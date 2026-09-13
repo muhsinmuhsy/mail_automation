@@ -365,3 +365,140 @@ describe('useEligibility — cleanup', () => {
     abortSpy.mockRestore();
   });
 });
+
+describe('useEligibility — stale-while-revalidate', () => {
+  it('keeps previous result visible (isReady stays true) during refetch', async () => {
+    const firstResult = makeResult({ eligibleCount: 2 });
+    const secondResult = makeResult({ eligibleCount: 3 });
+
+    let resolveSecond: (value: { ok: boolean; json: () => Promise<unknown> }) => void = () => {};
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => {
+      if (mockedFetchCalls === 0) {
+        mockedFetchCalls++;
+        return { ok: true, json: async () => ({ success: true, data: firstResult }) };
+      }
+      mockedFetchCalls++;
+      return new Promise((resolve) => { resolveSecond = resolve; });
+    }));
+    let mockedFetchCalls = 0;
+
+    const { result, rerender } = renderHook(({ contactIds }) => useEligibility({ ...baseParams, contactIds }), {
+      initialProps: { contactIds: ['c1'] },
+    });
+
+    await act(async () => { vi.advanceTimersByTime(0); });
+    expect(result.current.status).toBe('ready');
+    expect(result.current.isReady).toBe(true);
+    expect(result.current.result?.eligibleCount).toBe(2);
+
+    rerender({ contactIds: ['c1', 'c2'] });
+    await act(async () => { vi.advanceTimersByTime(0); });
+
+    expect(result.current.isReady).toBe(true);
+    expect(result.current.isStale).toBe(true);
+    expect(result.current.isFetching).toBe(true);
+    expect(result.current.isChecking).toBe(false);
+    expect(result.current.result?.eligibleCount).toBe(2);
+
+    await act(async () => {
+      resolveSecond({ ok: true, json: async () => ({ success: true, data: secondResult }) });
+    });
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.isReady).toBe(true);
+    expect(result.current.isStale).toBe(false);
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.result?.eligibleCount).toBe(3);
+  });
+
+  it('canSchedule is false during refetch (cannot submit with stale data)', async () => {
+    const firstResult = makeResult({ eligibleCount: 2 });
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => {
+      if (mockedCalls === 0) {
+        mockedCalls++;
+        return { ok: true, json: async () => ({ success: true, data: firstResult }) };
+      }
+      mockedCalls++;
+      return new Promise(() => {});
+    }));
+    let mockedCalls = 0;
+
+    const { result, rerender } = renderHook(({ contactIds }) => useEligibility({ ...baseParams, contactIds }), {
+      initialProps: { contactIds: ['c1'] },
+    });
+
+    await act(async () => { vi.advanceTimersByTime(0); });
+    expect(result.current.canSchedule).toBe(true);
+
+    rerender({ contactIds: ['c1', 'c2'] });
+    await act(async () => { vi.advanceTimersByTime(0); });
+
+    expect(result.current.canSchedule).toBe(false);
+    expect(result.current.isReady).toBe(true);
+  });
+
+  it('isChecking is true only on initial load, not during refetch', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => {
+      if (mockedCalls === 0) {
+        mockedCalls++;
+        return { ok: true, json: async () => ({ success: true, data: makeResult() }) };
+      }
+      mockedCalls++;
+      return new Promise(() => {});
+    }));
+    let mockedCalls = 0;
+
+    const { result, rerender } = renderHook(({ contactIds }) => useEligibility({ ...baseParams, contactIds }), {
+      initialProps: { contactIds: ['c1'] },
+    });
+
+    await act(async () => { vi.advanceTimersByTime(0); });
+    expect(result.current.isChecking).toBe(false);
+
+    rerender({ contactIds: ['c1', 'c2'] });
+    await act(async () => { vi.advanceTimersByTime(0); });
+
+    expect(result.current.isChecking).toBe(false);
+    expect(result.current.isStale).toBe(true);
+    expect(result.current.isFetching).toBe(true);
+  });
+
+  it('isChecking is true on initial load with no previous data', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Promise(() => {})));
+
+    const { result } = renderHook(() => useEligibility(baseParams));
+
+    await act(async () => { vi.advanceTimersByTime(0); });
+
+    expect(result.current.isChecking).toBe(true);
+    expect(result.current.isStale).toBe(false);
+    expect(result.current.isFetching).toBe(true);
+    expect(result.current.isReady).toBe(false);
+    expect(result.current.result).toBeNull();
+  });
+
+  it('effectiveCount uses previous result during refetch (stable count)', async () => {
+    const firstResult = makeResult({ eligibleCount: 5 });
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => {
+      if (mockedCalls === 0) {
+        mockedCalls++;
+        return { ok: true, json: async () => ({ success: true, data: firstResult }) };
+      }
+      mockedCalls++;
+      return new Promise(() => {});
+    }));
+    let mockedCalls = 0;
+
+    const { result, rerender } = renderHook(({ contactIds }) => useEligibility({ ...baseParams, contactIds }), {
+      initialProps: { contactIds: ['c1'] },
+    });
+
+    await act(async () => { vi.advanceTimersByTime(0); });
+    expect(result.current.effectiveCount).toBe(5);
+
+    rerender({ contactIds: ['c1', 'c2', 'c3'] });
+    await act(async () => { vi.advanceTimersByTime(0); });
+
+    expect(result.current.effectiveCount).toBe(5);
+  });
+});

@@ -414,4 +414,60 @@ describe('CampaignWizard', () => {
     expect(payload.contactIds).not.toBe(['contact-1', 'contact-2']);
     expect(Array.isArray(payload.contactIds)).toBe(true);
   });
+
+  it('shows Already scheduled badge from recipient-status for selected contacts during refetch', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/recipient-status' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: {
+              statuses: (body.contactIds ?? []).map((id: string) => ({
+                contactId: id,
+                classification: 'PENDING',
+                lastSentAt: null,
+              })),
+            },
+          }),
+        };
+      }
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        const count = body.contactIds?.length ?? 0;
+        return {
+          ok: true,
+          json: async () => mockPreCheckResponse({
+            selectedCount: count,
+            eligibleCount: 0,
+            excludedCount: count,
+            totalContactCount: count,
+            excludedByReason: { duplicateAddress: 0, previouslySent: 0, pending: count, deliveryUnknown: 0, missingValues: 0 },
+            recipients: (body.contactIds ?? []).map((id: string) => ({
+              contactId: id,
+              included: false,
+              followUpSelected: false,
+              canSelectFollowUp: false,
+              primaryReason: 'PENDING',
+            })),
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+
+    await waitFor(() => {
+      expect(screen.getByText('Already scheduled')).toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
 });

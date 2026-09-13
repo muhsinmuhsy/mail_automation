@@ -10,6 +10,9 @@ const mockRequireAdmin = vi.fn();
 const mockGetDbRole = vi.fn();
 const mockEnforceRateLimit = vi.fn();
 const mockRespondError = vi.fn();
+const mockLoggerError = vi.fn();
+const mockLoggerWarn = vi.fn();
+const mockLoggerInfo = vi.fn();
 
 vi.mock('@/lib/api/session', () => ({
   requireVerifiedUser: (...a: unknown[]) => mockRequireVerifiedUser(...a),
@@ -29,7 +32,16 @@ vi.mock('@/lib/api/respond', () => ({
   respondError: (...a: unknown[]) => mockRespondError(...a),
 }));
 
+vi.mock('@/lib/logging/logger', () => ({
+  logger: {
+    error: (...a: unknown[]) => mockLoggerError(...a),
+    warn: (...a: unknown[]) => mockLoggerWarn(...a),
+    info: (...a: unknown[]) => mockLoggerInfo(...a),
+  },
+}));
+
 import { defineRoute } from '@/lib/api/route';
+import { ValidationError } from '@/lib/errors';
 
 function makeReq(url = 'https://api.test/x') {
   return new NextRequest(url);
@@ -133,5 +145,39 @@ describe('lib/api/route', () => {
     await route(makeReq(), { params: {} });
     expect(mockRespondError).toHaveBeenCalledWith(authErr, expect.any(String));
     expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('logs non-AppError exceptions via logger.error before responding', async () => {
+    mockRequireVerifiedUser.mockResolvedValue({ id: 'u1', email: 'a@b.c' });
+    const boom = new Error('something broke');
+    const handler = vi.fn(() => { throw boom; });
+    const route = defineRoute(handler);
+    await route(makeReq(), { params: {} });
+    expect(mockLoggerError).toHaveBeenCalledWith('unhandled exception', expect.objectContaining({
+      message: 'something broke',
+      stack: expect.any(String),
+    }));
+    expect(mockRespondError).toHaveBeenCalledWith(boom, expect.any(String));
+  });
+
+  it('does NOT log AppError exceptions via logger.error (they are operational)', async () => {
+    mockRequireVerifiedUser.mockResolvedValue({ id: 'u1', email: 'a@b.c' });
+    const validationErr = new ValidationError('Bad input');
+    const handler = vi.fn(() => { throw validationErr; });
+    const route = defineRoute(handler);
+    await route(makeReq(), { params: {} });
+    expect(mockLoggerError).not.toHaveBeenCalled();
+    expect(mockRespondError).toHaveBeenCalledWith(validationErr, expect.any(String));
+  });
+
+  it('logs the error message and stack for non-Error thrown values', async () => {
+    mockRequireVerifiedUser.mockResolvedValue({ id: 'u1', email: 'a@b.c' });
+    const handler = vi.fn(() => { throw 'string error'; });
+    const route = defineRoute(handler);
+    await route(makeReq(), { params: {} });
+    expect(mockLoggerError).toHaveBeenCalledWith('unhandled exception', expect.objectContaining({
+      message: 'string error',
+      stack: undefined,
+    }));
   });
 });

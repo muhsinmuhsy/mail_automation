@@ -233,7 +233,7 @@ export function CampaignWizard({
   };
 
   const submit = async () => {
-    if (submitting || eligibility.isChecking) return;
+    if (submitting || eligibility.isFetching) return;
     const originalStep = step;
     for (let index = 0; index < steps.length - 1; index += 1) {
       if (!validateStep(index)) {
@@ -490,8 +490,8 @@ export function CampaignWizard({
                     {eligibility.result!.includedWithoutPreviousSendCount} new {eligibility.result!.includedPreviousCount === 1 ? 'recipient' : 'recipients'} + {eligibility.result!.includedPreviousCount} {eligibility.result!.includedPreviousCount === 1 ? 'follow-up' : 'follow-ups'}
                   </p>
                 )}
-                {eligibility.isChecking && (
-                  <p className="mt-1 text-sm text-text-secondary">Updating…</p>
+                {eligibility.isFetching && (
+                  <p className="mt-1 text-sm text-text-secondary">{eligibility.isChecking ? 'Checking recipients…' : 'Updating…'}</p>
                 )}
                 {eligibility.status === 'error' && (
                   <p className="mt-1 text-sm text-error">
@@ -601,7 +601,7 @@ export function CampaignWizard({
                 {displayContacts.map((contact) => {
                   const recipient = eligibility.result?.recipients.find(r => r.contactId === contact.id);
                   const badgeReason = recipient?.primaryReason;
-                  const preSelectStatus = !badgeReason && !contactIds.includes(contact.id) ? recipientStatuses.get(contact.id) : null;
+                  const preSelectStatus = !badgeReason ? recipientStatuses.get(contact.id) : null;
                   const preSelectReason = preSelectStatus?.classification === 'PREVIOUSLY_SENT' ? 'PREVIOUSLY_SENT'
                     : preSelectStatus?.classification === 'PENDING' ? 'PENDING'
                     : preSelectStatus?.classification === 'DELIVERY_UNKNOWN' ? 'DELIVERY_UNKNOWN'
@@ -688,8 +688,8 @@ export function CampaignWizard({
               <h3 className="text-section-title font-semibold text-text-primary">Ready to launch</h3>
               <p className="mt-1 text-body text-text-secondary">Review the campaign before scheduling emails.</p>
             </div>
-            {eligibility.isChecking && (
-              <p className="text-sm text-text-secondary" aria-live="polite">Updating recipient summary…</p>
+            {eligibility.isFetching && (
+              <p className="text-sm text-text-secondary" aria-live="polite">{eligibility.isChecking ? 'Checking recipient summary…' : 'Updating recipient summary…'}</p>
             )}
             {(eligibility.status === 'error' || submitError || (hasUnknownTokens && unknownTokenAction === 'fix')) && (
               <div ref={errorRef} tabIndex={-1} role="alert" className="space-y-1">
@@ -753,8 +753,8 @@ export function CampaignWizard({
           Back
         </Button>
         {step === steps.length - 1 ? (
-          <Button onClick={submit} disabled={!canSubmit || loading || submitting || eligibility.isChecking}>
-            {eligibility.isChecking ? 'Checking…' : submitting ? 'Scheduling…' : `Schedule ${effectiveCount} ${effectiveCount === 1 ? 'email' : 'emails'}`}
+          <Button onClick={submit} disabled={!canSubmit || loading || submitting || eligibility.isFetching}>
+            {eligibility.isFetching ? 'Checking…' : submitting ? 'Scheduling…' : `Schedule ${effectiveCount} ${effectiveCount === 1 ? 'email' : 'emails'}`}
           </Button>
         ) : (
           <Button onClick={goNext} disabled={loading && step > 0 && emailAccounts.length === 0}>
