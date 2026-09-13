@@ -599,68 +599,68 @@ Production readiness requires passing these gates and reviewing migration/rollba
 Use this as an implementation completion checklist. Leave items unchecked until implemented and verified. Any new repository incompatibility must be resolved without weakening the documented guarantees.
 
 ### Schema and migrations
-- [ ] `CampaignSubmission` Prisma model added to `prisma/schema.prisma` (§6.3 provides the exact model).
-- [ ] `EmailJob.creation_key` column added (§6.4 provides the Prisma column + SQL CHECK).
-- [ ] Target indexes created exactly once with matching mapped names; expression/partial index and CHECK SQL retained in migration history.
-- [ ] `check-constraints.test.ts` guards the CHECK after migration replay; production does not use db push.
-- [ ] Both User and Campaign back-relations added; receipt campaign FK uses Restrict.
+- [x] `CampaignSubmission` Prisma model added to `prisma/schema.prisma` (§6.3 provides the exact model).
+- [x] `EmailJob.creation_key` column added (§6.4 provides the Prisma column + SQL CHECK).
+- [x] Target indexes created exactly once with matching mapped names; expression/partial index and CHECK SQL retained in migration history.
+- [x] `check-constraints.test.ts` guards the CHECK after migration replay; production does not use db push.
+- [x] Both User and Campaign back-relations added; receipt campaign FK uses Restrict.
 
 ### Shared services
-- [ ] `lib/campaigns/eligibility.ts` created with policy types, normalization, set-based history queries.
-- [ ] `lib/campaigns/create.ts` created as the sole campaign+job creation entry point.
-- [ ] `generateCampaignJobs` refactored: first parameter `PrismaClient` → `TransactionClient`, accepts prepared snapshot instead of raw `contactIds`.
-- [ ] Missing-value logic refactored to accept `TransactionClient` and prepared snapshots.
-- [ ] Database-normalized address keys used consistently in grouping, matching, fingerprints, and creation keys, including non-ASCII tests.
-- [ ] Fingerprint (SHA-256) and request-hash functions implemented with canonical ordering.
+- [x] `lib/campaigns/eligibility.ts` created with policy types, normalization, set-based history queries.
+- [x] `lib/campaigns/create.ts` created as the sole campaign+job creation entry point.
+- [x] `generateCampaignJobs` refactored: first parameter `PrismaClient` → `TransactionClient`, accepts prepared snapshot instead of raw `contactIds`.
+- [x] Missing-value logic refactored to accept `TransactionClient` and prepared snapshots.
+- [x] Database-normalized address keys used consistently in grouping, matching, fingerprints, and creation keys, including non-ASCII tests.
+- [x] Fingerprint (SHA-256) and request-hash functions implemented with canonical ordering.
 
 ### API routes
-- [ ] `POST /api/campaigns/pre-check` extended with all fields from §5.2.
-- [ ] `POST /api/campaigns` extended with `idempotency_key`, `preview_fingerprint`, `resend_recipients`, `missing_value_action`, `unknown_token_action` per §5.3.
-- [ ] `POST /api/campaigns/recipient-status` created per §5.4.
-- [ ] `GET /api/campaigns/submissions/[key]` created per §5.5.
-- [ ] `GET /api/contacts/[id]/emails` created per §7.
-- [ ] All new routes use `defineRoute` from `@/lib/api/route` with correct auth (`'user'` or ownership-based).
-- [ ] All new routes use `respondOk`/`respondError`/`respondList` from `@/lib/api/respond`.
-- [ ] `GET /api/contacts/[id]/emails` uses `parseListQuery` from `@/lib/api/list` for pagination.
-- [ ] All routes validate ownership with `user_id` scoping.
-- [ ] All routes return `private, no-store` headers.
+- [x] `POST /api/campaigns/pre-check` extended with all fields from §5.2.
+- [x] `POST /api/campaigns` extended with `idempotency_key`, `preview_fingerprint`, `resend_recipients`, `missing_value_action`, `unknown_token_action` per §5.3.
+- [x] `POST /api/campaigns/recipient-status` created per §5.4.
+- [x] `GET /api/campaigns/submissions/[key]` created per §5.5.
+- [x] `GET /api/contacts/[id]/emails` created per §7.
+- [x] All new routes use `defineRoute` from `@/lib/api/route` with correct auth (`'user'` or ownership-based).
+- [x] All new routes use `respondOk`/`respondError`/`respondList` from `@/lib/api/respond`.
+- [x] `GET /api/contacts/[id]/emails` uses `parseListQuery` from `@/lib/api/list` for pagination.
+- [x] All routes validate ownership with `user_id` scoping.
+- [x] All routes return `private, no-store` headers.
 
 ### Error handling
-- [ ] New error codes added to `ERROR_CODES` const in `lib/errors/error-codes.ts`.
-- [ ] New `AppError` subclasses created in `lib/errors/index.ts` per §5.3 table.
-- [ ] `ApiErrorResponse` extended to carry `details` for structured eligibility/conflict data.
-- [ ] Creation service resolves relevant P2002 via receipts after rollback; shared error conversion remains synchronous.
-- [ ] `createCampaign` handler returns structured result to wizard (not just a toast).
+- [x] New error codes added to `ERROR_CODES` const in `lib/errors/error-codes.ts`.
+- [x] New `AppError` subclasses created in `lib/errors/index.ts` per §5.3 table.
+- [x] `ApiErrorResponse` extended to carry `details` for structured eligibility/conflict data.
+- [x] Creation service resolves relevant P2002 via receipts after rollback; shared error conversion remains synchronous.
+- [x] `createCampaign` handler returns structured result to wizard (not just a toast).
 
 ### Validation
-- [ ] `preCheckSchema` (camelCase) per §5.7.
-- [ ] `createCampaignSchema` extended (snake_case) with new fields per §5.7.
-- [ ] `recipientStatusSchema` (camelCase, max 100) per §5.7.
-- [ ] All schemas reuse `uuid` and `email` from `@/lib/validation/common` — no redefined validators.
-- [ ] Contact cap (1,000) enforced in both Zod schema and UI.
-- [ ] `resend_recipients` subset validation in Zod + server-side ownership/representativeness/address check.
+- [x] `preCheckSchema` (camelCase) per §5.7.
+- [x] `createCampaignSchema` extended (snake_case) with new fields per §5.7.
+- [x] `recipientStatusSchema` (camelCase, max 100) per §5.7.
+- [x] All schemas reuse `uuid` and `email` from `@/lib/validation/common` — no redefined validators.
+- [x] Contact cap (1,000) enforced in both Zod schema and UI.
+- [x] `resend_recipients` subset validation in Zod + server-side ownership/representativeness/address check.
 
 ### UI
-- [ ] `CampaignWizard.tsx` updated with live eligibility, summary, follow-up controls.
-- [ ] Contact picker moved to paginated `/api/contacts` reads (page size 50, max 100).
-- [ ] Selection preserved across pages/search.
-- [ ] Follow-up checkboxes appear only when selected contacts have SENT history.
-- [ ] SchedulePreview uses effective count for timings; CampaignWizard uses the same count for its button.
-- [ ] Freshness state machine: `idle` → `checking` → `ready` / `stale` / `error`.
-- [ ] 250 ms debounce on selection; immediate on sender/template/attachment.
-- [ ] 30 s background poll; 60 s freshness window.
-- [ ] `aria-live="polite"` on summary; keyboard accessible controls.
-- [ ] Reuses existing custom Select for form values, Dropdown for action menus, and existing buttons/badges/search/pagination states.
+- [x] `CampaignWizard.tsx` updated with live eligibility, summary, follow-up controls.
+- [x] Contact picker moved to paginated `/api/contacts` reads (page size 50, max 100).
+- [x] Selection preserved across pages/search.
+- [x] Follow-up checkboxes appear only when selected contacts have SENT history.
+- [x] SchedulePreview uses effective count for timings; CampaignWizard uses the same count for its button.
+- [x] Freshness state machine: `idle` → `checking` → `ready` / `stale` / `error`.
+- [x] 250 ms debounce on selection; immediate on sender/template/attachment.
+- [x] 30 s background poll; 60 s freshness window.
+- [x] `aria-live="polite"` on summary; keyboard accessible controls.
+- [x] Reuses existing custom Select for form values, Dropdown for action menus, and existing buttons/badges/search/pagination states.
 
 ### Tests
-- [ ] Real Neon concurrency tests (≥2 independent connections, isolated branch).
-- [ ] HR scenario: 150 selected, 20 follow-ups → exactly 70 jobs.
-- [ ] Idempotency: same key/same payload → one campaign; same key/different payload → 409.
-- [ ] Creation-key uniqueness violation → atomic rollback.
-- [ ] Fingerprint stability on incidental changes; conflict on material changes.
-- [ ] All status combinations, mixed history, paused campaigns, unknown recovery.
-- [ ] Ownership boundaries, request size/count limits, no-store headers.
-- [ ] `typecheck`, `lint`, `test`, `build`, and `build:worker` pass; real Neon concurrency and browser acceptance evidence recorded.
+- [x] Real Neon concurrency tests (≥2 independent connections, isolated branch).
+- [x] HR scenario: 150 selected, 20 follow-ups → exactly 70 jobs.
+- [x] Idempotency: same key/same payload → one campaign; same key/different payload → 409.
+- [x] Creation-key uniqueness violation → atomic rollback.
+- [x] Fingerprint stability on incidental changes; conflict on material changes.
+- [x] All status combinations, mixed history, paused campaigns, unknown recovery.
+- [x] Ownership boundaries, request size/count limits, no-store headers.
+- [x] `typecheck`, `lint`, `test`, `build`, and `build:worker` pass; real Neon concurrency and browser acceptance evidence recorded.
 
 ## 11. References
 

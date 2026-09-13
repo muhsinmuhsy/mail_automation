@@ -18,6 +18,7 @@ import {
   RecipientActionRequiredError,
   AppError,
 } from '@/lib/errors';
+import { logger } from '@/lib/logging/logger';
 
 /** Result of a creation attempt. */
 export interface CreationResult {
@@ -33,6 +34,8 @@ export interface CreateCampaignInput extends EligibilityInput {
   name: string;
   idempotencyKey: string;
   previewFingerprint: string;
+  /** Request ID for log correlation (passed from the route handler). */
+  requestId?: string;
 }
 
 /** Stored receipt summary (subset of EligibilitySummary, §5.8). */
@@ -88,6 +91,8 @@ export async function createCampaign(
   input: CreateCampaignInput
 ): Promise<CreationResult> {
   const prisma = getPrisma();
+  const requestId = input.requestId;
+  const startTime = Date.now();
 
   // Compute request hash (outside transaction — deterministic).
   const requestHashInput: RequestHashInput = {
@@ -108,10 +113,12 @@ export async function createCampaign(
   const requestHash = await computeRequestHash(requestHashInput);
 
   try {
-    return await prisma.$transaction(
+    const result = await prisma.$transaction(
       async (tx) => {
+        const lockStart = Date.now();
         // 2. Acquire per-user advisory lock.
         await acquireUserCreationLock(tx, input.userId);
+        const lockMs = Date.now() - lockStart;
 
         // 3. Look up existing submission.
         const existing = await tx.campaignSubmission.findUnique({
@@ -137,11 +144,23 @@ export async function createCampaign(
               { storedRequestHash: existing.request_hash, computedRequestHash: requestHash }
             );
           }
+          const summary = existing.recipient_summary as unknown as EligibilitySummary;
+          logger.info('campaign:replay', {
+            requestId,
+            campaignId: existing.campaign_id,
+            policyVersion: summary.policyVersion,
+            selectedCount: summary.selectedCount,
+            eligibleCount: summary.eligibleCount,
+            excludedCount: summary.excludedCount,
+            jobCount: existing.campaign._count.email_jobs,
+            lockMs,
+            totalMs: Date.now() - startTime,
+          });
           return {
             campaignId: existing.campaign_id,
             campaignName: existing.campaign.name,
             status: 'replayed' as const,
-            recipientSummary: existing.recipient_summary as unknown as EligibilitySummary,
+            recipientSummary: summary,
             jobCount: existing.campaign._count.email_jobs,
           };
         }
@@ -222,6 +241,20 @@ export async function createCampaign(
           },
         });
 
+        logger.info('campaign:created', {
+          requestId,
+          campaignId: campaign.id,
+          policyVersion: summary.policyVersion,
+          selectedCount: summary.selectedCount,
+          eligibleCount: summary.eligibleCount,
+          excludedCount: summary.excludedCount,
+          includedPreviousCount: summary.includedPreviousCount,
+          includedWithoutPreviousSendCount: summary.includedWithoutPreviousSendCount,
+          jobCount: jobsWithKeys.length,
+          lockMs,
+          totalMs: Date.now() - startTime,
+        });
+
         return {
           campaignId: campaign.id,
           campaignName: campaign.name,
@@ -235,9 +268,31 @@ export async function createCampaign(
         isolationLevel: 'ReadCommitted',
       }
     );
+    return result;
   } catch (err) {
     // Map lock timeout / contention to 503.
-    if (err instanceof AppError) throw err;
+    if (err instanceof AppError) {
+      if (err.code === 'IDEMPOTENCY_KEY_REUSED') {
+        logger.warn('campaign:conflict:key-reused', {
+          requestId,
+          code: err.code,
+          totalMs: Date.now() - startTime,
+        });
+      } else if (err.code === 'CAMPAIGN_CREATION_BUSY') {
+        logger.warn('campaign:conflict:busy', {
+          requestId,
+          code: err.code,
+          totalMs: Date.now() - startTime,
+        });
+      } else {
+        logger.warn('campaign:creation-failed', {
+          requestId,
+          code: err.code,
+          totalMs: Date.now() - startTime,
+        });
+      }
+      throw err;
+    }
     const code = (err as { code?: string })?.code;
     if (code === 'P2034' || code === 'P2002') {
       // P2034 = transaction timeout, P2002 = unique constraint (creation_key conflict)
@@ -245,16 +300,31 @@ export async function createCampaign(
         // Could be a creation-key conflict or submission conflict.
         // The submission lookup above handles same-key replay. A creation-key
         // conflict means a concurrent request created the same campaign/address.
+        logger.warn('campaign:conflict:unique-constraint', {
+          requestId,
+          prismaCode: code,
+          totalMs: Date.now() - startTime,
+        });
         throw new CampaignCreationBusyError(
           'Campaign creation is busy. Please try again shortly.',
           { retryAfterSeconds: 2 }
         );
       }
+      logger.warn('campaign:conflict:timeout', {
+        requestId,
+        prismaCode: code,
+        totalMs: Date.now() - startTime,
+      });
       throw new CampaignCreationBusyError(
         'Campaign creation timed out. Please try again.',
         { retryAfterSeconds: 2 }
       );
     }
+    logger.error('campaign:creation-failed:unexpected', {
+      requestId,
+      errorName: (err as Error)?.name,
+      totalMs: Date.now() - startTime,
+    });
     throw err;
   }
 }

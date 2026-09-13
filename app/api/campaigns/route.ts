@@ -136,6 +136,7 @@ const _POST = defineRoute(async (req, ctx) => {
       dailyLimit: parsed.data.daily_limit ?? null,
       idempotencyKey: parsed.data.idempotency_key,
       previewFingerprint: parsed.data.preview_fingerprint,
+      requestId: ctx.requestId,
     });
 
     const campaign = await getPrisma().campaign.findUniqueOrThrow({

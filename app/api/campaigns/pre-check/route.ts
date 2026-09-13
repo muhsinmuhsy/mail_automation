@@ -6,6 +6,7 @@ import { preCheckSchema } from '@/lib/validation/campaign';
 import { ValidationError, ForbiddenError } from '@/lib/errors';
 import { computeEligibility } from '@/lib/campaigns/eligibility';
 import { computePreviewFingerprint } from '@/lib/campaigns/fingerprint';
+import { logger } from '@/lib/logging/logger';
 
 /**
  * Campaign pre-check endpoint (§5.2).
@@ -121,6 +122,16 @@ const _POST = defineRoute(async (req, ctx) => {
     ctx.requestId
   );
   response.headers.set('Cache-Control', 'private, no-store');
+
+  logger.info('campaign:pre-check', {
+    requestId: ctx.requestId,
+    policyVersion: eligibility.summary.policyVersion,
+    selectedCount: eligibility.summary.selectedCount,
+    eligibleCount: eligibility.summary.eligibleCount,
+    excludedCount: eligibility.summary.excludedCount,
+    blockedByUnknownTokens: eligibility.summary.blockedByUnknownTokens,
+  });
+
   return response;
 }, { auth: 'user', rateLimitKey: 'campaign-pre-check' });
 
