@@ -182,7 +182,7 @@ async function queryAddressHistory(
     WHERE user_id = ${userId}::uuid
       AND template_id = ${templateId}::uuid
       AND email_account_id = ${emailAccountId}::uuid
-      AND lower(btrim(to_email)) IN (${normalizedAddresses}::text[])
+      AND lower(btrim(to_email)) = ANY(${normalizedAddresses}::text[])
       AND status IN ('SENT', 'SCHEDULED', 'QUEUED', 'PROCESSING', 'RETRY_WAIT', 'DELIVERY_UNKNOWN')
   `;
 
