@@ -22,11 +22,11 @@ const TEMPLATE_ID = '44444444-4444-4444-8444-444444444444';
 const CONTACT_ID_A = '55555555-5555-4555-8555-555555555555';
 const CONTACT_ID_B = '66666666-6666-4666-8666-666666666666';
 
-const { mockRequireVerifiedSession, mockCheckApiRateLimit, mockGenerateCampaignJobs } = vi.hoisted(
+const { mockRequireVerifiedSession, mockCheckApiRateLimit, mockCreateCampaign } = vi.hoisted(
   () => ({
     mockRequireVerifiedSession: vi.fn(),
     mockCheckApiRateLimit: vi.fn(),
-    mockGenerateCampaignJobs: vi.fn(),
+    mockCreateCampaign: vi.fn(),
   })
 );
 
@@ -35,6 +35,7 @@ const mockPrisma = {
     findMany: vi.fn(),
     findFirst: vi.fn(),
     findUnique: vi.fn(),
+    findUniqueOrThrow: vi.fn(),
     count: vi.fn(),
     create: vi.fn(),
     updateMany: vi.fn(),
@@ -97,8 +98,8 @@ vi.mock('@/lib/rate-limit/middleware', () => ({
   }),
 }));
 
-vi.mock('@/lib/jobs/scheduler', () => ({
-  generateCampaignJobs: mockGenerateCampaignJobs,
+vi.mock('@/lib/campaigns/create', () => ({
+  createCampaign: mockCreateCampaign,
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -143,6 +144,8 @@ function validCreateBody(overrides: Record<string, unknown> = {}): Record<string
     timezone: 'UTC',
     interval_minutes: 5,
     daily_limit: 10,
+    idempotency_key: CAMPAIGN_ID,
+    preview_fingerprint: 'a'.repeat(64),
     ...overrides,
   };
 }
@@ -158,7 +161,27 @@ function jsonRequest(body: unknown, url = 'http://localhost/api/campaigns'): Nex
 beforeEach(() => {
   authenticated();
   mockCheckApiRateLimit.mockResolvedValue(null);
-  mockGenerateCampaignJobs.mockResolvedValue(undefined);
+  mockCreateCampaign.mockResolvedValue({
+    campaignId: CAMPAIGN_ID,
+    campaignName: 'Spring outreach',
+    status: 'created',
+    recipientSummary: {
+      policyVersion: 1,
+      selectedCount: 1,
+      eligibleCount: 1,
+      excludedCount: 0,
+      excludedByReason: { duplicateAddress: 0, previouslySent: 0, pending: 0, deliveryUnknown: 0, missingValues: 0 },
+      includedPreviousCount: 0,
+      includedWithoutPreviousSendCount: 1,
+      blockedByUnknownTokens: false,
+      recipients: [],
+      missingValues: [],
+      unknownTokens: [],
+      affectedContactCount: 0,
+      totalContactCount: 1,
+    },
+    jobCount: 1,
+  });
 
   mockPrisma.campaign.findMany.mockResolvedValue([
     { id: CAMPAIGN_ID, name: 'Spring outreach', status: 'ACTIVE', created_at: new Date('2030-01-01') },
@@ -177,6 +200,13 @@ beforeEach(() => {
     created_at: new Date('2030-01-01'),
   });
   mockPrisma.campaign.updateMany.mockResolvedValue({ count: 1 });
+  mockPrisma.campaign.findUniqueOrThrow.mockResolvedValue({
+    id: CAMPAIGN_ID,
+    name: 'Spring outreach',
+    status: 'ACTIVE',
+    created_at: new Date('2030-01-01'),
+    _count: { email_jobs: 1 },
+  });
   mockPrisma.emailJob.updateMany.mockResolvedValue({ count: 3 });
   mockPrisma.emailAccount.findFirst.mockResolvedValue({ id: EMAIL_ACCOUNT_ID, user_id: 'user-1', provider: 'gmail' });
   mockPrisma.attachment.findFirst.mockResolvedValue({ id: ATTACHMENT_ID, user_id: 'user-1' });
@@ -303,8 +333,7 @@ describe('POST /api/campaigns', () => {
     delete body.attachment_id;
     const response = await createCampaign(jsonRequest(body));
     expect(response.status).toBe(201);
-    expect(mockPrisma.campaign.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ attachment_id: null, attachment_ids: ids }) }));
-    expect(mockGenerateCampaignJobs).toHaveBeenCalledWith(mockPrisma, expect.objectContaining({ attachment_ids: ids }), [CONTACT_ID_A]);
+    expect(mockCreateCampaign).toHaveBeenCalledWith(expect.objectContaining({ attachmentIds: ids }));
     expect(mockPrisma.attachment.findFirst).toHaveBeenCalledTimes(ids.length);
   });
   it('rejects an inaccessible file among multiple selected attachments', async () => {
@@ -328,24 +357,16 @@ describe('POST /api/campaigns', () => {
     expect(response.status).toBe(201);
     expect(body.success).toBe(true);
     expect(body.message).toBe('Campaign created successfully.');
-    expect(mockPrisma.campaign.create).toHaveBeenCalledWith(
+    expect(mockCreateCampaign).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          user_id: 'user-1',
-          name: 'Spring outreach',
-          email_account_id: EMAIL_ACCOUNT_ID,
-          attachment_id: ATTACHMENT_ID,
-          template_id: TEMPLATE_ID,
-          timezone: 'UTC',
-          interval_minutes: 5,
-          daily_limit: 10,
-        }),
+        userId: 'user-1',
+        name: 'Spring outreach',
+        emailAccountId: EMAIL_ACCOUNT_ID,
+        templateId: TEMPLATE_ID,
+        timezone: 'UTC',
+        intervalMinutes: 5,
+        dailyLimit: 10,
       })
-    );
-    expect(mockGenerateCampaignJobs).toHaveBeenCalledWith(
-      mockPrisma,
-      expect.objectContaining({ id: CAMPAIGN_ID, user_id: 'user-1' }),
-      [CONTACT_ID_A]
     );
   });
 
@@ -360,13 +381,11 @@ describe('POST /api/campaigns', () => {
     const response = await createCampaign(jsonRequest(body));
 
     expect(response.status).toBe(201);
-    expect(mockPrisma.campaign.create).toHaveBeenCalledWith(
+    expect(mockCreateCampaign).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          timezone: 'UTC',
-          interval_minutes: 5,
-          daily_limit: undefined,
-        }),
+        timezone: 'UTC',
+        intervalMinutes: 5,
+        dailyLimit: null,
       })
     );
   });
@@ -451,7 +470,7 @@ describe('POST /api/campaigns', () => {
   });
 
   it('returns 500 when job generation fails', async () => {
-    mockGenerateCampaignJobs.mockRejectedValue(new Error('scheduler exploded'));
+    mockCreateCampaign.mockRejectedValue(new Error('scheduler exploded'));
 
     const response = await createCampaign(jsonRequest(validCreateBody()));
     const body = (await response.json()) as ApiBody;

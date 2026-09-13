@@ -101,6 +101,54 @@ export class ConfigurationError extends AppError {
   }
 }
 
+export class RecipientPreviewChangedError extends AppError {
+  constructor(message = 'Recipient preview has changed. Please review and try again.', details?: unknown) {
+    super(message, 409, 'RECIPIENT_PREVIEW_CHANGED', true, details);
+  }
+}
+
+export class IdempotencyKeyReusedError extends AppError {
+  constructor(message = 'This idempotency key was already used with a different request.', details?: unknown) {
+    super(message, 409, 'IDEMPOTENCY_KEY_REUSED', true, details);
+  }
+}
+
+export class CampaignCreationBusyError extends AppError {
+  constructor(message = 'Campaign creation is busy. Please try again shortly.', details?: unknown) {
+    super(message, 503, 'CAMPAIGN_CREATION_BUSY', true, details);
+  }
+}
+
+export class NoEligibleRecipientsError extends AppError {
+  constructor(message = 'No eligible recipients remain after applying exclusions.', details?: unknown) {
+    super(message, 422, 'NO_ELIGIBLE_RECIPIENTS', true, details);
+  }
+}
+
+export class RecipientActionRequiredError extends AppError {
+  constructor(message = 'Action required: resolve unknown tokens or missing values before scheduling.', details?: unknown) {
+    super(message, 422, 'RECIPIENT_ACTION_REQUIRED', true, details);
+  }
+}
+
+export class UnsupportedFieldError extends AppError {
+  constructor(message = 'Unsupported field in request.', details?: unknown) {
+    super(message, 422, 'UNSUPPORTED_FIELD', true, details);
+  }
+}
+
+export class ResendEntryInvalidError extends AppError {
+  constructor(message = 'One or more follow-up entries are invalid.', details?: unknown) {
+    super(message, 422, 'RESEND_ENTRY_INVALID', true, details);
+  }
+}
+
+export class PayloadTooLargeError extends AppError {
+  constructor(message = 'Request body exceeds the maximum allowed size.', details?: unknown) {
+    super(message, 413, 'PAYLOAD_TOO_LARGE', true, details);
+  }
+}
+
 function generateRequestId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
     return globalThis.crypto.randomUUID();

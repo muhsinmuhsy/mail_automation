@@ -7,6 +7,7 @@ export interface ApiErrorResponse {
   requestId?: string;
   fields?: Record<string, string>;
   retryAfter?: number;
+  details?: unknown;
 }
 
 export interface ApiSuccessResponse<T = unknown> {
@@ -29,7 +30,7 @@ export function success<T>(data: T, message?: string): ApiSuccessResponse<T> {
 export function failure(
   type: ErrorCode,
   message: string,
-  options?: { fields?: Record<string, string>; retryAfter?: number; requestId?: string }
+  options?: { fields?: Record<string, string>; retryAfter?: number; requestId?: string; details?: unknown }
 ): ApiFailureResponse {
   return {
     success: false,
@@ -58,7 +59,7 @@ export function fromAppError(err: unknown): { status: number; body: ApiFailureRe
   const requestId = globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}`;
   if (err instanceof AppError) {
     const type = APP_ERROR_CODE_MAP[err.code] ?? (err.code as ErrorCode);
-    const options: { fields?: Record<string, string>; retryAfter?: number; requestId: string } = {
+    const options: { fields?: Record<string, string>; retryAfter?: number; requestId: string; details?: unknown } = {
       requestId,
     };
     if (err.details && typeof err.details === 'object' && 'fields' in err.details) {
@@ -66,6 +67,9 @@ export function fromAppError(err: unknown): { status: number; body: ApiFailureRe
     }
     if (err.details && typeof err.details === 'object' && 'retryAfterSeconds' in err.details) {
       options.retryAfter = (err.details as { retryAfterSeconds: number }).retryAfterSeconds;
+    }
+    if (err.details !== undefined) {
+      options.details = err.details;
     }
     return { status: err.httpStatus, body: failure(type, err.message, options) };
   }

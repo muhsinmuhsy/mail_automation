@@ -1,5 +1,8 @@
 import type { PrismaClient } from '../generated/prisma/client';
+import type { TransactionClient } from '@/lib/db';
 import { VARIABLE_PATTERN, SUPPORTED_TEMPLATE_VARIABLES } from '@/lib/email/template';
+
+type DbClient = PrismaClient | TransactionClient;
 
 /**
  * Missing-personalization pre-send check (§11.16, §11.25).
@@ -33,7 +36,7 @@ export interface MissingValueResult {
  * scan and value lookup.
  */
 export async function runMissingValueCheck(
-  prisma: PrismaClient,
+  prisma: DbClient,
   userId: string,
   templateSubject: string,
   templateBody: string,

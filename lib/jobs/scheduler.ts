@@ -1,10 +1,70 @@
 import { campaignEmailTime } from '@/lib/scheduling/campaign';
 import { PrismaClient, Prisma } from '../generated/prisma/client';
+import type { TransactionClient } from '@/lib/db';
 import { replaceTemplateVariables } from '@/lib/email/template';
 import { buildTemplateContact, type ContactFieldDefinition, type ContactFieldValueRow } from '@/lib/email/template-contact';
+import type { PreparedJob } from '@/lib/campaigns/eligibility';
 
+type DbClient = PrismaClient | TransactionClient;
+
+/**
+ * Create campaign jobs from a prepared snapshot inside a transaction.
+ *
+ * The prepared snapshot comes from `computeEligibility` — it contains
+ * pre-rendered subject/body/bodyHtml and a deterministic creation_key for
+ * each recipient. This function does NOT re-read contacts or templates;
+ * it consumes exactly the snapshot computed under the eligibility lock.
+ *
+ * Per docs/CAMPAIGN/_DEDUPLICATION.md §5.1, the first parameter accepts
+ * `TransactionClient` (a subset of PrismaClient with the same delegates).
+ */
+export async function createCampaignJobsFromSnapshot(
+  db: DbClient,
+  campaign: {
+    id: string;
+    user_id: string;
+    email_account_id: string;
+    attachment_id?: string | null;
+    attachment_ids?: string[];
+    template_id: string;
+  },
+  preparedJobs: PreparedJob[]
+): Promise<void> {
+  if (preparedJobs.length === 0) return;
+
+  const attachmentIds = campaign.attachment_ids ?? (campaign.attachment_id ? [campaign.attachment_id] : []);
+
+  const data = preparedJobs.map((job) => ({
+    user_id: campaign.user_id,
+    campaign_id: campaign.id,
+    contact_id: job.contactId,
+    email_account_id: campaign.email_account_id,
+    attachment_id: campaign.attachment_id ?? null,
+    attachment_ids: attachmentIds,
+    template_id: campaign.template_id,
+    to_email: job.toEmail,
+    subject: job.subject,
+    body: job.body,
+    body_html: job.bodyHtml,
+    creation_key: job.creationKey,
+    scheduled_at: job.scheduledAt,
+    status: 'SCHEDULED' as const,
+    attempt_count: 0,
+  }));
+
+  await db.emailJob.createMany({ data });
+}
+
+/**
+ * Legacy job generation — reads contacts/template and renders snapshots.
+ *
+ * @deprecated Use `createCampaignJobsFromSnapshot` with a prepared snapshot
+ *   from `computeEligibility` for new campaign creation. This function is
+ *   retained for backward compatibility with existing callers that have not
+ *   yet migrated to the eligibility service.
+ */
 export async function generateCampaignJobs(
-  prisma: PrismaClient,
+  prisma: DbClient,
   campaign: {
     id: string;
     user_id: string;

@@ -8,6 +8,15 @@ process.env.SMTP_ENCRYPTION_KEY = KEY;
 
 vi.mock('@/lib/db', () => ({ getPrisma: () => prismaMock }));
 vi.mock('@/lib/api/route', () => ({ defineRoute: (handler: any) => handler }));
+vi.mock('@/lib/campaigns/create', () => ({
+  createCampaign: vi.fn().mockResolvedValue({
+    campaignId: 'c1',
+    campaignName: 'n',
+    status: 'created',
+    recipientSummary: { policyVersion: 1, selectedCount: 1, eligibleCount: 1, excludedCount: 0 },
+    jobCount: 1,
+  }),
+}));
 vi.mock('@/lib/auth/neon-auth', () => ({
   auth: {
     handler: () => ({
@@ -205,11 +214,7 @@ describe('app/api route handlers (unit coverage)', () => {
     prismaMock.attachment.findFirst.mockResolvedValue({ id: UUID });
     prismaMock.template.findFirst.mockResolvedValue({ id: UUID, subject: 'Hello {{name}}', body: 'Hi {{name}}' });
     prismaMock.contact.count.mockResolvedValue(2);
-    prismaMock.campaign.create.mockResolvedValue({ id: 'c1', name: 'n', status: 'DRAFT' });
-    prismaMock.contact.findMany.mockResolvedValue([{ id: UUID, email: 'a@b.com', name: null, contact_field_values: [] }]);
-    prismaMock.contactField.findMany.mockResolvedValue([]);
-    prismaMock.template.findUnique.mockResolvedValue({ id: UUID, subject: 's', body: 'b' });
-    prismaMock.emailJob.createMany.mockResolvedValue({ count: 1 });
+    prismaMock.campaign.findUniqueOrThrow.mockResolvedValue({ id: 'c1', name: 'n', status: 'ACTIVE', created_at: new Date(), start_at: new Date(), timezone: 'UTC', interval_minutes: 5, daily_limit: null, _count: { email_jobs: 1 } });
     const body = {
       name: 'Launch',
       email_account_id: UUID,
@@ -220,6 +225,8 @@ describe('app/api route handlers (unit coverage)', () => {
       timezone: 'UTC',
       interval_minutes: 60,
       daily_limit: 100,
+      idempotency_key: '00000000-0000-0000-0000-000000000003',
+      preview_fingerprint: 'a'.repeat(64),
     };
     const res = await (campaigns as any).POST(makeReq({ json: body }), CTX());
     await ok(res);

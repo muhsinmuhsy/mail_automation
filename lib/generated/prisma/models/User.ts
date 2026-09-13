@@ -241,6 +241,7 @@ export type UserWhereInput = {
   email_usage_daily?: Prisma.EmailUsageDailyListRelationFilter
   reservations?: Prisma.EmailSendReservationListRelationFilter
   contact_fields?: Prisma.ContactFieldListRelationFilter
+  campaign_submissions?: Prisma.CampaignSubmissionListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -260,6 +261,7 @@ export type UserOrderByWithRelationInput = {
   email_usage_daily?: Prisma.EmailUsageDailyOrderByRelationAggregateInput
   reservations?: Prisma.EmailSendReservationOrderByRelationAggregateInput
   contact_fields?: Prisma.ContactFieldOrderByRelationAggregateInput
+  campaign_submissions?: Prisma.CampaignSubmissionOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -282,6 +284,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   email_usage_daily?: Prisma.EmailUsageDailyListRelationFilter
   reservations?: Prisma.EmailSendReservationListRelationFilter
   contact_fields?: Prisma.ContactFieldListRelationFilter
+  campaign_submissions?: Prisma.CampaignSubmissionListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -329,6 +332,7 @@ export type UserCreateInput = {
   email_usage_daily?: Prisma.EmailUsageDailyCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -348,6 +352,7 @@ export type UserUncheckedCreateInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldUncheckedCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -367,6 +372,7 @@ export type UserUpdateInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -386,6 +392,7 @@ export type UserUncheckedUpdateInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUncheckedUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -615,6 +622,20 @@ export type UserUpdateOneRequiredWithoutReservationsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutReservationsInput, Prisma.UserUpdateWithoutReservationsInput>, Prisma.UserUncheckedUpdateWithoutReservationsInput>
 }
 
+export type UserCreateNestedOneWithoutCampaign_submissionsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCampaign_submissionsInput, Prisma.UserUncheckedCreateWithoutCampaign_submissionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCampaign_submissionsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutCampaign_submissionsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCampaign_submissionsInput, Prisma.UserUncheckedCreateWithoutCampaign_submissionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCampaign_submissionsInput
+  upsert?: Prisma.UserUpsertWithoutCampaign_submissionsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCampaign_submissionsInput, Prisma.UserUpdateWithoutCampaign_submissionsInput>, Prisma.UserUncheckedUpdateWithoutCampaign_submissionsInput>
+}
+
 export type UserCreateWithoutEmail_accountsInput = {
   id?: string
   email: string
@@ -631,6 +652,7 @@ export type UserCreateWithoutEmail_accountsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEmail_accountsInput = {
@@ -649,6 +671,7 @@ export type UserUncheckedCreateWithoutEmail_accountsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldUncheckedCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEmail_accountsInput = {
@@ -683,6 +706,7 @@ export type UserUpdateWithoutEmail_accountsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEmail_accountsInput = {
@@ -701,6 +725,7 @@ export type UserUncheckedUpdateWithoutEmail_accountsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUncheckedUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAttachmentsInput = {
@@ -719,6 +744,7 @@ export type UserCreateWithoutAttachmentsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAttachmentsInput = {
@@ -737,6 +763,7 @@ export type UserUncheckedCreateWithoutAttachmentsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldUncheckedCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAttachmentsInput = {
@@ -771,6 +798,7 @@ export type UserUpdateWithoutAttachmentsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAttachmentsInput = {
@@ -789,6 +817,7 @@ export type UserUncheckedUpdateWithoutAttachmentsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUncheckedUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutContactsInput = {
@@ -807,6 +836,7 @@ export type UserCreateWithoutContactsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutContactsInput = {
@@ -825,6 +855,7 @@ export type UserUncheckedCreateWithoutContactsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldUncheckedCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutContactsInput = {
@@ -859,6 +890,7 @@ export type UserUpdateWithoutContactsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutContactsInput = {
@@ -877,6 +909,7 @@ export type UserUncheckedUpdateWithoutContactsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUncheckedUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutContact_fieldsInput = {
@@ -895,6 +928,7 @@ export type UserCreateWithoutContact_fieldsInput = {
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutUserInput
   email_usage_daily?: Prisma.EmailUsageDailyCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutContact_fieldsInput = {
@@ -913,6 +947,7 @@ export type UserUncheckedCreateWithoutContact_fieldsInput = {
   email_jobs?: Prisma.EmailJobUncheckedCreateNestedManyWithoutUserInput
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutContact_fieldsInput = {
@@ -947,6 +982,7 @@ export type UserUpdateWithoutContact_fieldsInput = {
   email_jobs?: Prisma.EmailJobUpdateManyWithoutUserNestedInput
   email_usage_daily?: Prisma.EmailUsageDailyUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutContact_fieldsInput = {
@@ -965,6 +1001,7 @@ export type UserUncheckedUpdateWithoutContact_fieldsInput = {
   email_jobs?: Prisma.EmailJobUncheckedUpdateManyWithoutUserNestedInput
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutTemplatesInput = {
@@ -983,6 +1020,7 @@ export type UserCreateWithoutTemplatesInput = {
   email_usage_daily?: Prisma.EmailUsageDailyCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutTemplatesInput = {
@@ -1001,6 +1039,7 @@ export type UserUncheckedCreateWithoutTemplatesInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldUncheckedCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutTemplatesInput = {
@@ -1035,6 +1074,7 @@ export type UserUpdateWithoutTemplatesInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTemplatesInput = {
@@ -1053,6 +1093,7 @@ export type UserUncheckedUpdateWithoutTemplatesInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUncheckedUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCampaignsInput = {
@@ -1071,6 +1112,7 @@ export type UserCreateWithoutCampaignsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignsInput = {
@@ -1089,6 +1131,7 @@ export type UserUncheckedCreateWithoutCampaignsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldUncheckedCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignsInput = {
@@ -1123,6 +1166,7 @@ export type UserUpdateWithoutCampaignsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignsInput = {
@@ -1141,6 +1185,7 @@ export type UserUncheckedUpdateWithoutCampaignsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUncheckedUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutEmail_jobsInput = {
@@ -1159,6 +1204,7 @@ export type UserCreateWithoutEmail_jobsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEmail_jobsInput = {
@@ -1177,6 +1223,7 @@ export type UserUncheckedCreateWithoutEmail_jobsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldUncheckedCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEmail_jobsInput = {
@@ -1211,6 +1258,7 @@ export type UserUpdateWithoutEmail_jobsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEmail_jobsInput = {
@@ -1229,6 +1277,7 @@ export type UserUncheckedUpdateWithoutEmail_jobsInput = {
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUncheckedUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutEmail_usage_dailyInput = {
@@ -1247,6 +1296,7 @@ export type UserCreateWithoutEmail_usage_dailyInput = {
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEmail_usage_dailyInput = {
@@ -1265,6 +1315,7 @@ export type UserUncheckedCreateWithoutEmail_usage_dailyInput = {
   email_jobs?: Prisma.EmailJobUncheckedCreateNestedManyWithoutUserInput
   reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldUncheckedCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEmail_usage_dailyInput = {
@@ -1299,6 +1350,7 @@ export type UserUpdateWithoutEmail_usage_dailyInput = {
   email_jobs?: Prisma.EmailJobUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEmail_usage_dailyInput = {
@@ -1317,6 +1369,7 @@ export type UserUncheckedUpdateWithoutEmail_usage_dailyInput = {
   email_jobs?: Prisma.EmailJobUncheckedUpdateManyWithoutUserNestedInput
   reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUncheckedUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutReservationsInput = {
@@ -1335,6 +1388,7 @@ export type UserCreateWithoutReservationsInput = {
   email_jobs?: Prisma.EmailJobCreateNestedManyWithoutUserInput
   email_usage_daily?: Prisma.EmailUsageDailyCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutReservationsInput = {
@@ -1353,6 +1407,7 @@ export type UserUncheckedCreateWithoutReservationsInput = {
   email_jobs?: Prisma.EmailJobUncheckedCreateNestedManyWithoutUserInput
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedCreateNestedManyWithoutUserInput
   contact_fields?: Prisma.ContactFieldUncheckedCreateNestedManyWithoutUserInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutReservationsInput = {
@@ -1387,6 +1442,7 @@ export type UserUpdateWithoutReservationsInput = {
   email_jobs?: Prisma.EmailJobUpdateManyWithoutUserNestedInput
   email_usage_daily?: Prisma.EmailUsageDailyUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReservationsInput = {
@@ -1405,6 +1461,99 @@ export type UserUncheckedUpdateWithoutReservationsInput = {
   email_jobs?: Prisma.EmailJobUncheckedUpdateManyWithoutUserNestedInput
   email_usage_daily?: Prisma.EmailUsageDailyUncheckedUpdateManyWithoutUserNestedInput
   contact_fields?: Prisma.ContactFieldUncheckedUpdateManyWithoutUserNestedInput
+  campaign_submissions?: Prisma.CampaignSubmissionUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutCampaign_submissionsInput = {
+  id?: string
+  email: string
+  name?: string | null
+  role?: $Enums.UserRole
+  is_active?: boolean
+  daily_email_limit_override?: number | null
+  created_at?: Date | string
+  email_accounts?: Prisma.EmailAccountCreateNestedManyWithoutUserInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutUserInput
+  contacts?: Prisma.ContactCreateNestedManyWithoutUserInput
+  templates?: Prisma.TemplateCreateNestedManyWithoutUserInput
+  campaigns?: Prisma.CampaignCreateNestedManyWithoutUserInput
+  email_jobs?: Prisma.EmailJobCreateNestedManyWithoutUserInput
+  email_usage_daily?: Prisma.EmailUsageDailyCreateNestedManyWithoutUserInput
+  reservations?: Prisma.EmailSendReservationCreateNestedManyWithoutUserInput
+  contact_fields?: Prisma.ContactFieldCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutCampaign_submissionsInput = {
+  id?: string
+  email: string
+  name?: string | null
+  role?: $Enums.UserRole
+  is_active?: boolean
+  daily_email_limit_override?: number | null
+  created_at?: Date | string
+  email_accounts?: Prisma.EmailAccountUncheckedCreateNestedManyWithoutUserInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutUserInput
+  contacts?: Prisma.ContactUncheckedCreateNestedManyWithoutUserInput
+  templates?: Prisma.TemplateUncheckedCreateNestedManyWithoutUserInput
+  campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutUserInput
+  email_jobs?: Prisma.EmailJobUncheckedCreateNestedManyWithoutUserInput
+  email_usage_daily?: Prisma.EmailUsageDailyUncheckedCreateNestedManyWithoutUserInput
+  reservations?: Prisma.EmailSendReservationUncheckedCreateNestedManyWithoutUserInput
+  contact_fields?: Prisma.ContactFieldUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutCampaign_submissionsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutCampaign_submissionsInput, Prisma.UserUncheckedCreateWithoutCampaign_submissionsInput>
+}
+
+export type UserUpsertWithoutCampaign_submissionsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutCampaign_submissionsInput, Prisma.UserUncheckedUpdateWithoutCampaign_submissionsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutCampaign_submissionsInput, Prisma.UserUncheckedCreateWithoutCampaign_submissionsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutCampaign_submissionsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutCampaign_submissionsInput, Prisma.UserUncheckedUpdateWithoutCampaign_submissionsInput>
+}
+
+export type UserUpdateWithoutCampaign_submissionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  daily_email_limit_override?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  email_accounts?: Prisma.EmailAccountUpdateManyWithoutUserNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutUserNestedInput
+  contacts?: Prisma.ContactUpdateManyWithoutUserNestedInput
+  templates?: Prisma.TemplateUpdateManyWithoutUserNestedInput
+  campaigns?: Prisma.CampaignUpdateManyWithoutUserNestedInput
+  email_jobs?: Prisma.EmailJobUpdateManyWithoutUserNestedInput
+  email_usage_daily?: Prisma.EmailUsageDailyUpdateManyWithoutUserNestedInput
+  reservations?: Prisma.EmailSendReservationUpdateManyWithoutUserNestedInput
+  contact_fields?: Prisma.ContactFieldUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCampaign_submissionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  daily_email_limit_override?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  email_accounts?: Prisma.EmailAccountUncheckedUpdateManyWithoutUserNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutUserNestedInput
+  contacts?: Prisma.ContactUncheckedUpdateManyWithoutUserNestedInput
+  templates?: Prisma.TemplateUncheckedUpdateManyWithoutUserNestedInput
+  campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutUserNestedInput
+  email_jobs?: Prisma.EmailJobUncheckedUpdateManyWithoutUserNestedInput
+  email_usage_daily?: Prisma.EmailUsageDailyUncheckedUpdateManyWithoutUserNestedInput
+  reservations?: Prisma.EmailSendReservationUncheckedUpdateManyWithoutUserNestedInput
+  contact_fields?: Prisma.ContactFieldUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -1422,6 +1571,7 @@ export type UserCountOutputType = {
   email_usage_daily: number
   reservations: number
   contact_fields: number
+  campaign_submissions: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1434,6 +1584,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   email_usage_daily?: boolean | UserCountOutputTypeCountEmail_usage_dailyArgs
   reservations?: boolean | UserCountOutputTypeCountReservationsArgs
   contact_fields?: boolean | UserCountOutputTypeCountContact_fieldsArgs
+  campaign_submissions?: boolean | UserCountOutputTypeCountCampaign_submissionsArgs
 }
 
 /**
@@ -1509,6 +1660,13 @@ export type UserCountOutputTypeCountContact_fieldsArgs<ExtArgs extends runtime.T
   where?: Prisma.ContactFieldWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountCampaign_submissionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CampaignSubmissionWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1527,6 +1685,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   email_usage_daily?: boolean | Prisma.User$email_usage_dailyArgs<ExtArgs>
   reservations?: boolean | Prisma.User$reservationsArgs<ExtArgs>
   contact_fields?: boolean | Prisma.User$contact_fieldsArgs<ExtArgs>
+  campaign_submissions?: boolean | Prisma.User$campaign_submissionsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1571,6 +1730,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   email_usage_daily?: boolean | Prisma.User$email_usage_dailyArgs<ExtArgs>
   reservations?: boolean | Prisma.User$reservationsArgs<ExtArgs>
   contact_fields?: boolean | Prisma.User$contact_fieldsArgs<ExtArgs>
+  campaign_submissions?: boolean | Prisma.User$campaign_submissionsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1588,6 +1748,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     email_usage_daily: Prisma.$EmailUsageDailyPayload<ExtArgs>[]
     reservations: Prisma.$EmailSendReservationPayload<ExtArgs>[]
     contact_fields: Prisma.$ContactFieldPayload<ExtArgs>[]
+    campaign_submissions: Prisma.$CampaignSubmissionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2000,6 +2161,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   email_usage_daily<T extends Prisma.User$email_usage_dailyArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$email_usage_dailyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailUsageDailyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reservations<T extends Prisma.User$reservationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$reservationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailSendReservationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   contact_fields<T extends Prisma.User$contact_fieldsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$contact_fieldsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ContactFieldPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  campaign_submissions<T extends Prisma.User$campaign_submissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$campaign_submissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignSubmissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2642,6 +2804,30 @@ export type User$contact_fieldsArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.ContactFieldScalarFieldEnum | Prisma.ContactFieldScalarFieldEnum[]
+}
+
+/**
+ * User.campaign_submissions
+ */
+export type User$campaign_submissionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CampaignSubmission
+   */
+  select?: Prisma.CampaignSubmissionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CampaignSubmission
+   */
+  omit?: Prisma.CampaignSubmissionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CampaignSubmissionInclude<ExtArgs> | null
+  where?: Prisma.CampaignSubmissionWhereInput
+  orderBy?: Prisma.CampaignSubmissionOrderByWithRelationInput | Prisma.CampaignSubmissionOrderByWithRelationInput[]
+  cursor?: Prisma.CampaignSubmissionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CampaignSubmissionScalarFieldEnum | Prisma.CampaignSubmissionScalarFieldEnum[]
 }
 
 /**

@@ -4,7 +4,7 @@ import { createCampaignSchema } from '@/lib/validation/campaign';
 
 const attachmentSelectionError = (files: { size_bytes?: number | null }[]) => validateAttachments(files, 'gmail');
 const id = (n: number) => `550e8400-e29b-41d4-a716-${String(n).padStart(12, '0')}`;
-const body = { name: 'Campaign', email_account_id: id(1), template_id: id(2), contact_ids: [id(3)], start_at: '2030-01-01' };
+const body = { name: 'Campaign', email_account_id: id(1), template_id: id(2), contact_ids: [id(3)], start_at: '2030-01-01', idempotency_key: id(6), preview_fingerprint: 'a'.repeat(64) };
 describe('optional campaign attachment limits', () => {
   it('accepts omitted, empty, multiple and legacy selections', () => {
     for (const selection of [{}, { attachment_ids: [] }, { attachment_ids: [id(4), id(5)] }, { attachment_id: id(4) }]) {

@@ -412,7 +412,8 @@ export const ModelName = {
   EmailUsageDaily: 'EmailUsageDaily',
   CampaignUsageDaily: 'CampaignUsageDaily',
   EmailSendReservation: 'EmailSendReservation',
-  SystemUsageDaily: 'SystemUsageDaily'
+  SystemUsageDaily: 'SystemUsageDaily',
+  CampaignSubmission: 'CampaignSubmission'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -428,7 +429,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "emailAccount" | "emailOAuthAttempt" | "attachment" | "contact" | "contactField" | "contactFieldValue" | "template" | "campaign" | "emailJob" | "emailLog" | "systemSetting" | "emailUsageDaily" | "campaignUsageDaily" | "emailSendReservation" | "systemUsageDaily"
+    modelProps: "user" | "emailAccount" | "emailOAuthAttempt" | "attachment" | "contact" | "contactField" | "contactFieldValue" | "template" | "campaign" | "emailJob" | "emailLog" | "systemSetting" | "emailUsageDaily" | "campaignUsageDaily" | "emailSendReservation" | "systemUsageDaily" | "campaignSubmission"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1616,6 +1617,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CampaignSubmission: {
+      payload: Prisma.$CampaignSubmissionPayload<ExtArgs>
+      fields: Prisma.CampaignSubmissionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CampaignSubmissionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignSubmissionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CampaignSubmissionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignSubmissionPayload>
+        }
+        findFirst: {
+          args: Prisma.CampaignSubmissionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignSubmissionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CampaignSubmissionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignSubmissionPayload>
+        }
+        findMany: {
+          args: Prisma.CampaignSubmissionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignSubmissionPayload>[]
+        }
+        create: {
+          args: Prisma.CampaignSubmissionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignSubmissionPayload>
+        }
+        createMany: {
+          args: Prisma.CampaignSubmissionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CampaignSubmissionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignSubmissionPayload>[]
+        }
+        delete: {
+          args: Prisma.CampaignSubmissionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignSubmissionPayload>
+        }
+        update: {
+          args: Prisma.CampaignSubmissionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignSubmissionPayload>
+        }
+        deleteMany: {
+          args: Prisma.CampaignSubmissionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CampaignSubmissionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CampaignSubmissionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignSubmissionPayload>[]
+        }
+        upsert: {
+          args: Prisma.CampaignSubmissionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignSubmissionPayload>
+        }
+        aggregate: {
+          args: Prisma.CampaignSubmissionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCampaignSubmission>
+        }
+        groupBy: {
+          args: Prisma.CampaignSubmissionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignSubmissionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CampaignSubmissionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignSubmissionCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1808,6 +1883,7 @@ export const EmailJobScalarFieldEnum = {
   subject: 'subject',
   body: 'body',
   body_html: 'body_html',
+  creation_key: 'creation_key',
   scheduled_at: 'scheduled_at',
   status: 'status',
   attempt_count: 'attempt_count',
@@ -1889,6 +1965,21 @@ export const SystemUsageDailyScalarFieldEnum = {
 export type SystemUsageDailyScalarFieldEnum = (typeof SystemUsageDailyScalarFieldEnum)[keyof typeof SystemUsageDailyScalarFieldEnum]
 
 
+export const CampaignSubmissionScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  idempotency_key: 'idempotency_key',
+  request_hash: 'request_hash',
+  campaign_id: 'campaign_id',
+  recipient_summary: 'recipient_summary',
+  resend_recipients: 'resend_recipients',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type CampaignSubmissionScalarFieldEnum = (typeof CampaignSubmissionScalarFieldEnum)[keyof typeof CampaignSubmissionScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1903,6 +1994,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -2277,6 +2375,7 @@ export type GlobalOmitConfig = {
   campaignUsageDaily?: Prisma.CampaignUsageDailyOmit
   emailSendReservation?: Prisma.EmailSendReservationOmit
   systemUsageDaily?: Prisma.SystemUsageDailyOmit
+  campaignSubmission?: Prisma.CampaignSubmissionOmit
 }
 
 /* Types for Logging */

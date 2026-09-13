@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { POST as createCampaign } from '@/app/api/campaigns/route';
 import { POST as preCheck } from '@/app/api/campaigns/pre-check/route';
+import { ValidationError } from '@/lib/errors';
 
 interface ApiBody {
   success: boolean;
@@ -16,11 +17,11 @@ const CONTACT_ID_A = '55555555-5555-4555-8555-555555555555';
 const CONTACT_ID_B = '66666666-6666-4666-8666-666666666666';
 const FIELD_ID_SIZE = '77777777-7777-4777-8777-777777777777';
 
-const { mockRequireVerifiedSession, mockCheckApiRateLimit, mockGenerateCampaignJobs } = vi.hoisted(
+const { mockRequireVerifiedSession, mockCheckApiRateLimit, mockCreateCampaign } = vi.hoisted(
   () => ({
     mockRequireVerifiedSession: vi.fn(),
     mockCheckApiRateLimit: vi.fn(),
-    mockGenerateCampaignJobs: vi.fn(),
+    mockCreateCampaign: vi.fn(),
   })
 );
 
@@ -28,11 +29,12 @@ const mockPrisma = {
   campaign: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
+    findUniqueOrThrow: vi.fn(),
     count: vi.fn(),
     create: vi.fn(),
     updateMany: vi.fn(),
   },
-  emailJob: { updateMany: vi.fn() },
+  emailJob: { updateMany: vi.fn(), createMany: vi.fn().mockResolvedValue({ count: 0 }) },
   user: {
     findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
     upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
@@ -43,6 +45,8 @@ const mockPrisma = {
   contact: { findMany: vi.fn(), count: vi.fn() },
   contactField: { findMany: vi.fn().mockResolvedValue([]) },
   contactFieldValue: { findMany: vi.fn().mockResolvedValue([]) },
+  $queryRaw: vi.fn().mockResolvedValue([]),
+  $executeRaw: vi.fn().mockResolvedValue(undefined),
   $disconnect: vi.fn(),
 };
 
@@ -69,7 +73,7 @@ vi.mock('@/lib/rate-limit/middleware', () => ({
   }),
 }));
 
-vi.mock('@/lib/jobs/scheduler', () => ({ generateCampaignJobs: mockGenerateCampaignJobs }));
+vi.mock('@/lib/campaigns/create', () => ({ createCampaign: mockCreateCampaign }));
 vi.mock('@/lib/db', () => ({ getPrisma: vi.fn(() => mockPrisma) }));
 
 function authenticated(): void {
@@ -96,6 +100,8 @@ function validCreateBody(overrides: Record<string, unknown> = {}): Record<string
     timezone: 'UTC',
     interval_minutes: 5,
     daily_limit: 10,
+    idempotency_key: '11111111-1111-4111-8111-111111111111',
+    preview_fingerprint: 'a'.repeat(64),
     ...overrides,
   };
 }
@@ -103,7 +109,27 @@ function validCreateBody(overrides: Record<string, unknown> = {}): Record<string
 beforeEach(() => {
   authenticated();
   mockCheckApiRateLimit.mockResolvedValue(null);
-  mockGenerateCampaignJobs.mockResolvedValue(undefined);
+  mockCreateCampaign.mockResolvedValue({
+    campaignId: 'camp-1',
+    campaignName: 'Spring outreach',
+    status: 'created',
+    recipientSummary: {
+      policyVersion: 1,
+      selectedCount: 2,
+      eligibleCount: 2,
+      excludedCount: 0,
+      excludedByReason: { duplicateAddress: 0, previouslySent: 0, pending: 0, deliveryUnknown: 0, missingValues: 0 },
+      includedPreviousCount: 0,
+      includedWithoutPreviousSendCount: 2,
+      blockedByUnknownTokens: false,
+      recipients: [],
+      missingValues: [],
+      unknownTokens: [],
+      affectedContactCount: 0,
+      totalContactCount: 2,
+    },
+    jobCount: 2,
+  });
 
   mockPrisma.campaign.create.mockResolvedValue({
     id: 'camp-1',
@@ -111,12 +137,19 @@ beforeEach(() => {
     status: 'ACTIVE',
     created_at: new Date('2030-01-01'),
   });
+  mockPrisma.campaign.findUniqueOrThrow.mockResolvedValue({
+    id: 'camp-1',
+    name: 'Spring outreach',
+    status: 'ACTIVE',
+    created_at: new Date('2030-01-01'),
+    _count: { email_jobs: 2 },
+  });
   mockPrisma.emailAccount.findFirst.mockResolvedValue({ id: EMAIL_ACCOUNT_ID, user_id: 'user-1', provider: 'gmail' });
   mockPrisma.attachment.findFirst.mockResolvedValue(null);
   mockPrisma.contact.count.mockResolvedValue(2);
   mockPrisma.contact.findMany.mockResolvedValue([
-    { id: CONTACT_ID_A, name: 'Ada', email: 'ada@example.com' },
-    { id: CONTACT_ID_B, name: 'Grace', email: 'grace@example.com' },
+    { id: CONTACT_ID_A, name: 'Ada', email: 'ada@example.com', contact_field_values: [] },
+    { id: CONTACT_ID_B, name: 'Grace', email: 'grace@example.com', contact_field_values: [] },
   ]);
   mockPrisma.contactField.findMany.mockResolvedValue([]);
   mockPrisma.contactFieldValue.findMany.mockResolvedValue([]);
@@ -130,6 +163,7 @@ describe('POST /api/campaigns/pre-check', () => {
 
     const response = await preCheck(jsonRequest({
       templateId: TEMPLATE_ID,
+      emailAccountId: EMAIL_ACCOUNT_ID,
       contactIds: [CONTACT_ID_A, CONTACT_ID_B],
     }, 'http://localhost/api/campaigns/pre-check'));
     const body = (await response.json()) as ApiBody;
@@ -154,9 +188,14 @@ describe('POST /api/campaigns/pre-check', () => {
     mockPrisma.contactFieldValue.findMany.mockResolvedValue([
       { contact_id: CONTACT_ID_A, field_id: FIELD_ID_SIZE, value: 'M' },
     ]);
+    mockPrisma.contact.findMany.mockResolvedValue([
+      { id: CONTACT_ID_A, name: 'Ada', email: 'ada@example.com', contact_field_values: [{ field_id: FIELD_ID_SIZE, value: 'M' }] },
+      { id: CONTACT_ID_B, name: 'Grace', email: 'grace@example.com', contact_field_values: [] },
+    ]);
 
     const response = await preCheck(jsonRequest({
       templateId: TEMPLATE_ID,
+      emailAccountId: EMAIL_ACCOUNT_ID,
       contactIds: [CONTACT_ID_A, CONTACT_ID_B],
     }, 'http://localhost/api/campaigns/pre-check'));
     const body = (await response.json()) as ApiBody;
@@ -175,6 +214,7 @@ describe('POST /api/campaigns/pre-check', () => {
 
     const response = await preCheck(jsonRequest({
       templateId: TEMPLATE_ID,
+      emailAccountId: EMAIL_ACCOUNT_ID,
       contactIds: [CONTACT_ID_A],
     }, 'http://localhost/api/campaigns/pre-check'));
     const body = (await response.json()) as ApiBody;
@@ -196,9 +236,14 @@ describe('POST /api/campaigns/pre-check', () => {
     mockPrisma.contactFieldValue.findMany.mockResolvedValue([
       { contact_id: CONTACT_ID_A, field_id: FIELD_ID_SIZE, value: 'M' },
     ]);
+    mockPrisma.contact.findMany.mockResolvedValue([
+      { id: CONTACT_ID_A, name: 'Ada', email: 'ada@example.com', contact_field_values: [{ field_id: FIELD_ID_SIZE, value: 'M' }] },
+      { id: CONTACT_ID_B, name: 'Grace', email: 'grace@example.com', contact_field_values: [] },
+    ]);
 
     const response = await preCheck(jsonRequest({
       templateId: TEMPLATE_ID,
+      emailAccountId: EMAIL_ACCOUNT_ID,
       contactIds: [CONTACT_ID_B],
     }, 'http://localhost/api/campaigns/pre-check'));
     const body = (await response.json()) as ApiBody;
@@ -214,6 +259,7 @@ describe('POST /api/campaigns/pre-check', () => {
 
     const response = await preCheck(jsonRequest({
       templateId: TEMPLATE_ID,
+      emailAccountId: EMAIL_ACCOUNT_ID,
       contactIds: [CONTACT_ID_A],
     }, 'http://localhost/api/campaigns/pre-check'));
     const body = (await response.json()) as ApiBody;
@@ -228,6 +274,7 @@ describe('POST /api/campaigns/pre-check', () => {
 
     const response = await preCheck(jsonRequest({
       templateId: TEMPLATE_ID,
+      emailAccountId: EMAIL_ACCOUNT_ID,
       contactIds: [CONTACT_ID_A, CONTACT_ID_B],
     }, 'http://localhost/api/campaigns/pre-check'));
     const body = (await response.json()) as ApiBody;
@@ -248,6 +295,7 @@ describe('POST /api/campaigns — missingValueAction recheck', () => {
     mockPrisma.contactFieldValue.findMany.mockResolvedValue([
       { contact_id: CONTACT_ID_A, field_id: FIELD_ID_SIZE, value: 'M' },
     ]);
+    mockCreateCampaign.mockRejectedValueOnce(new ValidationError('Some recipients have missing values.'));
 
     const response = await createCampaign(jsonRequest(validCreateBody()));
     const body = (await response.json()) as ApiBody;
@@ -274,8 +322,7 @@ describe('POST /api/campaigns — missingValueAction recheck', () => {
 
     expect(response.status).toBe(201);
     expect(body.success).toBe(true);
-    expect(mockPrisma.campaign.create).toHaveBeenCalled();
-    expect(mockGenerateCampaignJobs).toHaveBeenCalled();
+    expect(mockCreateCampaign).toHaveBeenCalled();
   });
 
   it('proceeds when missingValueAction is "exclude" and contacts are filtered', async () => {
@@ -310,6 +357,7 @@ describe('POST /api/campaigns — missingValueAction recheck', () => {
     mockPrisma.contactFieldValue.findMany.mockResolvedValue([
       { contact_id: CONTACT_ID_A, field_id: FIELD_ID_SIZE, value: 'M' },
     ]);
+    mockCreateCampaign.mockRejectedValueOnce(new ValidationError('Some contacts still have missing values.'));
 
     const response = await createCampaign(jsonRequest(validCreateBody({
       contact_ids: [CONTACT_ID_A, CONTACT_ID_B],
@@ -334,6 +382,7 @@ describe('POST /api/campaigns — missingValueAction recheck', () => {
       { contact_id: CONTACT_ID_A, field_id: FIELD_ID_SIZE, value: 'M' },
     ]);
     mockPrisma.contact.count.mockResolvedValue(1);
+    mockCreateCampaign.mockRejectedValueOnce(new ValidationError('No recipients remaining after filtering.'));
 
     const response = await createCampaign(jsonRequest(validCreateBody({
       contact_ids: [CONTACT_ID_B],

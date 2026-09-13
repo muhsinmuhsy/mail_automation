@@ -71,15 +71,16 @@ model User {
   daily_email_limit_override Int?
   created_at                DateTime @default(now()) @db.Timestamptz
 
-  email_accounts    EmailAccount[]
-  attachments       Attachment[]
-  contacts          Contact[]
-  templates         Template[]
-  campaigns         Campaign[]
-  email_jobs        EmailJob[]
-  email_usage_daily EmailUsageDaily[]
-  reservations      EmailSendReservation[]
-  contact_fields    ContactField[]
+  email_accounts       EmailAccount[]
+  attachments          Attachment[]
+  contacts             Contact[]
+  templates            Template[]
+  campaigns            Campaign[]
+  email_jobs           EmailJob[]
+  email_usage_daily    EmailUsageDaily[]
+  reservations         EmailSendReservation[]
+  contact_fields       ContactField[]
+  campaign_submissions CampaignSubmission[]
 
   @@map("users")
 }
@@ -261,6 +262,7 @@ model Campaign {
   email_jobs    EmailJob[]
   usage_daily   CampaignUsageDaily[]
   reservations  EmailSendReservation[]
+  submission    CampaignSubmission?
 
   @@index([user_id, status], map: "idx_campaigns_user_id_status")
   @@map("campaigns")
@@ -286,6 +288,9 @@ model EmailJob {
   body                    String        @db.Text
   /// Resolved HTML snapshot (merge tags already substituted). Null for legacy text-only jobs.
   body_html               String?       @db.Text
+  /// Deterministic uniqueness key `<campaign UUID>:<normalized recipient email>` for
+  /// new campaign jobs. Null for legacy rows. See docs/CAMPAIGN/_DEDUPLICATION.md §6.4.
+  creation_key            String?       @unique(map: "idx_email_jobs_creation_key_unique") @db.VarChar(321)
   scheduled_at            DateTime      @db.Timestamptz
   status                  EmailJobStatus @default(SCHEDULED)
   attempt_count           Int           @default(0)
@@ -379,4 +384,24 @@ model SystemUsageDaily {
   reserved_count Int      @default(0)
 
   @@map("system_usage_daily")
+}
+
+/// Durable campaign submission receipt for idempotent creation replay.
+/// See docs/CAMPAIGN/_DEDUPLICATION.md §6.3.
+model CampaignSubmission {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String   @db.Uuid
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  idempotency_key String   @db.Uuid
+  request_hash    String   @db.VarChar(64)
+  campaign_id     String   @unique(map: "uq_campaign_submissions_campaign_id") @db.Uuid
+  campaign        Campaign @relation(fields: [campaign_id], references: [id], onDelete: Restrict)
+  recipient_summary Json   @db.JsonB
+  resend_recipients Json   @default("[]") @db.JsonB
+  created_at      DateTime @default(now()) @db.Timestamptz
+  updated_at      DateTime @updatedAt @default(now()) @db.Timestamptz
+
+  @@unique([user_id, idempotency_key], map: "uq_campaign_submissions_user_key")
+  @@index([user_id, created_at], map: "idx_campaign_submissions_user_created")
+  @@map("campaign_submissions")
 }

@@ -27,6 +27,9 @@ export const RATE_LIMITS: Record<string, RateLimitRule> = {
   'campaigns:update': { limit: 20, windowSec: 60 },
   'campaigns:pause': { limit: 20, windowSec: 60 },
   'campaigns:cancel': { limit: 20, windowSec: 60 },
+  'campaign-pre-check': { limit: 120, windowSec: 60 },
+  'campaign-create': { limit: 10, windowSec: 60 },
+  'campaign-submission-status': { limit: 60, windowSec: 60 },
 
   'attachments:upload': { limit: 20, windowSec: 60 },
   'attachments:delete': { limit: 20, windowSec: 60 },

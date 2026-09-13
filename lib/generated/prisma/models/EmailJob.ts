@@ -46,6 +46,7 @@ export type EmailJobMinAggregateOutputType = {
   subject: string | null
   body: string | null
   body_html: string | null
+  creation_key: string | null
   scheduled_at: Date | null
   status: $Enums.EmailJobStatus | null
   attempt_count: number | null
@@ -69,6 +70,7 @@ export type EmailJobMaxAggregateOutputType = {
   subject: string | null
   body: string | null
   body_html: string | null
+  creation_key: string | null
   scheduled_at: Date | null
   status: $Enums.EmailJobStatus | null
   attempt_count: number | null
@@ -93,6 +95,7 @@ export type EmailJobCountAggregateOutputType = {
   subject: number
   body: number
   body_html: number
+  creation_key: number
   scheduled_at: number
   status: number
   attempt_count: number
@@ -126,6 +129,7 @@ export type EmailJobMinAggregateInputType = {
   subject?: true
   body?: true
   body_html?: true
+  creation_key?: true
   scheduled_at?: true
   status?: true
   attempt_count?: true
@@ -149,6 +153,7 @@ export type EmailJobMaxAggregateInputType = {
   subject?: true
   body?: true
   body_html?: true
+  creation_key?: true
   scheduled_at?: true
   status?: true
   attempt_count?: true
@@ -173,6 +178,7 @@ export type EmailJobCountAggregateInputType = {
   subject?: true
   body?: true
   body_html?: true
+  creation_key?: true
   scheduled_at?: true
   status?: true
   attempt_count?: true
@@ -284,6 +290,7 @@ export type EmailJobGroupByOutputType = {
   subject: string
   body: string
   body_html: string | null
+  creation_key: string | null
   scheduled_at: Date
   status: $Enums.EmailJobStatus
   attempt_count: number
@@ -331,6 +338,7 @@ export type EmailJobWhereInput = {
   subject?: Prisma.StringFilter<"EmailJob"> | string
   body?: Prisma.StringFilter<"EmailJob"> | string
   body_html?: Prisma.StringNullableFilter<"EmailJob"> | string | null
+  creation_key?: Prisma.StringNullableFilter<"EmailJob"> | string | null
   scheduled_at?: Prisma.DateTimeFilter<"EmailJob"> | Date | string
   status?: Prisma.EnumEmailJobStatusFilter<"EmailJob"> | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFilter<"EmailJob"> | number
@@ -363,6 +371,7 @@ export type EmailJobOrderByWithRelationInput = {
   subject?: Prisma.SortOrder
   body?: Prisma.SortOrder
   body_html?: Prisma.SortOrderInput | Prisma.SortOrder
+  creation_key?: Prisma.SortOrderInput | Prisma.SortOrder
   scheduled_at?: Prisma.SortOrder
   status?: Prisma.SortOrder
   attempt_count?: Prisma.SortOrder
@@ -384,6 +393,7 @@ export type EmailJobOrderByWithRelationInput = {
 
 export type EmailJobWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  creation_key?: string
   AND?: Prisma.EmailJobWhereInput | Prisma.EmailJobWhereInput[]
   OR?: Prisma.EmailJobWhereInput[]
   NOT?: Prisma.EmailJobWhereInput | Prisma.EmailJobWhereInput[]
@@ -415,7 +425,7 @@ export type EmailJobWhereUniqueInput = Prisma.AtLeast<{
   template?: Prisma.XOR<Prisma.TemplateScalarRelationFilter, Prisma.TemplateWhereInput>
   email_logs?: Prisma.EmailLogListRelationFilter
   reservations?: Prisma.EmailSendReservationListRelationFilter
-}, "id">
+}, "id" | "creation_key">
 
 export type EmailJobOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -430,6 +440,7 @@ export type EmailJobOrderByWithAggregationInput = {
   subject?: Prisma.SortOrder
   body?: Prisma.SortOrder
   body_html?: Prisma.SortOrderInput | Prisma.SortOrder
+  creation_key?: Prisma.SortOrderInput | Prisma.SortOrder
   scheduled_at?: Prisma.SortOrder
   status?: Prisma.SortOrder
   attempt_count?: Prisma.SortOrder
@@ -462,6 +473,7 @@ export type EmailJobScalarWhereWithAggregatesInput = {
   subject?: Prisma.StringWithAggregatesFilter<"EmailJob"> | string
   body?: Prisma.StringWithAggregatesFilter<"EmailJob"> | string
   body_html?: Prisma.StringNullableWithAggregatesFilter<"EmailJob"> | string | null
+  creation_key?: Prisma.StringNullableWithAggregatesFilter<"EmailJob"> | string | null
   scheduled_at?: Prisma.DateTimeWithAggregatesFilter<"EmailJob"> | Date | string
   status?: Prisma.EnumEmailJobStatusWithAggregatesFilter<"EmailJob"> | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntWithAggregatesFilter<"EmailJob"> | number
@@ -480,6 +492,7 @@ export type EmailJobCreateInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -512,6 +525,7 @@ export type EmailJobUncheckedCreateInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -532,6 +546,7 @@ export type EmailJobUpdateInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -564,6 +579,7 @@ export type EmailJobUncheckedUpdateInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -590,6 +606,7 @@ export type EmailJobCreateManyInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -608,6 +625,7 @@ export type EmailJobUpdateManyMutationInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -632,6 +650,7 @@ export type EmailJobUncheckedUpdateManyInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -666,6 +685,7 @@ export type EmailJobCountOrderByAggregateInput = {
   subject?: Prisma.SortOrder
   body?: Prisma.SortOrder
   body_html?: Prisma.SortOrder
+  creation_key?: Prisma.SortOrder
   scheduled_at?: Prisma.SortOrder
   status?: Prisma.SortOrder
   attempt_count?: Prisma.SortOrder
@@ -693,6 +713,7 @@ export type EmailJobMaxOrderByAggregateInput = {
   subject?: Prisma.SortOrder
   body?: Prisma.SortOrder
   body_html?: Prisma.SortOrder
+  creation_key?: Prisma.SortOrder
   scheduled_at?: Prisma.SortOrder
   status?: Prisma.SortOrder
   attempt_count?: Prisma.SortOrder
@@ -716,6 +737,7 @@ export type EmailJobMinOrderByAggregateInput = {
   subject?: Prisma.SortOrder
   body?: Prisma.SortOrder
   body_html?: Prisma.SortOrder
+  creation_key?: Prisma.SortOrder
   scheduled_at?: Prisma.SortOrder
   status?: Prisma.SortOrder
   attempt_count?: Prisma.SortOrder
@@ -1036,6 +1058,7 @@ export type EmailJobCreateWithoutUserInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1066,6 +1089,7 @@ export type EmailJobUncheckedCreateWithoutUserInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1121,6 +1145,7 @@ export type EmailJobScalarWhereInput = {
   subject?: Prisma.StringFilter<"EmailJob"> | string
   body?: Prisma.StringFilter<"EmailJob"> | string
   body_html?: Prisma.StringNullableFilter<"EmailJob"> | string | null
+  creation_key?: Prisma.StringNullableFilter<"EmailJob"> | string | null
   scheduled_at?: Prisma.DateTimeFilter<"EmailJob"> | Date | string
   status?: Prisma.EnumEmailJobStatusFilter<"EmailJob"> | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFilter<"EmailJob"> | number
@@ -1139,6 +1164,7 @@ export type EmailJobCreateWithoutEmail_accountInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1169,6 +1195,7 @@ export type EmailJobUncheckedCreateWithoutEmail_accountInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1215,6 +1242,7 @@ export type EmailJobCreateWithoutAttachmentInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1245,6 +1273,7 @@ export type EmailJobUncheckedCreateWithoutAttachmentInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1291,6 +1320,7 @@ export type EmailJobCreateWithoutContactInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1321,6 +1351,7 @@ export type EmailJobUncheckedCreateWithoutContactInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1367,6 +1398,7 @@ export type EmailJobCreateWithoutTemplateInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1397,6 +1429,7 @@ export type EmailJobUncheckedCreateWithoutTemplateInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1443,6 +1476,7 @@ export type EmailJobCreateWithoutCampaignInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1473,6 +1507,7 @@ export type EmailJobUncheckedCreateWithoutCampaignInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1519,6 +1554,7 @@ export type EmailJobCreateWithoutEmail_logsInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1550,6 +1586,7 @@ export type EmailJobUncheckedCreateWithoutEmail_logsInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1585,6 +1622,7 @@ export type EmailJobUpdateWithoutEmail_logsInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1616,6 +1654,7 @@ export type EmailJobUncheckedUpdateWithoutEmail_logsInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1635,6 +1674,7 @@ export type EmailJobCreateWithoutReservationsInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1666,6 +1706,7 @@ export type EmailJobUncheckedCreateWithoutReservationsInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1701,6 +1742,7 @@ export type EmailJobUpdateWithoutReservationsInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1732,6 +1774,7 @@ export type EmailJobUncheckedUpdateWithoutReservationsInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1756,6 +1799,7 @@ export type EmailJobCreateManyUserInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1774,6 +1818,7 @@ export type EmailJobUpdateWithoutUserInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1804,6 +1849,7 @@ export type EmailJobUncheckedUpdateWithoutUserInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1829,6 +1875,7 @@ export type EmailJobUncheckedUpdateManyWithoutUserInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1852,6 +1899,7 @@ export type EmailJobCreateManyEmail_accountInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1870,6 +1918,7 @@ export type EmailJobUpdateWithoutEmail_accountInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1900,6 +1949,7 @@ export type EmailJobUncheckedUpdateWithoutEmail_accountInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1925,6 +1975,7 @@ export type EmailJobUncheckedUpdateManyWithoutEmail_accountInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1948,6 +1999,7 @@ export type EmailJobCreateManyAttachmentInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -1966,6 +2018,7 @@ export type EmailJobUpdateWithoutAttachmentInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1996,6 +2049,7 @@ export type EmailJobUncheckedUpdateWithoutAttachmentInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2021,6 +2075,7 @@ export type EmailJobUncheckedUpdateManyWithoutAttachmentInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2044,6 +2099,7 @@ export type EmailJobCreateManyContactInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -2062,6 +2118,7 @@ export type EmailJobUpdateWithoutContactInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2092,6 +2149,7 @@ export type EmailJobUncheckedUpdateWithoutContactInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2117,6 +2175,7 @@ export type EmailJobUncheckedUpdateManyWithoutContactInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2140,6 +2199,7 @@ export type EmailJobCreateManyTemplateInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -2158,6 +2218,7 @@ export type EmailJobUpdateWithoutTemplateInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2188,6 +2249,7 @@ export type EmailJobUncheckedUpdateWithoutTemplateInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2213,6 +2275,7 @@ export type EmailJobUncheckedUpdateManyWithoutTemplateInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2236,6 +2299,7 @@ export type EmailJobCreateManyCampaignInput = {
   subject: string
   body: string
   body_html?: string | null
+  creation_key?: string | null
   scheduled_at: Date | string
   status?: $Enums.EmailJobStatus
   attempt_count?: number
@@ -2254,6 +2318,7 @@ export type EmailJobUpdateWithoutCampaignInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2284,6 +2349,7 @@ export type EmailJobUncheckedUpdateWithoutCampaignInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2309,6 +2375,7 @@ export type EmailJobUncheckedUpdateManyWithoutCampaignInput = {
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   body?: Prisma.StringFieldUpdateOperationsInput | string
   body_html?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  creation_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scheduled_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumEmailJobStatusFieldUpdateOperationsInput | $Enums.EmailJobStatus
   attempt_count?: Prisma.IntFieldUpdateOperationsInput | number
@@ -2373,6 +2440,7 @@ export type EmailJobSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   subject?: boolean
   body?: boolean
   body_html?: boolean
+  creation_key?: boolean
   scheduled_at?: boolean
   status?: boolean
   attempt_count?: boolean
@@ -2406,6 +2474,7 @@ export type EmailJobSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   subject?: boolean
   body?: boolean
   body_html?: boolean
+  creation_key?: boolean
   scheduled_at?: boolean
   status?: boolean
   attempt_count?: boolean
@@ -2436,6 +2505,7 @@ export type EmailJobSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   subject?: boolean
   body?: boolean
   body_html?: boolean
+  creation_key?: boolean
   scheduled_at?: boolean
   status?: boolean
   attempt_count?: boolean
@@ -2466,6 +2536,7 @@ export type EmailJobSelectScalar = {
   subject?: boolean
   body?: boolean
   body_html?: boolean
+  creation_key?: boolean
   scheduled_at?: boolean
   status?: boolean
   attempt_count?: boolean
@@ -2477,7 +2548,7 @@ export type EmailJobSelectScalar = {
   updated_at?: boolean
 }
 
-export type EmailJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "campaign_id" | "contact_id" | "email_account_id" | "attachment_id" | "attachment_ids" | "template_id" | "to_email" | "subject" | "body" | "body_html" | "scheduled_at" | "status" | "attempt_count" | "processing_started_at" | "next_attempt_at" | "sent_at" | "error_message" | "created_at" | "updated_at", ExtArgs["result"]["emailJob"]>
+export type EmailJobOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "campaign_id" | "contact_id" | "email_account_id" | "attachment_id" | "attachment_ids" | "template_id" | "to_email" | "subject" | "body" | "body_html" | "creation_key" | "scheduled_at" | "status" | "attempt_count" | "processing_started_at" | "next_attempt_at" | "sent_at" | "error_message" | "created_at" | "updated_at", ExtArgs["result"]["emailJob"]>
 export type EmailJobInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   campaign?: boolean | Prisma.EmailJob$campaignArgs<ExtArgs>
@@ -2534,6 +2605,11 @@ export type $EmailJobPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
      * Resolved HTML snapshot (merge tags already substituted). Null for legacy text-only jobs.
      */
     body_html: string | null
+    /**
+     * Deterministic uniqueness key `<campaign UUID>:<normalized recipient email>` for
+     * new campaign jobs. Null for legacy rows. See docs/CAMPAIGN/_DEDUPLICATION.md §6.4.
+     */
+    creation_key: string | null
     scheduled_at: Date
     status: $Enums.EmailJobStatus
     attempt_count: number
@@ -2986,6 +3062,7 @@ export interface EmailJobFieldRefs {
   readonly subject: Prisma.FieldRef<"EmailJob", 'String'>
   readonly body: Prisma.FieldRef<"EmailJob", 'String'>
   readonly body_html: Prisma.FieldRef<"EmailJob", 'String'>
+  readonly creation_key: Prisma.FieldRef<"EmailJob", 'String'>
   readonly scheduled_at: Prisma.FieldRef<"EmailJob", 'DateTime'>
   readonly status: Prisma.FieldRef<"EmailJob", 'EmailJobStatus'>
   readonly attempt_count: Prisma.FieldRef<"EmailJob", 'Int'>

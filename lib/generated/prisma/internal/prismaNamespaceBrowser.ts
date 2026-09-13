@@ -66,7 +66,8 @@ export const ModelName = {
   EmailUsageDaily: 'EmailUsageDaily',
   CampaignUsageDaily: 'CampaignUsageDaily',
   EmailSendReservation: 'EmailSendReservation',
-  SystemUsageDaily: 'SystemUsageDaily'
+  SystemUsageDaily: 'SystemUsageDaily',
+  CampaignSubmission: 'CampaignSubmission'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -238,6 +239,7 @@ export const EmailJobScalarFieldEnum = {
   subject: 'subject',
   body: 'body',
   body_html: 'body_html',
+  creation_key: 'creation_key',
   scheduled_at: 'scheduled_at',
   status: 'status',
   attempt_count: 'attempt_count',
@@ -319,6 +321,21 @@ export const SystemUsageDailyScalarFieldEnum = {
 export type SystemUsageDailyScalarFieldEnum = (typeof SystemUsageDailyScalarFieldEnum)[keyof typeof SystemUsageDailyScalarFieldEnum]
 
 
+export const CampaignSubmissionScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  idempotency_key: 'idempotency_key',
+  request_hash: 'request_hash',
+  campaign_id: 'campaign_id',
+  recipient_summary: 'recipient_summary',
+  resend_recipients: 'resend_recipients',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type CampaignSubmissionScalarFieldEnum = (typeof CampaignSubmissionScalarFieldEnum)[keyof typeof CampaignSubmissionScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -333,6 +350,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {

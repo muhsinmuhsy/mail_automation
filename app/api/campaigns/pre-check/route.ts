@@ -2,47 +2,70 @@ import { NextRequest } from 'next/server';
 import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
-import { uuid } from '@/lib/validation/common';
+import { preCheckSchema } from '@/lib/validation/campaign';
 import { ValidationError, ForbiddenError } from '@/lib/errors';
-import { runMissingValueCheck } from '@/lib/campaigns/missing-values';
-import { z } from 'zod';
+import { computeEligibility } from '@/lib/campaigns/eligibility';
+import { computePreviewFingerprint } from '@/lib/campaigns/fingerprint';
 
 /**
- * Campaign pre-check endpoint (§11.16, §11.25).
+ * Campaign pre-check endpoint (§5.2).
  *
- * Scans the template for {{token}} patterns, maps them to built-in and custom
- * fields, queries the selected contacts for missing values, and returns the
- * counts. The UI shows a warning before the user confirms scheduling.
+ * Returns the full eligibility summary: selected/eligible/excluded counts,
+ * per-recipient classification, missing values, unknown tokens, and a preview
+ * fingerprint for creation-time freshness validation.
  */
-
-const preCheckSchema = z.object({
-  templateId: uuid,
-  contactIds: z.array(uuid).min(1),
-});
-
 const _POST = defineRoute(async (req, ctx) => {
   const body = await req.json();
   const parsed = preCheckSchema.safeParse(body);
   if (!parsed.success) {
     return respondError(
-      new ValidationError('Please correct the highlighted fields.'),
+      new ValidationError(
+        'Please correct the highlighted fields.',
+        Object.fromEntries(parsed.error.errors.map((e) => [e.path.join('.'), e.message]))
+      ),
       ctx.requestId
     );
   }
 
-  const { templateId, contactIds } = parsed.data;
+  const {
+    templateId,
+    emailAccountId,
+    contactIds,
+    attachmentIds,
+    resendRecipients,
+    missingValueAction,
+    unknownTokenAction,
+    startAt,
+    intervalMinutes,
+    dailyLimit,
+  } = parsed.data;
 
-  const template = await getPrisma().template.findFirst({
-    where: { id: templateId, user_id: ctx.user.id },
-    select: { id: true, subject: true, body: true, body_text: true, body_html: true },
-  });
+  // Validate ownership of template and email account.
+  const [template, emailAccount] = await Promise.all([
+    getPrisma().template.findFirst({
+      where: { id: templateId, user_id: ctx.user.id },
+      select: { id: true, subject: true, body: true, body_text: true, body_html: true },
+    }),
+    getPrisma().emailAccount.findFirst({
+      where: { id: emailAccountId, user_id: ctx.user.id, is_active: true },
+      select: { id: true },
+    }),
+  ]);
+
   if (!template) {
     return respondError(
       new ForbiddenError('Template not found or does not belong to you.'),
       ctx.requestId
     );
   }
+  if (!emailAccount) {
+    return respondError(
+      new ForbiddenError('Email account not found or is not active.'),
+      ctx.requestId
+    );
+  }
 
+  // Validate contact ownership.
   const contactCount = await getPrisma().contact.count({
     where: { id: { in: contactIds }, user_id: ctx.user.id },
   });
@@ -53,16 +76,53 @@ const _POST = defineRoute(async (req, ctx) => {
     );
   }
 
-  const result = await runMissingValueCheck(
-    getPrisma(),
-    ctx.user.id,
-    template.subject,
-    template.body_html ?? template.body_text ?? template.body,
-    contactIds
-  );
+  // Compute eligibility.
+  const eligibility = await computeEligibility(getPrisma(), {
+    userId: ctx.user.id,
+    templateId,
+    emailAccountId,
+    contactIds,
+    attachmentIds,
+    resendRecipients,
+    missingValueAction,
+    unknownTokenAction,
+    startAt: startAt ?? new Date(),
+    timezone: parsed.data.timezone,
+    intervalMinutes,
+    dailyLimit: dailyLimit ?? null,
+  });
 
-  return respondOk(result, ctx.requestId);
-}, { auth: 'user' });
+  // Compute preview fingerprint.
+  const previewFingerprint = await computePreviewFingerprint({
+    templateId,
+    emailAccountId,
+    attachmentIds,
+    contactIds,
+    resendRecipients,
+    missingValueAction,
+    unknownTokenAction,
+    eligibleRecipients: eligibility.preparedJobs.map((job) => ({
+      contactId: job.contactId,
+      recipientEmail: job.toEmail,
+      subject: job.subject,
+      bodyText: job.body,
+      bodyHtml: job.bodyHtml,
+    })),
+    includedPreviousCount: eligibility.summary.includedPreviousCount,
+    includedWithoutPreviousSendCount: eligibility.summary.includedWithoutPreviousSendCount,
+    followUpSentJobIds: [],
+  });
+
+  const response = respondOk(
+    {
+      ...eligibility.summary,
+      previewFingerprint,
+    },
+    ctx.requestId
+  );
+  response.headers.set('Cache-Control', 'private, no-store');
+  return response;
+}, { auth: 'user', rateLimitKey: 'campaign-pre-check' });
 
 
 export async function POST(req: NextRequest, ctx: { params: RouteParams } = { params: {} as RouteParams }) {

@@ -100,3 +100,9 @@ export type EmailSendReservation = Prisma.EmailSendReservationModel
  * 
  */
 export type SystemUsageDaily = Prisma.SystemUsageDailyModel
+/**
+ * Model CampaignSubmission
+ * Durable campaign submission receipt for idempotent creation replay.
+ * See docs/CAMPAIGN/_DEDUPLICATION.md §6.3.
+ */
+export type CampaignSubmission = Prisma.CampaignSubmissionModel
