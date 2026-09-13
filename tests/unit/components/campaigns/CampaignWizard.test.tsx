@@ -267,6 +267,102 @@ describe('CampaignWizard', () => {
     });
   });
 
+  it('shows eligibility summary immediately on Contacts step without navigating away', async () => {
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+
+    await waitFor(() => {
+      expect(screen.getByText(/emails? will be scheduled/)).toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
+
+  it('shows excluded count and View details when contacts are excluded', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        return {
+          ok: true,
+          json: async () => mockPreCheckResponse({
+            selectedCount: 2,
+            eligibleCount: 1,
+            excludedCount: 1,
+            totalContactCount: 2,
+            excludedByReason: { duplicateAddress: 0, previouslySent: 1, pending: 0, deliveryUnknown: 0, missingValues: 0 },
+            recipients: (body.contactIds ?? []).map((id: string, i: number) => ({
+              contactId: id,
+              included: i === 0,
+              followUpSelected: false,
+              canSelectFollowUp: i === 1,
+              primaryReason: i === 0 ? null : 'PREVIOUSLY_SENT',
+            })),
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+
+    await waitFor(() => {
+      expect(screen.getByText('1 email will be scheduled')).toBeInTheDocument();
+    }, { timeout: 5000 });
+    expect(screen.getByText(/1 contact excluded/)).toBeInTheDocument();
+    expect(screen.getByText(/View details/)).toBeInTheDocument();
+  });
+
+  it('shows Already scheduled badge for contacts with pending status', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        return {
+          ok: true,
+          json: async () => mockPreCheckResponse({
+            selectedCount: 2,
+            eligibleCount: 1,
+            excludedCount: 1,
+            totalContactCount: 2,
+            excludedByReason: { duplicateAddress: 0, previouslySent: 0, pending: 1, deliveryUnknown: 0, missingValues: 0 },
+            recipients: (body.contactIds ?? []).map((id: string, i: number) => ({
+              contactId: id,
+              included: i === 0,
+              followUpSelected: false,
+              canSelectFollowUp: false,
+              primaryReason: i === 0 ? null : 'PENDING',
+            })),
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+
+    await waitFor(() => {
+      expect(screen.getByText('Already scheduled')).toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
+
   it('uses effective count in the schedule button label', async () => {
     const onSubmit = vi.fn();
     const { user } = await completeWizard(onSubmit);

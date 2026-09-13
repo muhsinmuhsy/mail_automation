@@ -67,10 +67,12 @@ export function useEligibility(params: UseEligibilityParams) {
   const lastSuccessAt = useRef(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevImmediateKey = useRef('');
+  const prevDebouncedKey = useRef('');
+  const wasEnabled = useRef(false);
 
-  const contactIdsKey = contactIds.join(',');
-  const attachmentIdsKey = attachmentIds.join(',');
-  const resendKey = resendRecipients.map(r => `${r.contactId}:${r.recipientEmail}`).join('|');
+  const immediateKey = `${templateId}|${emailAccountId}|${attachmentIds.join(',')}`;
+  const debouncedKey = `${contactIds.join(',')}|${resendRecipients.map(r => `${r.contactId}:${r.recipientEmail}`).join('|')}|${missingValueAction}|${unknownTokenAction}`;
   const hasRequired = Boolean(templateId && emailAccountId && contactIds.length > 0);
 
   const check = useCallback(async (signal: AbortSignal, reqId: number) => {
@@ -106,6 +108,7 @@ export function useEligibility(params: UseEligibilityParams) {
         setErrorMessage(body?.error?.message ?? 'Could not check recipients. Try again.');
         return;
       }
+      if (reqId !== requestIdRef.current) return;
       setStatus('ready');
       setResult(body.data as EligibilityResult);
       setErrorMessage(null);
@@ -117,7 +120,7 @@ export function useEligibility(params: UseEligibilityParams) {
     }
   }, [templateId, emailAccountId, contactIds, attachmentIds, resendRecipients, missingValueAction, unknownTokenAction]);
 
-  const triggerImmediate = useCallback(() => {
+  const trigger = useCallback((useDebounce: boolean) => {
     if (!enabled) return;
     requestIdRef.current += 1;
     const reqId = requestIdRef.current;
@@ -125,45 +128,47 @@ export function useEligibility(params: UseEligibilityParams) {
     const controller = new AbortController();
     abortRef.current = controller;
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    void check(controller.signal, reqId);
-  }, [check, enabled]);
-
-  const triggerDebounced = useCallback(() => {
-    if (!enabled) return;
-    requestIdRef.current += 1;
-    const reqId = requestIdRef.current;
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    setStatus(prev => prev === 'ready' ? 'stale' : prev);
-    debounceTimer.current = setTimeout(() => {
+    if (useDebounce) {
+      setStatus(prev => prev === 'ready' ? 'stale' : prev);
+      debounceTimer.current = setTimeout(() => {
+        void check(controller.signal, reqId);
+      }, DEBOUNCE_MS);
+    } else {
       void check(controller.signal, reqId);
-    }, DEBOUNCE_MS);
+    }
   }, [check, enabled]);
 
   useEffect(() => {
-    if (!hasRequired) {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      abortRef.current?.abort();
-      requestIdRef.current += 1;
+    if (!enabled || !hasRequired) {
+      if (!hasRequired && (debounceTimer.current || abortRef.current)) {
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        abortRef.current?.abort();
+        requestIdRef.current += 1;
+        const t = setTimeout(() => { setStatus('idle'); setResult(null); }, 0);
+        return () => clearTimeout(t);
+      }
       return;
     }
-    triggerImmediate();
-  }, [hasRequired, templateId, emailAccountId, attachmentIdsKey, triggerImmediate]);
 
-  useEffect(() => {
-    if (!hasRequired) return;
-    const timer = setTimeout(() => triggerDebounced(), 0);
-    return () => clearTimeout(timer);
-  }, [hasRequired, contactIdsKey, resendKey, missingValueAction, unknownTokenAction, triggerDebounced]);
+    const justEnabled = !wasEnabled.current;
+    const immediateChanged = prevImmediateKey.current !== immediateKey;
+    const debouncedChanged = prevDebouncedKey.current !== debouncedKey;
+    prevImmediateKey.current = immediateKey;
+    prevDebouncedKey.current = debouncedKey;
+    wasEnabled.current = true;
 
-  useEffect(() => {
-    if (!hasRequired && status !== 'idle') {
-      const timer = setTimeout(() => { setStatus('idle'); setResult(null); }, 0);
-      return () => clearTimeout(timer);
+    if (justEnabled || immediateChanged) {
+      trigger(false);
+    } else if (debouncedChanged) {
+      trigger(true);
     }
-  }, [hasRequired, status]);
+  }, [enabled, hasRequired, immediateKey, debouncedKey, trigger]);
+
+  useEffect(() => {
+    if (!enabled) {
+      wasEnabled.current = false;
+    }
+  }, [enabled]);
 
   useEffect(() => {
     return () => {
@@ -177,27 +182,27 @@ export function useEligibility(params: UseEligibilityParams) {
     pollTimer.current = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
       if (Date.now() - lastSuccessAt.current > FRESHNESS_MS) {
-        triggerDebounced();
+        trigger(true);
       }
     }, POLL_MS);
     return () => { if (pollTimer.current) clearInterval(pollTimer.current); };
-  }, [enabled, status, triggerDebounced]);
+  }, [enabled, status, trigger]);
 
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible' && enabled && hasRequired) {
         if (Date.now() - lastSuccessAt.current > FRESHNESS_MS) {
-          triggerImmediate();
+          trigger(false);
         }
       }
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [enabled, hasRequired, triggerImmediate]);
+  }, [enabled, hasRequired, trigger]);
 
   const retry = useCallback(() => {
-    triggerImmediate();
-  }, [triggerImmediate]);
+    trigger(false);
+  }, [trigger]);
 
   const effectiveCount = result?.eligibleCount ?? contactIds.length;
   const isReady = status === 'ready' && result !== null;
