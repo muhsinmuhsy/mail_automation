@@ -6,7 +6,7 @@
  * and an internal prepared snapshot for job generation.
  */
 
-import type { PrismaClient } from '../generated/prisma/client';
+import { PrismaClient, Prisma } from '../generated/prisma/client';
 import type { TransactionClient } from '@/lib/db';
 import {
   VARIABLE_PATTERN,
@@ -173,7 +173,7 @@ async function queryAddressHistory(
       scheduled_at: Date | null;
       id: string;
     }>
-  >`
+  >(Prisma.sql`
     SELECT
       lower(btrim(to_email)) AS normalized_email,
       status,
@@ -184,9 +184,9 @@ async function queryAddressHistory(
     WHERE user_id = ${userId}::uuid
       AND template_id = ${templateId}::uuid
       AND email_account_id = ${emailAccountId}::uuid
-      AND lower(btrim(to_email)) = ANY(${normalizedAddresses}::text[])
+      AND lower(btrim(to_email)) IN (${Prisma.join(normalizedAddresses)})
       AND status IN ('SENT', 'SCHEDULED', 'QUEUED', 'PROCESSING', 'RETRY_WAIT', 'DELIVERY_UNKNOWN')
-  `;
+  `);
 
   const historyByAddress = new Map<string, AddressHistorySummary>();
   for (const addr of normalizedAddresses) {
@@ -553,7 +553,7 @@ export async function computeRecipientStatus(
     db, userId, templateId, emailAccountId, normalizedAddresses
   );
 
-  return contacts.map((contact) => {
+  const results = contacts.map((contact) => {
     const normalized = normalizeEmail(contact.email);
     const history = historyByAddress.get(normalized) ?? {
       hasSent: false, hasPending: false, hasDeliveryUnknown: false,
@@ -566,4 +566,6 @@ export async function computeRecipientStatus(
       pendingScheduledAt: history.pendingScheduledAt?.toISOString() ?? null,
     };
   });
+
+  return results;
 }

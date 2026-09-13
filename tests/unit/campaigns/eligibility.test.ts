@@ -38,7 +38,8 @@ function makeMockDb(opts: {
     template: {
       findFirst: vi.fn().mockResolvedValue(opts.template),
     },
-    $queryRaw: vi.fn((strings: TemplateStringsArray, ..._values: unknown[]) => {
+    $queryRaw: vi.fn((query: unknown) => {
+      const strings = (query as { strings: TemplateStringsArray }).strings ?? (query as TemplateStringsArray);
       const sql = strings.join('?');
       if (sql.includes('lower(btrim(original))')) {
         return Promise.resolve(normRows);
@@ -387,7 +388,8 @@ describe('computeEligibility — no PG normalization query (Fix #4 revert)', () 
 
     const $queryRawCalls = (db as unknown as { $queryRaw: { mock: { calls: unknown[][] } } }).$queryRaw.mock.calls;
     const normalizationCalls = $queryRawCalls.filter((call) => {
-      const sql = (call[0] as TemplateStringsArray).join('?');
+      const strings = (call[0] as { strings?: TemplateStringsArray }).strings ?? (call[0] as TemplateStringsArray);
+      const sql = strings.join('?');
       return sql.includes('lower(btrim(original))') && sql.includes('unnest');
     });
     expect(normalizationCalls).toHaveLength(0);
@@ -417,7 +419,8 @@ describe('computeEligibility — no PG normalization query (Fix #4 revert)', () 
     expect($queryRawCalls.length).toBeGreaterThanOrEqual(1);
 
     for (const call of $queryRawCalls) {
-      const sql = (call[0] as TemplateStringsArray).join('?');
+      const strings = (call[0] as { strings?: TemplateStringsArray }).strings ?? (call[0] as TemplateStringsArray);
+      const sql = strings.join('?');
       expect(sql).not.toContain('unnest');
     }
   });
