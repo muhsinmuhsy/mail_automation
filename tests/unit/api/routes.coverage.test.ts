@@ -430,6 +430,7 @@ describe('app/api route handlers (unit coverage)', () => {
 
   it('attachments/[id] DELETE removes when no pending jobs', async () => {
     prismaMock.attachment.findUnique.mockResolvedValue({ id: UUID });
+    prismaMock.campaign.count.mockResolvedValue(0);
     prismaMock.emailJob.count.mockResolvedValue(0);
     prismaMock.attachment.delete.mockResolvedValue({});
     await ok((await (attachmentById as any).DELETE(makeReq(), CTX({ id: UUID }))));
@@ -437,9 +438,10 @@ describe('app/api route handlers (unit coverage)', () => {
 
   it('attachments/[id] DELETE retains when pending jobs exist', async () => {
     prismaMock.attachment.findUnique.mockResolvedValue({ id: UUID });
+    prismaMock.campaign.count.mockResolvedValue(0);
     prismaMock.emailJob.count.mockResolvedValue(3);
     prismaMock.attachment.update.mockResolvedValue({});
-    await ok((await (attachmentById as any).DELETE(makeReq(), CTX({ id: UUID }))));
+    await fail((await (attachmentById as any).DELETE(makeReq(), CTX({ id: UUID }))));
   });
 
   it('attachments/[id]/default sets the default attachment', async () => {

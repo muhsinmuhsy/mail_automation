@@ -94,7 +94,7 @@ describe('POST /api/templates — render failure rollback (§7.1)', () => {
     );
     const body = (await response.json()) as ApiBody;
 
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(400);
     expect(body.success).toBe(false);
     expect(mockPrisma.template.create).not.toHaveBeenCalled();
   });
@@ -113,7 +113,7 @@ describe('PATCH /api/templates/[id] — render failure rollback (§7.1)', () => 
     );
     const body = (await response.json()) as ApiBody;
 
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(400);
     expect(body.success).toBe(false);
     expect(mockPrisma.template.updateMany).not.toHaveBeenCalled();
   });
