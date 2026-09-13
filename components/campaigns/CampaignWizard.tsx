@@ -2,17 +2,25 @@
 
 import { getAttachmentPolicy } from '@/lib/email/providers/attachment-policies';
 import { SchedulePreview } from './SchedulePreview';
+import { useEligibility, type EligibilityResult } from './useEligibility';
 import Link from 'next/link';
 import { attachmentSelectionError, MAX_FILE_BYTES } from '@/lib/email/attachment-limits';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { localDateTimeInZone, zonedDateTimeToIso, formatScheduledTime } from '@/lib/scheduling/time';
 import { Button } from '@/components/ui/Button';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
-import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Badge } from '@/components/ui/Badge';
 
 const steps = ['Campaign', 'Content', 'Contacts', 'Schedule', 'Review'];
+
+const MAX_CAMPAIGN_CONTACTS = 1000;
+
+function generateUuid(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return '00000000-0000-4000-8000-000000000000'.replace(/0/g, () => Math.floor(Math.random() * 16).toString(16));
+}
 
 export interface CampaignSelectOption {
   id: string;
@@ -20,6 +28,11 @@ export interface CampaignSelectOption {
   description?: string;
   size_bytes?: number | null;
   provider?: string;
+}
+
+export interface ResendRecipient {
+  contactId: string;
+  recipientEmail: string;
 }
 
 export interface CampaignSubmitData {
@@ -32,21 +45,18 @@ export interface CampaignSubmitData {
   timezone: string;
   intervalMinutes: number;
   dailyLimit: number | null;
-  missingValueAction?: 'exclude' | 'continue';
+  missingValueAction: 'exclude' | 'continue';
+  unknownTokenAction: 'fix' | 'continue';
+  idempotencyKey: string;
+  previewFingerprint: string;
+  resendRecipients: ResendRecipient[];
 }
 
-interface MissingValueEntry {
-  token: string;
-  label: string;
-  contactCount: number;
-  contactIds: string[];
-}
-
-interface PreCheckResult {
-  missingValues: MissingValueEntry[];
-  unknownTokens: string[];
-  affectedContactCount: number;
-  totalContactCount: number;
+export interface CampaignCreateResult {
+  success: boolean;
+  replayed?: boolean;
+  recipientSummary?: unknown;
+  error?: { type: string; message: string; details?: { preCheck?: EligibilityResult } };
 }
 
 interface CampaignWizardProps {
@@ -55,7 +65,7 @@ interface CampaignWizardProps {
   templates?: CampaignSelectOption[];
   contacts?: CampaignSelectOption[];
   loading?: boolean;
-  onSubmit: (data: CampaignSubmitData) => void | Promise<void>;
+  onSubmit: (data: CampaignSubmitData) => void | Promise<CampaignCreateResult | void>;
 }
 
 function defaultLocalDateTime(): string {
@@ -64,10 +74,31 @@ function defaultLocalDateTime(): string {
   return localDateTimeInZone(date, Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
 }
 
-
 function optionList(label: string, options: CampaignSelectOption[]) {
   if (options.length === 0) return [{ value: '', label }];
   return options.map((option) => ({ value: option.id, label: option.label }));
+}
+
+function reasonLabel(reason: string): string {
+  switch (reason) {
+    case 'DUPLICATE_ADDRESS': return 'Same address selected twice';
+    case 'PREVIOUSLY_SENT': return 'Previously emailed using this template';
+    case 'PENDING': return 'Already scheduled';
+    case 'DELIVERY_UNKNOWN': return 'Delivery needs review';
+    case 'MISSING_VALUES': return 'Missing personalization values';
+    default: return reason;
+  }
+}
+
+function reasonBadgeVariant(reason: string | null): 'warning' | 'error' | 'information' | 'default' {
+  switch (reason) {
+    case 'DELIVERY_UNKNOWN': return 'error';
+    case 'PENDING': return 'warning';
+    case 'PREVIOUSLY_SENT': return 'information';
+    case 'DUPLICATE_ADDRESS': return 'default';
+    case 'MISSING_VALUES': return 'warning';
+    default: return 'default';
+  }
 }
 
 export function CampaignWizard({
@@ -97,8 +128,13 @@ export function CampaignWizard({
   const [intervalMinutes, setIntervalMinutes] = useState('5');
   const [dailyLimit, setDailyLimit] = useState('20');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [preCheckResult, setPreCheckResult] = useState<PreCheckResult | null>(null);
-  const [preChecking, setPreChecking] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showFollowUps, setShowFollowUps] = useState(false);
+  const [resendRecipients, setResendRecipients] = useState<ResendRecipient[]>([]);
+  const [missingValueAction, setMissingValueAction] = useState<'exclude' | 'continue'>('exclude');
+  const [unknownTokenAction, setUnknownTokenAction] = useState<'fix' | 'continue'>('fix');
+  const [idempotencyKey, setIdempotencyKey] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const effectiveEmailAccountId = emailAccountId || emailAccounts[0]?.id || '';
   const selectedAttachments = attachments.filter(item => attachmentIds.includes(item.id));
@@ -115,6 +151,17 @@ export function CampaignWizard({
     }),
     [effectiveEmailAccountId, effectiveTemplateId, emailAccounts, templates]
   );
+
+  const eligibility = useEligibility({
+    templateId: effectiveTemplateId,
+    emailAccountId: effectiveEmailAccountId,
+    contactIds,
+    attachmentIds,
+    resendRecipients,
+    missingValueAction,
+    unknownTokenAction,
+    enabled: step >= 2 && !submitting,
+  });
 
   const validateStep = (targetStep = step) => {
     const nextErrors: Record<string, string> = {};
@@ -140,10 +187,10 @@ export function CampaignWizard({
       if (!timezone.trim()) {
         nextErrors.timezone = 'Timezone is required.';
       }
-      if (contactIds.length > 1 && (!Number.isInteger(parsedInterval) || parsedInterval <= 0)) {
+      if (effectiveCount > 1 && (!Number.isInteger(parsedInterval) || parsedInterval <= 0)) {
         nextErrors.intervalMinutes = 'Enter at least 1 minute, using a whole number.';
       }
-      if (contactIds.length > 1 && parsedLimit !== null && (!Number.isInteger(parsedLimit) || parsedLimit <= 0)) {
+      if (effectiveCount > 1 && parsedLimit !== null && (!Number.isInteger(parsedLimit) || parsedLimit <= 0)) {
         nextErrors.dailyLimit = 'Enter at least 1 email, or leave this blank for no campaign cap.';
       }
     }
@@ -151,7 +198,9 @@ export function CampaignWizard({
     return Object.keys(nextErrors).length === 0;
   };
 
-  const singleRecipient = contactIds.length === 1;
+  const selectedCount = contactIds.length;
+  const effectiveCount = eligibility.isReady ? eligibility.effectiveCount : selectedCount;
+  const singleRecipient = selectedCount === 1;
 
   const canSubmit =
     name.trim() &&
@@ -161,14 +210,15 @@ export function CampaignWizard({
     contactIds.length > 0 &&
     startAt &&
     timezone.trim() &&
-    (singleRecipient || Number(intervalMinutes) > 0);
+    (singleRecipient || Number(intervalMinutes) > 0) &&
+    eligibility.canSchedule;
 
   const goNext = () => {
     if (!validateStep()) return;
     setStep((current) => Math.min(steps.length - 1, current + 1));
   };
 
-  const buildSubmitData = (overrides: Partial<CampaignSubmitData> = {}): CampaignSubmitData => ({
+  const buildSubmitData = useCallback((): CampaignSubmitData => ({
     name: name.trim(),
     emailAccountId: effectiveEmailAccountId,
     attachmentIds,
@@ -178,16 +228,15 @@ export function CampaignWizard({
     timezone: timezone.trim(),
     intervalMinutes: singleRecipient ? 5 : Number(intervalMinutes),
     dailyLimit: singleRecipient ? null : (dailyLimit.trim() ? Number(dailyLimit) : null),
-    ...overrides,
-  });
-
-  const doSubmit = async (data: CampaignSubmitData) => {
-    setSubmitting(true);
-    try { await onSubmit(data); } finally { setSubmitting(false); }
-  };
+    missingValueAction,
+    unknownTokenAction,
+    idempotencyKey: idempotencyKey || generateUuid(),
+    previewFingerprint: eligibility.result?.previewFingerprint ?? '',
+    resendRecipients,
+  }), [name, effectiveEmailAccountId, attachmentIds, effectiveTemplateId, contactIds, startAt, timezone, singleRecipient, intervalMinutes, dailyLimit, missingValueAction, unknownTokenAction, idempotencyKey, eligibility.result, resendRecipients]);
 
   const submit = async () => {
-    if (submitting || preChecking) return;
+    if (submitting || eligibility.isChecking) return;
     const originalStep = step;
     for (let index = 0; index < steps.length - 1; index += 1) {
       if (!validateStep(index)) {
@@ -197,60 +246,51 @@ export function CampaignWizard({
     }
     setStep(originalStep);
 
-    setPreChecking(true);
+    if (!eligibility.canSchedule) {
+      setSubmitError(eligibility.errorMessage ?? 'Please review the recipient summary before scheduling.');
+      return;
+    }
+
+    const key = idempotencyKey || generateUuid();
+    setIdempotencyKey(key);
+    setSubmitError(null);
+    setSubmitting(true);
     try {
-      const response = await fetch('/api/campaigns/pre-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ templateId: effectiveTemplateId, contactIds }),
-      });
-      const body = await response.json() as { success: boolean; data?: PreCheckResult; error?: { message?: string } };
-      if (!response.ok || !body.success) {
-        setErrors({ contactIds: body?.error?.message ?? 'Could not verify contact values. Please try again.' });
-        return;
-      }
-      const result = body.data as PreCheckResult;
-      if (result.missingValues.length > 0 || result.unknownTokens.length > 0) {
-        setPreCheckResult(result);
-        return;
-      }
+      const data = buildSubmitData();
+      await onSubmit(data);
     } catch {
-      setErrors({ contactIds: 'Could not verify contact values. Please try again.' });
-      return;
+      setSubmitError('Could not schedule the campaign. Please try again.');
     } finally {
-      setPreChecking(false);
+      setSubmitting(false);
     }
-
-    await doSubmit(buildSubmitData());
-  };
-
-  const confirmExclude = async () => {
-    if (!preCheckResult) return;
-    const missingIds = new Set<string>();
-    for (const mv of preCheckResult.missingValues) {
-      for (const id of mv.contactIds) missingIds.add(id);
-    }
-    const filtered = contactIds.filter((id) => !missingIds.has(id));
-    setPreCheckResult(null);
-    if (filtered.length === 0) {
-      setErrors({ contactIds: 'No recipients remaining after excluding contacts with missing values.' });
-      return;
-    }
-    setContactIds(filtered);
-    await doSubmit(buildSubmitData({ contactIds: filtered, missingValueAction: 'exclude' }));
-  };
-
-  const confirmContinue = async () => {
-    setPreCheckResult(null);
-    await doSubmit(buildSubmitData({ missingValueAction: 'continue' }));
   };
 
   const toggleContact = (id: string) => {
     setContactIds((current) =>
       current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
     );
+    setResendRecipients((current) => current.filter(r => r.contactId !== id));
   };
+
+  const toggleFollowUp = (recipient: { contactId: string; recipientEmail?: string }) => {
+    const email = recipient.recipientEmail ?? contacts.find(c => c.id === recipient.contactId)?.description?.split(' - ')[0]?.split(' ')[0] ?? '';
+    setResendRecipients((current) => {
+      const exists = current.some(r => r.contactId === recipient.contactId);
+      if (exists) return current.filter(r => r.contactId !== recipient.contactId);
+      return [...current, { contactId: recipient.contactId, recipientEmail: email }];
+    });
+  };
+
+  const filteredContacts = contacts.filter(contact =>
+    `${contact.label} ${contact.description ?? ''}`.toLowerCase().includes(contactSearch.toLowerCase())
+  );
+
+  const excludedReasons = eligibility.result?.excludedByReason;
+  const hasExclusions = eligibility.isReady && (eligibility.result?.excludedCount ?? 0) > 0;
+  const hasFollowUpCandidates = eligibility.isReady && (eligibility.result?.recipients ?? []).some(r => r.canSelectFollowUp);
+  const hasMissingValues = eligibility.isReady && (eligibility.result?.missingValues ?? []).length > 0;
+  const hasUnknownTokens = eligibility.isReady && (eligibility.result?.unknownTokens ?? []).length > 0;
+  const followUpSelectedCount = resendRecipients.length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -268,7 +308,7 @@ export function CampaignWizard({
         ))}
       </ol>
 
-      <p className="text-sm text-text-secondary">Step {step + 1} of {steps.length} ? {['Name your campaign so you can find it later.', 'Choose the sender, message template, and optional files.', 'Choose who will receive this campaign.', 'Set when emails start and how often they are sent.', 'Check your selections before scheduling.'][step]}</p>
+      <p className="text-sm text-text-secondary">Step {step + 1} of {steps.length} — {['Name your campaign so you can find it later.', 'Choose the sender, message template, and optional files.', 'Choose who will receive this campaign.', 'Set when emails start and how often they are sent.', 'Check your selections before scheduling.'][step]}</p>
       <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
         {step === 0 ? (
           <Input
@@ -285,7 +325,7 @@ export function CampaignWizard({
             <Select
               label="Sending account"
               value={effectiveEmailAccountId}
-              onChange={(event) => setEmailAccountId(event.target.value)}
+              onChange={(event) => { setEmailAccountId(event.target.value); setResendRecipients([]); }}
               options={optionList('Select account', emailAccounts)}
               error={errors.emailAccountId}
               required
@@ -293,7 +333,7 @@ export function CampaignWizard({
             <Select
               label="Template"
               value={effectiveTemplateId}
-              onChange={(event) => setTemplateId(event.target.value)}
+              onChange={(event) => { setTemplateId(event.target.value); setResendRecipients([]); }}
               options={optionList('Select template', templates)}
               error={errors.templateId}
               required
@@ -302,7 +342,7 @@ export function CampaignWizard({
               <legend className="font-medium text-text-primary">Attachments (optional)</legend>
               <p id="attachment-help" className="text-sm text-text-secondary">Send without attachments, or choose files for {attachmentPolicy?.name ?? 'your sender'}. Up to {attachmentPolicy?.maxCount ?? 0} files, {(attachmentPolicy?.maxFileBytes ?? 0) / 1024 / 1024} MB each and {(attachmentPolicy?.maxTotalBytes ?? 0) / 1024 / 1024} MB total (app sending limits).</p>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span role="status">{attachmentIds.length} files selected ? {(attachmentBytes / 1024 / 1024).toFixed(1)} / {(attachmentPolicy?.maxTotalBytes ?? 0) / 1024 / 1024} MB</span>
+                <span role="status">{attachmentIds.length} files selected — {(attachmentBytes / 1024 / 1024).toFixed(1)} / {(attachmentPolicy?.maxTotalBytes ?? 0) / 1024 / 1024} MB</span>
                 {attachmentIds.length > 0 && <Button variant="secondary" size="sm" onClick={() => setAttachmentIds([])}>Clear attachments</Button>}
               </div>
               <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
@@ -319,35 +359,152 @@ export function CampaignWizard({
         ) : step === 2 ? (
           <fieldset className="flex flex-col gap-3">
             <legend className="text-sm font-medium text-text-primary">Contacts</legend>
+
+            {eligibility.isReady && (
+              <div aria-live="polite" className="rounded-[var(--radius-md)] border border-neutral-200 bg-surface p-4">
+                <p className="font-medium text-text-primary">
+                  {effectiveCount} {effectiveCount === 1 ? 'email' : 'emails'} will be scheduled
+                </p>
+                {hasExclusions && (
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {eligibility.result!.excludedCount} {eligibility.result!.excludedCount === 1 ? 'contact' : 'contacts'} excluded.
+                    <button type="button" onClick={() => setShowDetails(d => !d)} className="ml-1 text-information hover:underline">
+                      {showDetails ? 'Hide details' : 'View details'}
+                    </button>
+                    {hasFollowUpCandidates && !showFollowUps && (
+                      <button type="button" onClick={() => setShowFollowUps(true)} className="ml-2 text-information hover:underline">
+                        Choose follow-ups
+                      </button>
+                    )}
+                  </p>
+                )}
+                {eligibility.isReady && eligibility.result!.includedPreviousCount > 0 && (
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {eligibility.result!.includedWithoutPreviousSendCount} new {eligibility.result!.includedPreviousCount === 1 ? 'recipient' : 'recipients'} + {eligibility.result!.includedPreviousCount} {eligibility.result!.includedPreviousCount === 1 ? 'follow-up' : 'follow-ups'}
+                  </p>
+                )}
+                {eligibility.isChecking && (
+                  <p className="mt-1 text-sm text-text-secondary">Updating…</p>
+                )}
+                {eligibility.status === 'error' && (
+                  <p className="mt-1 text-sm text-error">
+                    {eligibility.errorMessage}
+                    <button type="button" onClick={eligibility.retry} className="ml-2 text-information hover:underline">Try again</button>
+                  </p>
+                )}
+                {hasUnknownTokens && (
+                  <div className="mt-2 rounded-[var(--radius-sm)] border border-error/20 bg-error-light p-3">
+                    <p className="text-sm text-error">Unknown tokens: {eligibility.result!.unknownTokens.join(', ')}</p>
+                    <div className="mt-2 flex gap-2">
+                      <Button variant="secondary" size="sm" onClick={() => setUnknownTokenAction('fix')}>Fix template</Button>
+                      <Button variant="secondary" size="sm" onClick={() => setUnknownTokenAction('continue')}>Continue anyway</Button>
+                    </div>
+                  </div>
+                )}
+                {showDetails && eligibility.result && (
+                  <div className="mt-3 space-y-2 border-t border-neutral-200 pt-3 text-sm">
+                    <p className="text-text-secondary">Selected: {eligibility.result.selectedCount} · Eligible: {eligibility.result.eligibleCount} · Excluded: {eligibility.result.excludedCount}</p>
+                    {excludedReasons && (excludedReasons.duplicateAddress > 0 || excludedReasons.previouslySent > 0 || excludedReasons.pending > 0 || excludedReasons.deliveryUnknown > 0 || excludedReasons.missingValues > 0) && (
+                      <ul className="space-y-1 text-text-secondary">
+                        {excludedReasons.duplicateAddress > 0 && <li>Same address selected twice: {excludedReasons.duplicateAddress}</li>}
+                        {excludedReasons.previouslySent > 0 && <li>Previously emailed using this template: {excludedReasons.previouslySent}</li>}
+                        {excludedReasons.pending > 0 && <li>Already scheduled: {excludedReasons.pending}</li>}
+                        {excludedReasons.deliveryUnknown > 0 && <li>Delivery needs review: {excludedReasons.deliveryUnknown}</li>}
+                        {excludedReasons.missingValues > 0 && <li>Missing personalization values: {excludedReasons.missingValues}</li>}
+                      </ul>
+                    )}
+                    <p className="text-text-secondary">Checks previous emails using this template and sending account, including earlier versions of the template.</p>
+                    {hasMissingValues && (
+                      <div className="mt-2">
+                        <p className="font-medium text-text-primary">Missing personalization values</p>
+                        <ul className="mt-1 space-y-1 text-text-secondary">
+                          {eligibility.result.missingValues.map(mv => (
+                            <li key={mv.token}>{mv.label} ({`{{${mv.token}}}`}): {mv.contactCount} contact(s)</li>
+                          ))}
+                        </ul>
+                        <div className="mt-2 flex gap-2">
+                          <Button variant="secondary" size="sm" onClick={() => setMissingValueAction('exclude')}>Exclude affected contacts</Button>
+                          <Button variant="secondary" size="sm" onClick={() => setMissingValueAction('continue')}>Send with missing values</Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {showFollowUps && eligibility.result && (
+              <div className="rounded-[var(--radius-md)] border border-neutral-200 bg-surface p-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-text-primary">Choose follow-ups</h4>
+                  <button type="button" onClick={() => setShowFollowUps(false)} className="text-sm text-text-secondary hover:underline">Close</button>
+                </div>
+                <p className="mt-1 text-sm text-text-secondary">{followUpSelectedCount} selected for follow-up</p>
+                <div className="mt-2 max-h-48 overflow-y-auto space-y-1">
+                  {eligibility.result.recipients.filter(r => r.canSelectFollowUp || resendRecipients.some(rr => rr.contactId === r.contactId)).map(r => {
+                    const contact = contacts.find(c => c.id === r.contactId);
+                    const checked = resendRecipients.some(rr => rr.contactId === r.contactId);
+                    return (
+                      <label key={r.contactId} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleFollowUp({ contactId: r.contactId, recipientEmail: r.recipientEmail })}
+                          disabled={!r.canSelectFollowUp}
+                          className="h-4 w-4 accent-information"
+                        />
+                        <span>{contact?.label ?? r.contactId}</span>
+                        {r.lastSentAt && <span className="text-caption text-text-secondary">Last sent: {new Date(r.lastSentAt).toLocaleDateString()}</span>}
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => {
+                    const candidates = eligibility.result?.recipients.filter(r => r.canSelectFollowUp) ?? [];
+                    setResendRecipients(candidates.map(r => ({ contactId: r.contactId, recipientEmail: r.recipientEmail ?? '' })));
+                  }}>Select all eligible</Button>
+                  <Button variant="secondary" size="sm" onClick={() => setResendRecipients([])} disabled={!followUpSelectedCount}>Clear follow-ups</Button>
+                </div>
+              </div>
+            )}
+
             <Input label="Search contacts" value={contactSearch} onChange={event => setContactSearch(event.target.value)} />
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span>{contactIds.length} of {contacts.length} contacts selected</span>
-              <Button variant="secondary" size="sm" onClick={() => setContactIds(contacts.map(contact => contact.id))}>Select all contacts</Button>
-              <Button variant="secondary" size="sm" onClick={() => setContactIds([])} disabled={!contactIds.length}>Clear contacts</Button>
+              <Button variant="secondary" size="sm" onClick={() => setContactIds(contacts.slice(0, MAX_CAMPAIGN_CONTACTS).map(contact => contact.id))} disabled={contacts.length === 0}>Select all contacts</Button>
+              <Button variant="secondary" size="sm" onClick={() => { setContactIds([]); setResendRecipients([]); }} disabled={!contactIds.length}>Clear contacts</Button>
             </div>
             {contacts.length === 0 ? (
               <p className="text-supporting text-text-secondary">Add at least one contact before launching a campaign.</p>
             ) : (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {contacts.filter(contact => `${contact.label} ${contact.description ?? ''}`.toLowerCase().includes(contactSearch.toLowerCase())).map((contact) => (
-                  <label
-                    key={contact.id}
-                    className="flex items-start gap-3 rounded-[var(--radius-md)] border border-neutral-200 bg-background p-3 text-sm transition-colors hover:bg-surface"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={contactIds.includes(contact.id)}
-                      onChange={() => toggleContact(contact.id)}
-                      className="mt-1 h-4 w-4 rounded-[var(--radius-sm)] border-neutral-300 text-information focus:ring-2 focus:ring-information"
-                    />
-                    <span>
-                      <span className="block font-medium text-text-primary">{contact.label}</span>
-                      {contact.description && (
-                        <span className="block text-caption text-text-secondary">{contact.description}</span>
-                      )}
-                    </span>
-                  </label>
-                ))}
+                {filteredContacts.map((contact) => {
+                  const recipient = eligibility.result?.recipients.find(r => r.contactId === contact.id);
+                  const badgeReason = recipient?.primaryReason;
+                  return (
+                    <label
+                      key={contact.id}
+                      className="flex items-start gap-3 rounded-[var(--radius-md)] border border-neutral-200 bg-background p-3 text-sm transition-colors hover:bg-surface"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={contactIds.includes(contact.id)}
+                        onChange={() => toggleContact(contact.id)}
+                        className="mt-1 h-4 w-4 rounded-[var(--radius-sm)] border-neutral-300 text-information focus:ring-2 focus:ring-information"
+                      />
+                      <span className="flex-1">
+                        <span className="block font-medium text-text-primary">{contact.label}</span>
+                        {contact.description && (
+                          <span className="block text-caption text-text-secondary">{contact.description}</span>
+                        )}
+                        {badgeReason && (
+                          <Badge variant={reasonBadgeVariant(badgeReason)}>{reasonLabel(badgeReason)}</Badge>
+                        )}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             )}
             {errors.contactIds && <p className="text-xs text-error">{errors.contactIds}</p>}
@@ -392,7 +549,7 @@ export function CampaignWizard({
             />
             <p id="daily-help" className="text-sm text-text-secondary">Send up to this many emails in each daily batch. Leave blank to keep sending without a campaign cap.</p>
             <Button variant="secondary" size="sm" onClick={() => setDailyLimit('')} disabled={!dailyLimit}>Use no daily cap</Button></div></>}
-            <div className="md:col-span-2"><SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={contactIds.length} /></div>
+            <div className="md:col-span-2"><SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={effectiveCount} /></div>
             <p className="md:col-span-2 text-sm text-text-secondary">Personalization values are captured when the campaign is scheduled. Editing contacts afterward will not affect already-scheduled emails.</p>
           </div>
         ) : (
@@ -401,6 +558,21 @@ export function CampaignWizard({
               <h3 className="text-section-title font-semibold text-text-primary">Ready to launch</h3>
               <p className="mt-1 text-body text-text-secondary">Review the campaign before scheduling emails.</p>
             </div>
+            {eligibility.isChecking && (
+              <p className="text-sm text-text-secondary" aria-live="polite">Updating recipient summary…</p>
+            )}
+            {eligibility.status === 'error' && (
+              <p className="text-sm text-error" role="alert">
+                {eligibility.errorMessage}
+                <button type="button" onClick={eligibility.retry} className="ml-2 text-information hover:underline">Try again</button>
+              </p>
+            )}
+            {hasUnknownTokens && unknownTokenAction === 'fix' && (
+              <p className="text-sm text-error" role="alert">Unknown tokens must be fixed or explicitly continued: {eligibility.result!.unknownTokens.join(', ')}</p>
+            )}
+            {submitError && (
+              <p className="text-sm text-error" role="alert">{submitError}</p>
+            )}
             <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
                 <dt className="text-caption text-text-secondary">Campaign</dt>
@@ -419,8 +591,8 @@ export function CampaignWizard({
                 <dd className="font-medium text-text-primary">{selected.template?.label ?? 'Not selected'}</dd>
               </div>
               <div>
-                <dt className="text-caption text-text-secondary">Contacts</dt>
-                <dd className="font-medium text-text-primary">{contactIds.length} selected</dd>
+                <dt className="text-caption text-text-secondary">Recipients</dt>
+                <dd className="font-medium text-text-primary">{effectiveCount} {effectiveCount === 1 ? 'email' : 'emails'}{hasExclusions ? ` (${contactIds.length} selected, ${eligibility.result!.excludedCount} excluded)` : ''}</dd>
               </div>
               <div>
                 <dt className="text-caption text-text-secondary">Schedule</dt>
@@ -432,19 +604,23 @@ export function CampaignWizard({
                 <dt className="text-caption text-text-secondary">Emails per day</dt>
                 <dd className="font-medium text-text-primary">{dailyLimit.trim() || 'No campaign limit'}</dd>
               </div>}
+              {followUpSelectedCount > 0 && <div>
+                <dt className="text-caption text-text-secondary">Follow-ups</dt>
+                <dd className="font-medium text-text-primary">{followUpSelectedCount} {followUpSelectedCount === 1 ? 'recipient' : 'recipients'} chosen for follow-up</dd>
+              </div>}
             </dl>
-            <SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={contactIds.length} />
+            <SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={effectiveCount} />
           </div>
         )}
       </div>
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        <Button variant="secondary" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0 || submitting || preChecking}>
+        <Button variant="secondary" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0 || submitting || eligibility.isChecking}>
           Back
         </Button>
         {step === steps.length - 1 ? (
-          <Button onClick={submit} disabled={!canSubmit || loading || submitting || preChecking}>
-            {preChecking ? 'Checking?' : submitting ? 'Scheduling?' : 'Start campaign'}
+          <Button onClick={submit} disabled={!canSubmit || loading || submitting || eligibility.isChecking}>
+            {eligibility.isChecking ? 'Checking…' : submitting ? 'Scheduling…' : `Schedule ${effectiveCount} ${effectiveCount === 1 ? 'email' : 'emails'}`}
           </Button>
         ) : (
           <Button onClick={goNext} disabled={loading && step > 0 && emailAccounts.length === 0}>
@@ -452,37 +628,6 @@ export function CampaignWizard({
           </Button>
         )}
       </div>
-
-      {preCheckResult && (
-        <Dialog
-          open={preCheckResult !== null}
-          onOpenChange={(open) => { if (!open) setPreCheckResult(null); }}
-          title="Missing personalization values"
-          description={`${preCheckResult.affectedContactCount} of ${preCheckResult.totalContactCount} contacts are missing values for fields used in this template. Emails to these contacts will contain the literal {{token}} text.`}
-        >
-          {preCheckResult.unknownTokens.length > 0 && (
-            <p className="mt-3 text-sm text-error">
-              Unknown tokens: {preCheckResult.unknownTokens.join(', ')}
-            </p>
-          )}
-          <ul className="mt-3 space-y-1 text-sm text-text-secondary">
-            {preCheckResult.missingValues.map((mv) => (
-              <li key={mv.token}>{mv.label} ({`{{${mv.token}}}`}): {mv.contactCount} contact(s)</li>
-            ))}
-          </ul>
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button variant="secondary" onClick={() => setPreCheckResult(null)} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button variant="secondary" onClick={confirmContinue} loading={submitting} disabled={submitting}>
-              Continue anyway
-            </Button>
-            <Button variant="primary" onClick={confirmExclude} loading={submitting} disabled={submitting}>
-              Exclude affected contacts
-            </Button>
-          </div>
-        </Dialog>
-      )}
     </div>
   );
 }

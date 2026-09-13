@@ -1,15 +1,50 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CampaignWizard, type CampaignSelectOption } from '@/components/campaigns/CampaignWizard';
 
+const VALID_FINGERPRINT = 'a'.repeat(64);
+
+function mockPreCheckResponse(overrides: Record<string, unknown> = {}) {
+  return {
+    success: true,
+    data: {
+      missingValues: [],
+      unknownTokens: [],
+      affectedContactCount: 0,
+      totalContactCount: 0,
+      policyVersion: 1,
+      checkedAt: new Date().toISOString(),
+      previewFingerprint: VALID_FINGERPRINT,
+      selectedCount: 0,
+      eligibleCount: 0,
+      excludedCount: 0,
+      excludedByReason: { duplicateAddress: 0, previouslySent: 0, pending: 0, deliveryUnknown: 0, missingValues: 0 },
+      includedPreviousCount: 0,
+      includedWithoutPreviousSendCount: 0,
+      blockedByUnknownTokens: false,
+      recipients: [],
+      ...overrides,
+    },
+  };
+}
+
 beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      success: true,
-      data: { missingValues: [], unknownTokens: [], affectedContactCount: 0, totalContactCount: 0 },
-    }),
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+    if (url === '/api/campaigns/pre-check' && init?.body) {
+      const body = JSON.parse(init.body as string);
+      const count = body.contactIds?.length ?? 0;
+      return {
+        ok: true,
+        json: async () => mockPreCheckResponse({
+          selectedCount: count,
+          eligibleCount: count,
+          totalContactCount: count,
+          recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+        }),
+      };
+    }
+    return { ok: true, json: async () => mockPreCheckResponse() };
   }));
 });
 
@@ -81,7 +116,7 @@ describe('CampaignWizard', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.queryByText('Emails per day')).not.toBeInTheDocument();
     expect(screen.queryByText(/every 0 minutes/)).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Start campaign' }));
+    await user.click(await screen.findByRole('button', { name: /Schedule 1 email/ }));
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ contactIds: ['contact-1'], intervalMinutes: 5, dailyLimit: null }));
   });
   it('explains the schedule and lets users remove the daily cap explicitly', async () => {
@@ -178,11 +213,10 @@ describe('CampaignWizard', () => {
     const { user } = await completeWizard(onSubmit);
 
     expect(screen.getByText('Ready to launch')).toBeInTheDocument();
-    expect(screen.getByText('2 selected')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Start campaign' }));
+    await user.click(await screen.findByRole('button', { name: /Schedule 2 emails/ }));
 
-    expect(onSubmit).toHaveBeenCalledWith({
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
       name: 'Hiring outreach',
       emailAccountId: 'account-1',
       attachmentIds: ['attachment-1'],
@@ -192,7 +226,12 @@ describe('CampaignWizard', () => {
       timezone: 'Asia/Calcutta',
       intervalMinutes: 10,
       dailyLimit: 20,
-    });
+      missingValueAction: 'exclude',
+      unknownTokenAction: 'fix',
+      previewFingerprint: VALID_FINGERPRINT,
+      resendRecipients: [],
+    }));
+    expect(onSubmit.mock.calls[0][0].idempotencyKey).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
   it('keeps the review submit disabled until required selections exist', async () => {
@@ -211,5 +250,26 @@ describe('CampaignWizard', () => {
 
     expect(screen.getByLabelText('Campaign name')).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+  });
+
+  it('shows the eligibility summary when contacts are selected', async () => {
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+
+    await waitFor(() => {
+      expect(screen.getByText(/emails will be scheduled/)).toBeInTheDocument();
+    });
+  });
+
+  it('uses effective count in the schedule button label', async () => {
+    const onSubmit = vi.fn();
+    const { user } = await completeWizard(onSubmit);
+    expect(screen.getByRole('button', { name: /Schedule \d+ emails?/ })).toBeInTheDocument();
   });
 });

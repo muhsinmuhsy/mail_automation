@@ -216,7 +216,11 @@ export default function CampaignsPage() {
         timezone: data.timezone,
         interval_minutes: data.intervalMinutes,
         daily_limit: data.dailyLimit,
-        ...(data.missingValueAction ? { missing_value_action: data.missingValueAction } : {}),
+        missing_value_action: data.missingValueAction,
+        unknown_token_action: data.unknownTokenAction,
+        idempotency_key: data.idempotencyKey,
+        preview_fingerprint: data.previewFingerprint,
+        resend_recipients: data.resendRecipients.map(r => ({ contact_id: r.contactId, recipient_email: r.recipientEmail })),
       }),
     });
 
