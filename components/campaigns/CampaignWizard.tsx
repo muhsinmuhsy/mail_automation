@@ -5,7 +5,7 @@ import { SchedulePreview } from './SchedulePreview';
 import { useEligibility, type EligibilityResult } from './useEligibility';
 import Link from 'next/link';
 import { attachmentSelectionError, MAX_FILE_BYTES } from '@/lib/email/attachment-limits';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { localDateTimeInZone, zonedDateTimeToIso, formatScheduledTime } from '@/lib/scheduling/time';
 import { Button } from '@/components/ui/Button';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
@@ -232,23 +232,6 @@ export function CampaignWizard({
     setStep((current) => Math.min(steps.length - 1, current + 1));
   };
 
-  const buildSubmitData = useCallback((): CampaignSubmitData => ({
-    name: name.trim(),
-    emailAccountId: effectiveEmailAccountId,
-    attachmentIds,
-    templateId: effectiveTemplateId,
-    contactIds,
-    startAt: zonedDateTimeToIso(startAt, timezone.trim()),
-    timezone: timezone.trim(),
-    intervalMinutes: singleRecipient ? 5 : Number(intervalMinutes),
-    dailyLimit: singleRecipient ? null : (dailyLimit.trim() ? Number(dailyLimit) : null),
-    missingValueAction,
-    unknownTokenAction,
-    idempotencyKey: idempotencyKey || generateUuid(),
-    previewFingerprint: eligibility.result?.previewFingerprint ?? '',
-    resendRecipients,
-  }), [name, effectiveEmailAccountId, attachmentIds, effectiveTemplateId, contactIds, startAt, timezone, singleRecipient, intervalMinutes, dailyLimit, missingValueAction, unknownTokenAction, idempotencyKey, eligibility.result, resendRecipients]);
-
   const submit = async () => {
     if (submitting || eligibility.isChecking) return;
     const originalStep = step;
@@ -265,12 +248,33 @@ export function CampaignWizard({
       return;
     }
 
-    const key = idempotencyKey || generateUuid();
-    setIdempotencyKey(key);
+    // Freeze the payload at click time — generate key, fingerprint, and
+    // recipient copies synchronously before any state updates (§4.3).
+    const frozenKey = idempotencyKey || generateUuid();
+    const frozenFingerprint = eligibility.result?.previewFingerprint ?? '';
+    const frozenContactIds = [...contactIds];
+    const frozenResendRecipients = resendRecipients.map(r => ({ ...r }));
+    const data: CampaignSubmitData = {
+      name: name.trim(),
+      emailAccountId: effectiveEmailAccountId,
+      attachmentIds: [...attachmentIds],
+      templateId: effectiveTemplateId,
+      contactIds: frozenContactIds,
+      startAt: zonedDateTimeToIso(startAt, timezone.trim()),
+      timezone: timezone.trim(),
+      intervalMinutes: singleRecipient ? 5 : Number(intervalMinutes),
+      dailyLimit: singleRecipient ? null : (dailyLimit.trim() ? Number(dailyLimit) : null),
+      missingValueAction,
+      unknownTokenAction,
+      idempotencyKey: frozenKey,
+      previewFingerprint: frozenFingerprint,
+      resendRecipients: frozenResendRecipients,
+    };
+
+    setIdempotencyKey(frozenKey);
     setSubmitError(null);
     setSubmitting(true);
     try {
-      const data = buildSubmitData();
       await onSubmit(data);
     } catch {
       setSubmitError('Could not schedule the campaign. Please try again.');

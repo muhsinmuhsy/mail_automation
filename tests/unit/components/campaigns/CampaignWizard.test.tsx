@@ -368,4 +368,50 @@ describe('CampaignWizard', () => {
     const { user } = await completeWizard(onSubmit);
     expect(screen.getByRole('button', { name: /Schedule \d+ emails?/ })).toBeInTheDocument();
   });
+
+  it('freezes idempotency key and fingerprint at click time (Fix #5)', async () => {
+    const customFingerprint = 'c'.repeat(64);
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        const count = body.contactIds?.length ?? 0;
+        return {
+          ok: true,
+          json: async () => mockPreCheckResponse({
+            selectedCount: count,
+            eligibleCount: count,
+            totalContactCount: count,
+            previewFingerprint: customFingerprint,
+            recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const onSubmit = vi.fn();
+    const { user } = await completeWizard(onSubmit);
+
+    await user.click(await screen.findByRole('button', { name: /Schedule 2 emails/ }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload.previewFingerprint).toBe(customFingerprint);
+    expect(payload.idempotencyKey).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(payload.contactIds).toEqual(['contact-1', 'contact-2']);
+    expect(payload.resendRecipients).toEqual([]);
+  });
+
+  it('freezes contactIds as a copy at click time (Fix #5)', async () => {
+    const onSubmit = vi.fn();
+    const { user } = await completeWizard(onSubmit);
+
+    await user.click(await screen.findByRole('button', { name: /Schedule 2 emails/ }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload.contactIds).toEqual(['contact-1', 'contact-2']);
+    expect(payload.contactIds).not.toBe(['contact-1', 'contact-2']);
+    expect(Array.isArray(payload.contactIds)).toBe(true);
+  });
 });

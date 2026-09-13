@@ -9,13 +9,14 @@
 import { getPrisma, type TransactionClient } from '@/lib/db';
 import { createCampaignJobsFromSnapshot } from '@/lib/jobs/scheduler';
 import { computeEligibility, type EligibilityInput, type EligibilitySummary } from './eligibility';
-import { computeRequestHash, type RequestHashInput } from './fingerprint';
+import { computeRequestHash, computePreviewFingerprint, type RequestHashInput } from './fingerprint';
 import { normalizeEmail } from './normalize';
 import {
   IdempotencyKeyReusedError,
   CampaignCreationBusyError,
   NoEligibleRecipientsError,
   RecipientActionRequiredError,
+  RecipientPreviewChangedError,
   AppError,
 } from '@/lib/errors';
 import { logger } from '@/lib/logging/logger';
@@ -169,7 +170,35 @@ export async function createCampaign(
         const eligibility = await computeEligibility(tx, input);
         const { summary, preparedJobs } = eligibility;
 
-        // 5. Check for blocking conditions.
+        // 5. Recompute fingerprint and reject stale preview (§6.2 step 5).
+        const recomputedFingerprint = await computePreviewFingerprint({
+          templateId: input.templateId,
+          emailAccountId: input.emailAccountId,
+          attachmentIds: input.attachmentIds,
+          contactIds: input.contactIds,
+          resendRecipients: input.resendRecipients,
+          missingValueAction: input.missingValueAction,
+          unknownTokenAction: input.unknownTokenAction,
+          eligibleRecipients: preparedJobs.map((job) => ({
+            contactId: job.contactId,
+            recipientEmail: job.toEmail,
+            subject: job.subject,
+            bodyText: job.body,
+            bodyHtml: job.bodyHtml,
+          })),
+          includedPreviousCount: summary.includedPreviousCount,
+          includedWithoutPreviousSendCount: summary.includedWithoutPreviousSendCount,
+          followUpSentJobIds: eligibility.followUpSentJobIds,
+        });
+
+        if (recomputedFingerprint !== input.previewFingerprint) {
+          throw new RecipientPreviewChangedError(
+            'The recipient preview has changed. Please review the updated summary and try again.',
+            { preCheck: summary }
+          );
+        }
+
+        // 6. Check for blocking conditions.
         if (summary.blockedByUnknownTokens) {
           throw new RecipientActionRequiredError(
             'Unknown template tokens must be resolved before scheduling.',

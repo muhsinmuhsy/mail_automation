@@ -111,7 +111,7 @@ const _POST = defineRoute(async (req, ctx) => {
     })),
     includedPreviousCount: eligibility.summary.includedPreviousCount,
     includedWithoutPreviousSendCount: eligibility.summary.includedWithoutPreviousSendCount,
-    followUpSentJobIds: [],
+    followUpSentJobIds: eligibility.followUpSentJobIds,
   });
 
   const response = respondOk(
