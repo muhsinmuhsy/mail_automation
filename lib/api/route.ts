@@ -10,7 +10,8 @@ import {
   requireUser,
   type SessionUser,
 } from '@/lib/auth/guards';
-import { ForbiddenError } from '@/lib/errors';
+import { ForbiddenError, AppError } from '@/lib/errors';
+import { logger } from '@/lib/logging/logger';
 
 export type RouteParams = Record<string, string> | Promise<Record<string, string>>;
 
@@ -90,6 +91,13 @@ export function defineRoute(handler: RouteHandler, options: RouteOptions = {}) {
 
       return await handler(req, { user, params, req, requestId });
     } catch (err) {
+      if (!(err instanceof AppError)) {
+        logger.error('unhandled exception', {
+          requestId,
+          message: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+        });
+      }
       return respondError(err, requestId);
     }
   };

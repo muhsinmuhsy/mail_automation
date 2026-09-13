@@ -148,29 +148,6 @@ export interface EligibilityInput {
 // ─── History query ───────────────────────────────────────────────────────
 
 /**
- * Normalize email addresses using PostgreSQL `lower(btrim(...))` — the
- * authoritative normalization (§3.1). Returns a map from original → normalized.
- * For ASCII addresses this is identical to JS `trim().toLowerCase()`, but
- * this guarantees exact Neon/Postgres consistency for edge cases.
- */
-async function normalizeEmailsInPg(
-  db: DbClient,
-  emails: string[]
-): Promise<Map<string, string>> {
-  if (emails.length === 0) return new Map();
-  const uniqueEmails = [...new Set(emails)];
-  const rows = await db.$queryRaw<Array<{ original: string; normalized: string }>>`
-    SELECT original, lower(btrim(original)) AS normalized
-    FROM unnest(${uniqueEmails}::text[]) AS t(original)
-  `;
-  const map = new Map<string, string>();
-  for (const row of rows) {
-    map.set(row.original, row.normalized);
-  }
-  return map;
-}
-
-/**
  * Query matching job history for a set of normalized addresses. Set-based —
  * one query for all addresses, not one per contact (§6.5).
  *
@@ -380,13 +357,9 @@ export async function computeEligibility(
   const templateBodyHtml = template?.body_html ?? null;
 
   // 3. Group by normalized email — first in order is the representative.
-  // Use PostgreSQL lower(btrim()) for authoritative normalization (§3.1).
-  const allEmails = orderedContacts.map((c) => c.email);
-  const pgNormalizedMap = await normalizeEmailsInPg(db, allEmails);
-
   const addressGroups = new Map<string, string[]>();
   for (const contact of orderedContacts) {
-    const normalized = pgNormalizedMap.get(contact.email) ?? normalizeEmail(contact.email);
+    const normalized = normalizeEmail(contact.email);
     const group = addressGroups.get(normalized) ?? [];
     group.push(contact.id);
     addressGroups.set(normalized, group);
@@ -412,7 +385,7 @@ export async function computeEligibility(
   const validatedResendRecipients: ResendEntry[] = [];
   const invalidResendEntries: Array<{ contactId: string; recipientEmail: string; reason: string }> = [];
   for (const entry of resendRecipients) {
-    const normalized = pgNormalizedMap.get(entry.recipientEmail) ?? normalizeEmail(entry.recipientEmail);
+    const normalized = normalizeEmail(entry.recipientEmail);
     const representative = representativeByAddress.get(normalized);
     if (representative === undefined) {
       invalidResendEntries.push({ contactId: entry.contactId, recipientEmail: entry.recipientEmail, reason: 'Contact is not in the selected recipients.' });
@@ -447,7 +420,7 @@ export async function computeEligibility(
   const preparedJobs: PreparedJob[] = [];
 
   for (const contact of orderedContacts) {
-    const normalizedEmail = pgNormalizedMap.get(contact.email) ?? normalizeEmail(contact.email);
+    const normalizedEmail = normalizeEmail(contact.email);
     const isDuplicate = duplicateContacts.has(contact.id);
     const representativeId = representativeByAddress.get(normalizedEmail);
     const isRepresentative = contact.id === representativeId;
@@ -530,7 +503,7 @@ export async function computeEligibility(
   // Collect SENT job IDs for explicitly chosen follow-up recipients (§5.8).
   const followUpSentJobIds: string[] = [];
   for (const entry of validatedResendRecipients) {
-    const normalized = pgNormalizedMap.get(entry.recipientEmail) ?? normalizeEmail(entry.recipientEmail);
+    const normalized = normalizeEmail(entry.recipientEmail);
     const history = historyByAddress.get(normalized);
     if (history) {
       followUpSentJobIds.push(...history.sentJobIds);
