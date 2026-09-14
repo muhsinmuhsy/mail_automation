@@ -34,7 +34,7 @@ const mockPrisma = {
     create: vi.fn(),
     updateMany: vi.fn(),
   },
-  emailJob: { updateMany: vi.fn(), createMany: vi.fn().mockResolvedValue({ count: 0 }) },
+  emailJob: { findMany: vi.fn().mockResolvedValue([]), updateMany: vi.fn(), createMany: vi.fn().mockResolvedValue({ count: 0 }) },
   user: {
     findUnique: vi.fn().mockResolvedValue({ role: 'USER', is_active: true }),
     upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),

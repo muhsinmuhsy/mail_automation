@@ -6,7 +6,7 @@
  * and an internal prepared snapshot for job generation.
  */
 
-import { PrismaClient, Prisma } from '../generated/prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
 import type { TransactionClient } from '@/lib/db';
 import {
   VARIABLE_PATTERN,
@@ -151,8 +151,9 @@ export interface EligibilityInput {
  * Query matching job history for a set of normalized addresses. Set-based —
  * one query for all addresses, not one per contact (§6.5).
  *
- * Uses raw SQL to leverage the expression index on
- * `lower(btrim(to_email))` and filter by the history-match statuses.
+ * Uses Prisma's standard query builder (not raw SQL) for compatibility with
+ * the Neon serverless adapter. Address matching is done in JavaScript using
+ * `normalizeEmail` (equivalent to PostgreSQL `lower(btrim(...))`).
  */
 async function queryAddressHistory(
   db: DbClient,
@@ -165,28 +166,25 @@ async function queryAddressHistory(
     return new Map();
   }
 
-  const rows = await db.$queryRaw<
-    Array<{
-      normalized_email: string;
-      status: string;
-      sent_at: Date | null;
-      scheduled_at: Date | null;
-      id: string;
-    }>
-  >(Prisma.sql`
-    SELECT
-      lower(btrim(to_email)) AS normalized_email,
-      status,
-      sent_at,
-      scheduled_at,
-      id
-    FROM email_jobs
-    WHERE user_id = ${userId}::uuid
-      AND template_id = ${templateId}::uuid
-      AND email_account_id = ${emailAccountId}::uuid
-      AND lower(btrim(to_email)) IN (${Prisma.join(normalizedAddresses)})
-      AND status IN ('SENT', 'SCHEDULED', 'QUEUED', 'PROCESSING', 'RETRY_WAIT', 'DELIVERY_UNKNOWN')
-  `);
+  const historyMatchStatuses = [
+    'SENT', 'SCHEDULED', 'QUEUED', 'PROCESSING', 'RETRY_WAIT', 'DELIVERY_UNKNOWN',
+  ] as const;
+
+  const jobs = await db.emailJob.findMany({
+    where: {
+      user_id: userId,
+      template_id: templateId,
+      email_account_id: emailAccountId,
+      status: { in: [...historyMatchStatuses] },
+    },
+    select: {
+      id: true,
+      to_email: true,
+      status: true,
+      sent_at: true,
+      scheduled_at: true,
+    },
+  });
 
   const historyByAddress = new Map<string, AddressHistorySummary>();
   for (const addr of normalizedAddresses) {
@@ -200,22 +198,26 @@ async function queryAddressHistory(
     });
   }
 
-  for (const row of rows) {
-    const summary = historyByAddress.get(row.normalized_email);
+  const normalizedSet = new Set(normalizedAddresses);
+  for (const job of jobs) {
+    const normalizedEmail = normalizeEmail(job.to_email);
+    if (!normalizedSet.has(normalizedEmail)) continue;
+
+    const summary = historyByAddress.get(normalizedEmail);
     if (!summary) continue;
 
-    if (row.status === 'SENT') {
+    if (job.status === 'SENT') {
       summary.hasSent = true;
-      summary.sentJobIds.push(row.id);
-      if (row.sent_at && (!summary.lastSentAt || row.sent_at > summary.lastSentAt)) {
-        summary.lastSentAt = row.sent_at;
+      summary.sentJobIds.push(job.id);
+      if (job.sent_at && (!summary.lastSentAt || job.sent_at > summary.lastSentAt)) {
+        summary.lastSentAt = job.sent_at;
       }
-    } else if (row.status === 'DELIVERY_UNKNOWN') {
+    } else if (job.status === 'DELIVERY_UNKNOWN') {
       summary.hasDeliveryUnknown = true;
-    } else if ((PENDING_JOB_STATUSES as readonly string[]).includes(row.status)) {
+    } else if ((PENDING_JOB_STATUSES as readonly string[]).includes(job.status)) {
       summary.hasPending = true;
-      if (row.scheduled_at && (!summary.pendingScheduledAt || row.scheduled_at < summary.pendingScheduledAt)) {
-        summary.pendingScheduledAt = row.scheduled_at;
+      if (job.scheduled_at && (!summary.pendingScheduledAt || job.scheduled_at < summary.pendingScheduledAt)) {
+        summary.pendingScheduledAt = job.scheduled_at;
       }
     }
   }

@@ -22,10 +22,8 @@ type MockTemplate = {
 function makeMockDb(opts: {
   contacts: MockContact[];
   template: MockTemplate | null;
-  historyRows?: Array<{ normalized_email: string; status: string; sent_at: Date | null; scheduled_at: Date | null; id: string }>;
+  historyRows?: Array<{ to_email: string; status: string; sent_at: Date | null; scheduled_at: Date | null; id: string }>;
 }): never {
-  const contactEmails = opts.contacts.map((c) => c.email);
-  const normRows = contactEmails.map((e) => ({ original: e, normalized: e.trim().toLowerCase() }));
   const historyRows = opts.historyRows ?? [];
 
   const db = {
@@ -38,17 +36,10 @@ function makeMockDb(opts: {
     template: {
       findFirst: vi.fn().mockResolvedValue(opts.template),
     },
-    $queryRaw: vi.fn((query: unknown) => {
-      const strings = (query as { strings: TemplateStringsArray }).strings ?? (query as TemplateStringsArray);
-      const sql = strings.join('?');
-      if (sql.includes('lower(btrim(original))')) {
-        return Promise.resolve(normRows);
-      }
-      if (sql.includes('lower(btrim(to_email))')) {
-        return Promise.resolve(historyRows);
-      }
-      return Promise.resolve([]);
-    }),
+    emailJob: {
+      findMany: vi.fn().mockResolvedValue(historyRows),
+    },
+    $queryRaw: vi.fn().mockResolvedValue([]),
     $executeRaw: vi.fn().mockResolvedValue(undefined),
   };
 
@@ -249,7 +240,7 @@ describe('computeEligibility — strict resend validation (Fix #2)', () => {
       contacts,
       template,
       historyRows: [
-        { normalized_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-01-01'), scheduled_at: null, id: 'job-sent-1' },
+        { to_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-01-01'), scheduled_at: null, id: 'job-sent-1' },
       ],
     });
 
@@ -281,8 +272,8 @@ describe('computeEligibility — followUpSentJobIds collection (Fix #3)', () => 
       contacts,
       template,
       historyRows: [
-        { normalized_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-01-01'), scheduled_at: null, id: 'job-sent-1' },
-        { normalized_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-02-01'), scheduled_at: null, id: 'job-sent-2' },
+        { to_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-01-01'), scheduled_at: null, id: 'job-sent-1' },
+        { to_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-02-01'), scheduled_at: null, id: 'job-sent-2' },
       ],
     });
 
@@ -304,7 +295,7 @@ describe('computeEligibility — followUpSentJobIds collection (Fix #3)', () => 
       contacts,
       template,
       historyRows: [
-        { normalized_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-01-01'), scheduled_at: null, id: 'job-sent-1' },
+        { to_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-01-01'), scheduled_at: null, id: 'job-sent-1' },
       ],
     });
 
@@ -345,8 +336,8 @@ describe('computeEligibility — followUpSentJobIds collection (Fix #3)', () => 
       contacts,
       template,
       historyRows: [
-        { normalized_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-01-01'), scheduled_at: null, id: 'job-alice' },
-        { normalized_email: 'bob@test.com', status: 'SENT', sent_at: new Date('2026-01-02'), scheduled_at: null, id: 'job-bob' },
+        { to_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-01-01'), scheduled_at: null, id: 'job-alice' },
+        { to_email: 'bob@test.com', status: 'SENT', sent_at: new Date('2026-01-02'), scheduled_at: null, id: 'job-bob' },
       ],
     });
 
@@ -364,7 +355,7 @@ describe('computeEligibility — followUpSentJobIds collection (Fix #3)', () => 
   });
 });
 
-describe('computeEligibility — no PG normalization query (Fix #4 revert)', () => {
+describe('computeEligibility — uses Prisma query builder (not raw SQL)', () => {
   const template: MockTemplate = {
     id: 'template-1',
     subject: 'Hello {{name}}',
@@ -373,7 +364,7 @@ describe('computeEligibility — no PG normalization query (Fix #4 revert)', () 
     body_html: null,
   };
 
-  it('uses JS normalizeEmail instead of a $queryRaw normalization query', async () => {
+  it('uses JS normalizeEmail and emailJob.findMany (not $queryRaw)', async () => {
     const contacts: MockContact[] = [
       { id: 'c1', name: 'Alice', email: 'Alice@Example.COM', user_id: 'user-1', contact_field_values: [] },
       { id: 'c2', name: 'Bob', email: '  bob@test.com  ', user_id: 'user-1', contact_field_values: [] },
@@ -387,17 +378,15 @@ describe('computeEligibility — no PG normalization query (Fix #4 revert)', () 
     });
 
     const $queryRawCalls = (db as unknown as { $queryRaw: { mock: { calls: unknown[][] } } }).$queryRaw.mock.calls;
-    const normalizationCalls = $queryRawCalls.filter((call) => {
-      const strings = (call[0] as { strings?: TemplateStringsArray }).strings ?? (call[0] as TemplateStringsArray);
-      const sql = strings.join('?');
-      return sql.includes('lower(btrim(original))') && sql.includes('unnest');
-    });
-    expect(normalizationCalls).toHaveLength(0);
+    expect($queryRawCalls).toHaveLength(0);
+
+    const emailJobFindManyCalls = (db as unknown as { emailJob: { findMany: { mock: { calls: unknown[][] } } } }).emailJob.findMany.mock.calls;
+    expect(emailJobFindManyCalls.length).toBeGreaterThanOrEqual(1);
 
     expect(result.summary.eligibleCount).toBe(2);
   });
 
-  it('still makes history $queryRaw but not normalization $queryRaw', async () => {
+  it('queries emailJob.findMany for history with correct statuses', async () => {
     const contacts: MockContact[] = [
       { id: 'c1', name: 'Alice', email: 'alice@test.com', user_id: 'user-1', contact_field_values: [] },
     ];
@@ -405,7 +394,7 @@ describe('computeEligibility — no PG normalization query (Fix #4 revert)', () 
       contacts,
       template,
       historyRows: [
-        { normalized_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-01-01'), scheduled_at: null, id: 'job-1' },
+        { to_email: 'alice@test.com', status: 'SENT', sent_at: new Date('2026-01-01'), scheduled_at: null, id: 'job-1' },
       ],
     });
 
@@ -416,12 +405,9 @@ describe('computeEligibility — no PG normalization query (Fix #4 revert)', () 
     });
 
     const $queryRawCalls = (db as unknown as { $queryRaw: { mock: { calls: unknown[][] } } }).$queryRaw.mock.calls;
-    expect($queryRawCalls.length).toBeGreaterThanOrEqual(1);
+    expect($queryRawCalls).toHaveLength(0);
 
-    for (const call of $queryRawCalls) {
-      const strings = (call[0] as { strings?: TemplateStringsArray }).strings ?? (call[0] as TemplateStringsArray);
-      const sql = strings.join('?');
-      expect(sql).not.toContain('unnest');
-    }
+    const emailJobFindManyCalls = (db as unknown as { emailJob: { findMany: { mock: { calls: unknown[][] } } } }).emailJob.findMany.mock.calls;
+    expect(emailJobFindManyCalls.length).toBeGreaterThanOrEqual(1);
   });
 });
