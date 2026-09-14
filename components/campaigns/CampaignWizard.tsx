@@ -103,6 +103,23 @@ function reasonBadgeVariant(reason: string | null): 'warning' | 'error' | 'infor
   }
 }
 
+function reasonTooltip(reason: string | null): string | undefined {
+  switch (reason) {
+    case 'PENDING':
+      return 'Email is queued in another campaign with this template and account. It will be excluded. Once sent, you can follow up. To send now: cancel the existing campaign or use a different template/sending account.';
+    case 'PREVIOUSLY_SENT':
+      return 'Already received this template from this account. Click \'Choose follow-ups\' to send again.';
+    case 'DELIVERY_UNKNOWN':
+      return 'A previous send has unknown status. An admin must resolve it before this contact can receive emails.';
+    case 'DUPLICATE_ADDRESS':
+      return 'Another contact with the same email address was already chosen. This contact will be excluded.';
+    case 'MISSING_VALUES':
+      return 'This contact is missing values for template merge tags and will be excluded.';
+    default:
+      return undefined;
+  }
+}
+
 export function CampaignWizard({
   emailAccounts = [],
   attachments = [],
@@ -389,6 +406,7 @@ export function CampaignWizard({
   const hasMissingValues = eligibility.isReady && (eligibility.result?.missingValues ?? []).length > 0;
   const hasUnknownTokens = eligibility.isReady && (eligibility.result?.unknownTokens ?? []).length > 0;
   const followUpSelectedCount = resendRecipients.length;
+  const isZeroEligible = eligibility.isReady && (eligibility.result?.eligibleCount ?? 0) === 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -558,6 +576,36 @@ export function CampaignWizard({
               </div>
             )}
 
+            {isZeroEligible && (
+              <div role="alert" className="rounded-[var(--radius-md)] border border-error/30 bg-error-light p-4">
+                <p className="font-medium text-error">No emails will be scheduled</p>
+                <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded:</p>
+                <ul className="mt-1 space-y-1 text-sm text-text-secondary">
+                  {excludedReasons && excludedReasons.pending > 0 && (
+                    <li>{excludedReasons.pending} Already scheduled (emails in queue — wait for them to complete or cancel the existing campaigns)</li>
+                  )}
+                  {excludedReasons && excludedReasons.previouslySent > 0 && (
+                    <li>{excludedReasons.previouslySent} Previously emailed (use follow-ups to resend)</li>
+                  )}
+                  {excludedReasons && excludedReasons.deliveryUnknown > 0 && (
+                    <li>{excludedReasons.deliveryUnknown} Delivery needs review (admin action required)</li>
+                  )}
+                  {excludedReasons && excludedReasons.duplicateAddress > 0 && (
+                    <li>{excludedReasons.duplicateAddress} Same address selected twice</li>
+                  )}
+                  {excludedReasons && excludedReasons.missingValues > 0 && (
+                    <li>{excludedReasons.missingValues} Missing personalization values</li>
+                  )}
+                </ul>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {excludedReasons && excludedReasons.previouslySent > 0 && (
+                    <Button variant="secondary" size="sm" onClick={() => setShowFollowUps(true)}>Choose follow-ups</Button>
+                  )}
+                  <Button variant="secondary" size="sm" onClick={() => setStep(1)}>Use a different template or sending account</Button>
+                </div>
+              </div>
+            )}
+
             {followUpNotice && (
               <p role="status" className="rounded-[var(--radius-sm)] border border-information/20 bg-surface p-2 text-sm text-text-secondary">
                 {followUpNotice}
@@ -641,10 +689,10 @@ export function CampaignWizard({
                           <span className="block text-caption text-text-secondary">{contact.description}</span>
                         )}
                         {badgeReason && (
-                          <Badge variant={reasonBadgeVariant(badgeReason)}>{reasonLabel(badgeReason)}</Badge>
+                          <Badge variant={reasonBadgeVariant(badgeReason)} title={reasonTooltip(badgeReason)}>{reasonLabel(badgeReason)}</Badge>
                         )}
                         {!badgeReason && preSelectReason && (
-                          <Badge variant={reasonBadgeVariant(preSelectReason)}>{reasonLabel(preSelectReason)}</Badge>
+                          <Badge variant={reasonBadgeVariant(preSelectReason)} title={reasonTooltip(preSelectReason)}>{reasonLabel(preSelectReason)}</Badge>
                         )}
                         {!badgeReason && !preSelectReason && recipientStatusLoading && (
                           <span className="inline-block h-5 w-24 animate-pulse rounded-full bg-neutral-200" aria-label="Checking status" />
@@ -662,6 +710,13 @@ export function CampaignWizard({
           </fieldset>
         ) : step === 3 ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {isZeroEligible && (
+              <div className="md:col-span-2 rounded-[var(--radius-md)] border border-error/30 bg-error-light p-4" role="alert">
+                <p className="font-medium text-error">No emails will be scheduled</p>
+                <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded. Go back to Contacts to choose eligible recipients or select follow-ups.</p>
+                <Button variant="secondary" size="sm" onClick={() => setStep(2)} className="mt-2">Back to Contacts</Button>
+              </div>
+            )}
             <DateTimePicker
               label={singleRecipient ? "When to send" : "Start time"}
               value={startAt}
@@ -709,6 +764,13 @@ export function CampaignWizard({
               <h3 className="text-section-title font-semibold text-text-primary">Ready to launch</h3>
               <p className="mt-1 text-body text-text-secondary">Review the campaign before scheduling emails.</p>
             </div>
+            {isZeroEligible && (
+              <div className="rounded-[var(--radius-md)] border border-error/30 bg-error-light p-4" role="alert">
+                <p className="font-medium text-error">No eligible recipients</p>
+                <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded. Go back to Contacts to choose eligible recipients or select follow-ups.</p>
+                <Button variant="secondary" size="sm" onClick={() => setStep(2)} className="mt-2">Back to Contacts</Button>
+              </div>
+            )}
             {eligibility.isFetching && (
               <p className="text-sm text-text-secondary" aria-live="polite">{eligibility.isChecking ? 'Checking recipient summary…' : 'Updating recipient summary…'}</p>
             )}
@@ -778,8 +840,8 @@ export function CampaignWizard({
             {eligibility.isFetching ? 'Checking…' : submitting ? 'Scheduling…' : `Schedule ${effectiveCount} ${effectiveCount === 1 ? 'email' : 'emails'}`}
           </Button>
         ) : (
-          <Button onClick={goNext} disabled={loading && step > 0 && emailAccounts.length === 0}>
-            Continue
+          <Button onClick={goNext} disabled={(loading && step > 0 && emailAccounts.length === 0) || (step === 2 && isZeroEligible)}>
+            {step === 2 && isZeroEligible ? 'No eligible recipients' : 'Continue'}
           </Button>
         )}
       </div>
