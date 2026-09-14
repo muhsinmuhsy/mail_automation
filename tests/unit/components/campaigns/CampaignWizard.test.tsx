@@ -742,3 +742,179 @@ describe('CampaignWizard', () => {
     expect(screen.getByRole('button', { name: 'No eligible recipients' })).toBeDisabled();
   });
 });
+
+describe('CampaignWizard — Contacts step sort and date range filter', () => {
+  it('shows SortSelect and DateRangeFilter on the Contacts step when using paginated contacts', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (typeof url === 'string' && url.startsWith('/api/contacts')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: [
+              { id: 'c1', name: 'Alice', email: 'alice@test.com' },
+              { id: 'c2', name: 'Bob', email: 'bob@test.com' },
+            ],
+            pagination: { total: 2, totalPages: 1 },
+          }),
+        };
+      }
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        return { ok: true, json: async () => mockPreCheckResponse() };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const { emailAccounts, attachments, templates } = options;
+    render(<CampaignWizard emailAccounts={emailAccounts} attachments={attachments} templates={templates} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Sort')).toBeInTheDocument();
+    });
+    expect(screen.getByLabelText('Start date')).toBeInTheDocument();
+    expect(screen.getByLabelText('End date')).toBeInTheDocument();
+  });
+
+  it('sends sortOrder param to /api/contacts when sort changes', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (typeof url === 'string' && url.startsWith('/api/contacts')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: [
+              { id: 'c1', name: 'Alice', email: 'alice@test.com' },
+              { id: 'c2', name: 'Bob', email: 'bob@test.com' },
+            ],
+            pagination: { total: 2, totalPages: 1 },
+          }),
+        };
+      }
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        return { ok: true, json: async () => mockPreCheckResponse() };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { emailAccounts, attachments, templates } = options;
+    render(<CampaignWizard emailAccounts={emailAccounts} attachments={attachments} templates={templates} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Sort')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Sort'));
+    await user.click(screen.getByText('Oldest first'));
+
+    await waitFor(() => {
+      const contactsCalls = fetchMock.mock.calls.filter(
+        (call) => typeof call[0] === 'string' && call[0].startsWith('/api/contacts')
+      );
+      const lastCall = contactsCalls[contactsCalls.length - 1];
+      expect(lastCall[0]).toContain('sortOrder=asc');
+    });
+  });
+
+  it('sends startDate and endDate params to /api/contacts when date range is set', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (typeof url === 'string' && url.startsWith('/api/contacts')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: [
+              { id: 'c1', name: 'Alice', email: 'alice@test.com' },
+              { id: 'c2', name: 'Bob', email: 'bob@test.com' },
+            ],
+            pagination: { total: 2, totalPages: 1 },
+          }),
+        };
+      }
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        return { ok: true, json: async () => mockPreCheckResponse() };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { emailAccounts, attachments, templates } = options;
+    render(<CampaignWizard emailAccounts={emailAccounts} attachments={attachments} templates={templates} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Start date')).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByLabelText('Start date'), '2026-09-01');
+    await user.type(screen.getByLabelText('End date'), '2026-09-30');
+
+    await waitFor(() => {
+      const contactsCalls = fetchMock.mock.calls.filter(
+        (call) => typeof call[0] === 'string' && call[0].startsWith('/api/contacts')
+      );
+      const lastCall = contactsCalls[contactsCalls.length - 1];
+      expect(lastCall[0]).toContain('startDate=2026-09-01');
+      expect(lastCall[0]).toContain('endDate=2026-09-30');
+    });
+  });
+
+  it('resets to page 1 when sort order changes', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (typeof url === 'string' && url.startsWith('/api/contacts')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: [{ id: 'c1', name: 'Alice', email: 'alice@test.com' }],
+            pagination: { total: 25, totalPages: 2 },
+          }),
+        };
+      }
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        return { ok: true, json: async () => mockPreCheckResponse() };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { emailAccounts, attachments, templates } = options;
+    render(<CampaignWizard emailAccounts={emailAccounts} attachments={attachments} templates={templates} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Sort'));
+    await user.click(screen.getByText('Oldest first'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+    });
+  });
+});

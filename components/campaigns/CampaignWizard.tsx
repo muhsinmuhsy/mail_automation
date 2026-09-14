@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
+import { SortSelect } from '@/components/ui/SortSelect';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
 const steps = ['Campaign', 'Content', 'Contacts', 'Schedule', 'Review'];
 
@@ -137,6 +139,9 @@ export function CampaignWizard({
   const [contactIds, setContactIds] = useState<string[]>([]);
   const [contactSearch, setContactSearch] = useState('');
   const [contactPage, setContactPage] = useState(1);
+  const [contactSortOrder, setContactSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [contactStartDate, setContactStartDate] = useState('');
+  const [contactEndDate, setContactEndDate] = useState('');
   const [fetchedContacts, setFetchedContacts] = useState<CampaignSelectOption[]>([]);
   const [contactTotal, setContactTotal] = useState(0);
   const [contactTotalPages, setContactTotalPages] = useState(1);
@@ -330,8 +335,10 @@ export function CampaignWizard({
       const controller = new AbortController();
       contactAbortRef.current = controller;
       setContactsLoading(true);
-      const params = new URLSearchParams({ page: String(contactPage), limit: String(CONTACT_PAGE_SIZE) });
+      const params = new URLSearchParams({ page: String(contactPage), limit: String(CONTACT_PAGE_SIZE), sortOrder: contactSortOrder });
       if (contactSearch.trim()) params.set('search', contactSearch.trim());
+      if (contactStartDate) params.set('startDate', contactStartDate);
+      if (contactEndDate) params.set('endDate', contactEndDate);
       fetch(`/api/contacts?${params.toString()}`, { credentials: 'include', signal: controller.signal })
         .then(async res => {
           if (controller.signal.aborted) return;
@@ -345,7 +352,7 @@ export function CampaignWizard({
         .finally(() => { if (!controller.signal.aborted) setContactsLoading(false); });
     }, usePaginatedContacts ? 250 : 0);
     return () => { if (contactSearchDebounce.current) clearTimeout(contactSearchDebounce.current); };
-  }, [usePaginatedContacts, step, contactPage, contactSearch]);
+  }, [usePaginatedContacts, step, contactPage, contactSearch, contactSortOrder, contactStartDate, contactEndDate]);
 
   useEffect(() => {
     if (step !== 2 || !effectiveTemplateId || !effectiveEmailAccountId) {
@@ -652,7 +659,23 @@ export function CampaignWizard({
               </div>
             )}
 
-            <Input label="Search contacts" value={contactSearch} onChange={event => { setContactSearch(event.target.value); if (usePaginatedContacts) setContactPage(1); }} />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:flex-wrap">
+              <div className="w-full sm:w-64">
+                <Input label="Search contacts" value={contactSearch} onChange={event => { setContactSearch(event.target.value); if (usePaginatedContacts) setContactPage(1); }} />
+              </div>
+              {usePaginatedContacts && (
+                <>
+                  <SortSelect value={contactSortOrder} onChange={(v) => { setContactSortOrder(v); setContactPage(1); }} />
+                  <DateRangeFilter
+                    startDate={contactStartDate}
+                    endDate={contactEndDate}
+                    onStartChange={(v) => { setContactStartDate(v); setContactPage(1); }}
+                    onEndChange={(v) => { setContactEndDate(v); setContactPage(1); }}
+                    onClear={() => { setContactStartDate(''); setContactEndDate(''); setContactPage(1); }}
+                  />
+                </>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span>{contactIds.length} selected{usePaginatedContacts ? ` · ${contactTotal} total` : ` of ${contacts.length}`}</span>
               <Button variant="secondary" size="sm" onClick={() => setContactIds(prev => { const pageIds = displayContacts.map(c => c.id); const merged = [...new Set([...prev, ...pageIds])]; return merged.slice(0, MAX_CAMPAIGN_CONTACTS); })} disabled={displayContacts.length === 0}>Select this page</Button>
