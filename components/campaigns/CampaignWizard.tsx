@@ -17,7 +17,7 @@ import { Pagination } from '@/components/ui/Pagination';
 const steps = ['Campaign', 'Content', 'Contacts', 'Schedule', 'Review'];
 
 const MAX_CAMPAIGN_CONTACTS = 1000;
-const CONTACT_PAGE_SIZE = 50;
+const CONTACT_PAGE_SIZE = 20;
 
 function generateUuid(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
