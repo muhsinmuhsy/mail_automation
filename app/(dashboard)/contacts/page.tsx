@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -32,6 +33,8 @@ export default function ContactsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddContact, setShowAddContact] = useState(false);
@@ -71,6 +74,8 @@ export default function ContactsPage() {
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sortOrder });
     if (search) params.set('search', search);
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
     try {
       const response = await fetch(`/api/contacts?${params.toString()}`);
       const payload = (await response.json()) as ApiResponse<Contact[]>;
@@ -83,7 +88,7 @@ export default function ContactsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, sortOrder]);
+  }, [page, search, sortOrder, startDate, endDate]);
 
   useEffect(() => {
     const timer = setTimeout(() => void load(), 0);
@@ -102,6 +107,12 @@ export default function ContactsPage() {
 
   const handleSortOrderChange = (value: 'desc' | 'asc') => {
     setSortOrder(value);
+    setPage(1);
+  };
+
+  const handleDateClear = () => {
+    setStartDate('');
+    setEndDate('');
     setPage(1);
   };
 
@@ -218,7 +229,21 @@ export default function ContactsPage() {
         }
       />
 
-      <ListToolbar search={search} onSearchChange={handleSearchChange} sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange} />
+      <ListToolbar
+        search={search}
+        onSearchChange={handleSearchChange}
+        sortOrder={sortOrder}
+        onSortOrderChange={handleSortOrderChange}
+        filters={
+          <DateRangeFilter
+            startDate={startDate}
+            endDate={endDate}
+            onStartChange={(v) => { setStartDate(v); setPage(1); }}
+            onEndChange={(v) => { setEndDate(v); setPage(1); }}
+            onClear={handleDateClear}
+          />
+        }
+      />
 
       {showAddContact && (
         <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">

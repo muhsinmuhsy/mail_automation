@@ -2,16 +2,17 @@ import { NextRequest } from 'next/server';
 import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk, respondList } from '@/lib/api/respond';
-import { parseListQuery } from '@/lib/api/list';
+import { parseListQuery, dateRangeWhere } from '@/lib/api/list';
 import { createTemplateSchema } from '@/lib/validation/template';
 import { ConflictError, ValidationError, fromPrismaError } from '@/lib/errors';
 import { renderTemplate } from '@/lib/email/render';
 
 const _GET = defineRoute(async (req, ctx) => {
-  const { page, limit, search, sortBy, sortOrder } = parseListQuery(req, { search: true, sortable: ['created_at'] });
+  const { page, limit, search, sortBy, sortOrder, startDate, endDate } = parseListQuery(req, { search: true, sortable: ['created_at'], dateRange: true });
 
   const where = {
     user_id: ctx.user.id,
+    ...dateRangeWhere('created_at', startDate, endDate),
     ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
   };
 

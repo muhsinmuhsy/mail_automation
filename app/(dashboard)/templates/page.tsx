@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -32,6 +33,8 @@ export default function TemplatesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +49,8 @@ export default function TemplatesPage() {
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sortOrder });
     if (search) params.set('search', search);
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
     try {
       const response = await fetch(`/api/templates?${params.toString()}`);
       const payload = (await response.json()) as ApiEnvelope<Template[]>;
@@ -58,7 +63,7 @@ export default function TemplatesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, sortOrder]);
+  }, [page, search, sortOrder, startDate, endDate]);
 
   useEffect(() => {
     const timer = setTimeout(() => void load(), 0);
@@ -96,6 +101,12 @@ export default function TemplatesPage() {
     setPage(1);
   };
 
+  const handleDateClear = () => {
+    setStartDate('');
+    setEndDate('');
+    setPage(1);
+  };
+
   const handleNew = () => {
     setEditingId(null);
     setEditorOpen(true);
@@ -126,7 +137,21 @@ export default function TemplatesPage() {
         }
       />
 
-      <ListToolbar search={search} onSearchChange={handleSearchChange} sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange} />
+      <ListToolbar
+        search={search}
+        onSearchChange={handleSearchChange}
+        sortOrder={sortOrder}
+        onSortOrderChange={handleSortOrderChange}
+        filters={
+          <DateRangeFilter
+            startDate={startDate}
+            endDate={endDate}
+            onStartChange={(v) => { setStartDate(v); setPage(1); }}
+            onEndChange={(v) => { setEndDate(v); setPage(1); }}
+            onClear={handleDateClear}
+          />
+        }
+      />
 
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
 

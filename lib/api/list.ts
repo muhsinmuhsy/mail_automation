@@ -7,6 +7,8 @@ export interface ListQuery {
   search?: string;
   sortBy?: string;
   sortOrder: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface ListMeta {
@@ -27,7 +29,7 @@ export interface ListMeta {
  */
 export function parseListQuery(
   req: NextRequest,
-  options: { search?: boolean; sortable?: readonly string[] } = {}
+  options: { search?: boolean; sortable?: readonly string[]; dateRange?: boolean } = {}
 ): ListQuery {
   const { searchParams } = new URL(req.url);
 
@@ -50,12 +52,22 @@ export function parseListQuery(
       ? sort.sortBy
       : undefined;
 
+  const startDate = options.dateRange
+    ? (searchParams.get('startDate')?.toString().trim() || undefined)
+    : undefined;
+
+  const endDate = options.dateRange
+    ? (searchParams.get('endDate')?.toString().trim() || undefined)
+    : undefined;
+
   return {
     page: pagination.page,
     limit: pagination.limit,
     search,
     sortBy,
     sortOrder: sort.sortOrder,
+    startDate,
+    endDate,
   };
 }
 
@@ -65,5 +77,26 @@ export function listMeta(total: number, page: number, limit: number): ListMeta {
     page,
     pageSize: limit,
     totalPages: Math.max(1, Math.ceil(total / limit)),
+  };
+}
+
+/**
+ * Build a Prisma `where` fragment for a date range filter on a single column.
+ *
+ * `startDate` is treated as inclusive (`gte`), `endDate` is inclusive of the
+ * full day (`lte` with `T23:59:59.999Z` appended). Returns `{}` when neither
+ * date is provided so the spread is a no-op.
+ */
+export function dateRangeWhere(
+  field: string,
+  startDate?: string,
+  endDate?: string
+): Record<string, { gte?: Date; lte?: Date }> {
+  if (!startDate && !endDate) return {};
+  return {
+    [field]: {
+      ...(startDate ? { gte: new Date(startDate) } : {}),
+      ...(endDate ? { lte: new Date(endDate + 'T23:59:59.999Z') } : {}),
+    },
   };
 }

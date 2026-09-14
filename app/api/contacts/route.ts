@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk, respondList } from '@/lib/api/respond';
-import { parseListQuery } from '@/lib/api/list';
+import { parseListQuery, dateRangeWhere } from '@/lib/api/list';
 import {
   buildCreateContactSchema,
   splitContactPayload,
@@ -21,10 +21,11 @@ import { ConflictError, ValidationError, fromPrismaError } from '@/lib/errors';
  */
 
 const _GET = defineRoute(async (req, ctx) => {
-  const { page, limit, search, sortBy, sortOrder } = parseListQuery(req, { search: true, sortable: ['created_at'] });
+  const { page, limit, search, sortBy, sortOrder, startDate, endDate } = parseListQuery(req, { search: true, sortable: ['created_at'], dateRange: true });
 
   const where = {
     user_id: ctx.user.id,
+    ...dateRangeWhere('created_at', startDate, endDate),
     ...(search
       ? {
           OR: [

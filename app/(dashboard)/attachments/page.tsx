@@ -11,6 +11,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -32,6 +33,8 @@ export default function AttachmentsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [uploadOpen, setUploadOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +45,8 @@ export default function AttachmentsPage() {
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sortOrder });
     if (search) params.set('search', search);
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
     try {
       const response = await fetch(`/api/attachments?${params.toString()}`);
       const payload = (await response.json()) as ApiResponse<Attachment[]>;
@@ -54,7 +59,7 @@ export default function AttachmentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, sortOrder]);
+  }, [page, search, sortOrder, startDate, endDate]);
 
   useEffect(() => {
     const timer = setTimeout(() => void load(), 0);
@@ -68,6 +73,12 @@ export default function AttachmentsPage() {
 
   const handleSortOrderChange = (value: 'desc' | 'asc') => {
     setSortOrder(value);
+    setPage(1);
+  };
+
+  const handleDateClear = () => {
+    setStartDate('');
+    setEndDate('');
     setPage(1);
   };
 
@@ -105,7 +116,21 @@ export default function AttachmentsPage() {
         actions={<Button onClick={() => setUploadOpen(true)}>Upload Attachment</Button>}
       />
 
-      <ListToolbar search={search} onSearchChange={handleSearchChange} sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange} />
+      <ListToolbar
+        search={search}
+        onSearchChange={handleSearchChange}
+        sortOrder={sortOrder}
+        onSortOrderChange={handleSortOrderChange}
+        filters={
+          <DateRangeFilter
+            startDate={startDate}
+            endDate={endDate}
+            onStartChange={(v) => { setStartDate(v); setPage(1); }}
+            onEndChange={(v) => { setEndDate(v); setPage(1); }}
+            onClear={handleDateClear}
+          />
+        }
+      />
 
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen} title="Upload attachment" description={`${ATTACHMENT_TYPE_DESCRIPTION}. Up to 5 MB per file.`}>
         <AttachmentUpload onUpload={async (file) => {

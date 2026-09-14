@@ -17,6 +17,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Pagination } from '@/components/ui/Pagination';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
 import { Toast } from '@/components/ui/Toast';
@@ -74,6 +75,8 @@ export default function CampaignsPage() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showWizard, setShowWizard] = useState(false);
@@ -101,6 +104,8 @@ export default function CampaignsPage() {
       const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
       if (status) params.set('status', status);
       if (search.trim()) params.set('search', search.trim());
+      if (startDate) params.set('startDate', startDate);
+      if (endDate) params.set('endDate', endDate);
 
       try {
         const { status: httpStatus, body } = await requestJson<CampaignRow[]>(
@@ -127,7 +132,7 @@ export default function CampaignsPage() {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [page, router, search, status]
+    [page, router, search, status, startDate, endDate]
   );
 
   useEffect(() => {
@@ -294,15 +299,24 @@ export default function CampaignsPage() {
           setPage(1);
         }}
         filters={
-          <div className="sm:w-64">
-            <Select
-              label="Status"
-              options={STATUS_OPTIONS}
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value);
-                setPage(1);
-              }}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="sm:w-64">
+              <Select
+                label="Status"
+                options={STATUS_OPTIONS}
+                value={status}
+                onChange={(event) => {
+                  setStatus(event.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            <DateRangeFilter
+              startDate={startDate}
+              endDate={endDate}
+              onStartChange={(v) => { setStartDate(v); setPage(1); }}
+              onEndChange={(v) => { setEndDate(v); setPage(1); }}
+              onClear={() => { setStartDate(''); setEndDate(''); setPage(1); }}
             />
           </div>
         }

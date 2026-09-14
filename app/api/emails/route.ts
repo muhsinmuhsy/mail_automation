@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondList } from '@/lib/api/respond';
-import { parseListQuery } from '@/lib/api/list';
+import { parseListQuery, dateRangeWhere } from '@/lib/api/list';
 
 const EMAIL_JOB_STATUSES = [
   'SCHEDULED',
@@ -16,7 +16,7 @@ const EMAIL_JOB_STATUSES = [
 ] as const;
 
 const _GET = defineRoute(async (req, ctx) => {
-  const { page, limit, search } = parseListQuery(req, { search: true });
+  const { page, limit, search, startDate, endDate } = parseListQuery(req, { search: true, dateRange: true });
 
   const { searchParams } = new URL(req.url);
   const statusParam = searchParams.get('status');
@@ -28,6 +28,7 @@ const _GET = defineRoute(async (req, ctx) => {
   const where = {
     user_id: ctx.user.id,
     ...statusFilter,
+    ...dateRangeWhere('created_at', startDate, endDate),
     ...(search ? { to_email: { contains: search, mode: 'insensitive' as const } } : {}),
   };
 

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk, respondList } from '@/lib/api/respond';
-import { parseListQuery } from '@/lib/api/list';
+import { parseListQuery, dateRangeWhere } from '@/lib/api/list';
 import {
   createCampaignSchema,
   UNSUPPORTED_CREATION_FIELDS,
@@ -14,7 +14,7 @@ import { attachmentSelectionError } from '@/lib/email/attachment-limits';
 const CAMPAIGN_STATUSES = ['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'] as const;
 
 const _GET = defineRoute(async (req, ctx) => {
-  const { page, limit, search } = parseListQuery(req, { search: true });
+  const { page, limit, search, startDate, endDate } = parseListQuery(req, { search: true, dateRange: true });
 
   const { searchParams } = new URL(req.url);
   const statusParam = searchParams.get('status');
@@ -26,6 +26,7 @@ const _GET = defineRoute(async (req, ctx) => {
   const where = {
     user_id: ctx.user.id,
     ...statusFilter,
+    ...dateRangeWhere('created_at', startDate, endDate),
     ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
   };
 
