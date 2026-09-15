@@ -746,6 +746,160 @@ describe('CampaignWizard', () => {
     }, { timeout: 5000 });
   });
 
+  it('replaces summary card header with Updating… and hides old content during stale refetch', async () => {
+    let preCheckCallCount = 0;
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        preCheckCallCount++;
+        if (preCheckCallCount === 1) {
+          const body = JSON.parse(init.body as string);
+          const count = body.contactIds?.length ?? 0;
+          return {
+            ok: true,
+            json: async () => mockPreCheckResponse({
+              selectedCount: count,
+              eligibleCount: count,
+              totalContactCount: count,
+              recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+            }),
+          };
+        }
+        return new Promise(() => {});
+      }
+      if (url === '/api/campaigns/recipient-status') {
+        return { ok: true, json: async () => ({ success: true, data: { statuses: [] } }) };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+
+    await waitFor(() => {
+      expect(screen.getByText(/emails? will be scheduled/)).toBeInTheDocument();
+    }, { timeout: 5000 });
+
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+
+    await waitFor(() => {
+      expect(screen.getByText('Updating…')).toBeInTheDocument();
+      expect(screen.queryByText(/will be scheduled/)).not.toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
+
+  it('replaces error card header with Updating… and hides exclusion details during stale refetch', async () => {
+    let preCheckCallCount = 0;
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        preCheckCallCount++;
+        const body = JSON.parse(init.body as string);
+        const count = body.contactIds?.length ?? 0;
+        if (preCheckCallCount === 1) {
+          return {
+            ok: true,
+            json: async () => mockPreCheckResponse({
+              selectedCount: count,
+              eligibleCount: 0,
+              excludedCount: count,
+              totalContactCount: count,
+              excludedByReason: { duplicateAddress: 0, previouslySent: 0, pending: count, deliveryUnknown: 0, missingValues: 0 },
+              recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: false, followUpSelected: false, canSelectFollowUp: false, primaryReason: 'PENDING' })),
+            }),
+          };
+        }
+        return new Promise(() => {});
+      }
+      if (url === '/api/campaigns/recipient-status') {
+        return { ok: true, json: async () => ({ success: true, data: { statuses: [] } }) };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+
+    await waitFor(() => {
+      expect(screen.getByText('No emails will be scheduled')).toBeInTheDocument();
+    }, { timeout: 5000 });
+
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Updating…').length).toBeGreaterThan(0);
+      expect(screen.queryByText('No emails will be scheduled')).not.toBeInTheDocument();
+      expect(screen.queryByText(/All selected contacts are excluded/)).not.toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
+
+  it('restores normal header after stale refetch completes', async () => {
+    let preCheckCallCount = 0;
+    let resolveSecondCheck: (value: unknown) => void = () => {};
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        preCheckCallCount++;
+        const body = JSON.parse(init.body as string);
+        const count = body.contactIds?.length ?? 0;
+        if (preCheckCallCount === 1) {
+          return {
+            ok: true,
+            json: async () => mockPreCheckResponse({
+              selectedCount: count,
+              eligibleCount: count,
+              totalContactCount: count,
+              recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+            }),
+          };
+        }
+        await new Promise(resolve => { resolveSecondCheck = resolve; });
+        return {
+          ok: true,
+          json: async () => mockPreCheckResponse({
+            selectedCount: count,
+            eligibleCount: count,
+            totalContactCount: count,
+            recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+          }),
+        };
+      }
+      if (url === '/api/campaigns/recipient-status') {
+        return { ok: true, json: async () => ({ success: true, data: { statuses: [] } }) };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+
+    await waitFor(() => {
+      expect(screen.getByText(/emails? will be scheduled/)).toBeInTheDocument();
+    }, { timeout: 5000 });
+
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+
+    await waitFor(() => {
+      expect(screen.getByText('Updating…')).toBeInTheDocument();
+    }, { timeout: 5000 });
+
+    resolveSecondCheck({});
+
+    await waitFor(() => {
+      expect(screen.queryByText('Updating…')).not.toBeInTheDocument();
+      expect(screen.getByText(/emails? will be scheduled/)).toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
+
   it('shows zero-eligible warning with exclusion breakdown when all contacts are pending', async () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
       if (url === '/api/campaigns/pre-check' && init?.body) {
