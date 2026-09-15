@@ -59,6 +59,7 @@ function CustomFieldInput({
         onChange={(e) => onChange(e.target.value)}
         options={(field.options ?? []).map((o) => ({ value: o.value, label: o.label }))}
         required={field.is_required}
+        placeholder="Select…"
       />
     );
   }

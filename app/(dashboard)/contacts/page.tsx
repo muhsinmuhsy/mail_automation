@@ -53,7 +53,7 @@ export default function ContactsPage() {
       const response = await fetch('/api/contact-fields');
       const payload = (await response.json()) as {
         success: boolean;
-        data?: Array<{ id: string; name: string; label: string; field_type: string; is_required: boolean }>;
+        data?: Array<{ id: string; name: string; label: string; field_type: string; is_required: boolean; options?: Array<{ value: string; label: string }> | null }>;
       };
       if (payload.success && Array.isArray(payload.data)) {
         setFieldDefs(
@@ -63,6 +63,7 @@ export default function ContactsPage() {
             label: f.label,
             field_type: f.field_type as ContactFieldDef['field_type'],
             is_required: f.is_required,
+            ...(f.options ? { options: f.options } : {}),
           }))
         );
       }
