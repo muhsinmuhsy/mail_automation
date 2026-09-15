@@ -543,6 +543,15 @@ export function CampaignWizard({
               </div>
             )}
 
+            {recipientStatusLoading && !eligibility.isFetching && (
+              <div aria-live="polite" className="rounded-[var(--radius-md)] border border-neutral-200 bg-surface p-4">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+                  <p className="text-sm text-text-secondary">Checking contact statuses…</p>
+                </div>
+              </div>
+            )}
+
             {eligibility.isReady && (
               <div aria-live="polite" className="rounded-[var(--radius-md)] border border-neutral-200 bg-surface p-4">
                 <p className="font-medium text-text-primary">
@@ -573,7 +582,10 @@ export function CampaignWizard({
                   </div>
                 )}
                 {eligibility.isFetching && eligibility.isChecking && eligibility.isReady && (
-                  <p className="mt-1 text-sm text-text-secondary">Checking recipients…</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+                    <p className="text-sm text-text-secondary">Checking recipients…</p>
+                  </div>
                 )}
                 {eligibility.status === 'error' && (
                   <p className="mt-1 text-sm text-error">
