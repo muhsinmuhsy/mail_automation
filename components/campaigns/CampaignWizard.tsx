@@ -12,6 +12,7 @@ import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { TimezoneSelect } from '@/components/ui/TimezoneSelect';
 import { Badge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import { SortSelect } from '@/components/ui/SortSelect';
@@ -773,7 +774,7 @@ export function CampaignWizard({
               error={errors.startAt}
               required
             />
-            <Input
+            <TimezoneSelect
               label="Timezone"
               value={timezone}
               onChange={(event) => setTimezone(event.target.value)}

@@ -80,8 +80,9 @@ async function completeWizard(onSubmit = vi.fn()) {
 
   await user.clear(screen.getByLabelText('Start time'));
   await user.type(screen.getByLabelText('Start time'), '2026-09-03T09:30');
-  await user.clear(screen.getByLabelText('Timezone'));
-  await user.type(screen.getByLabelText('Timezone'), 'Asia/Calcutta');
+  await user.click(screen.getByRole('combobox', { name: 'Timezone' }));
+  await user.type(screen.getByPlaceholderText(/Search timezone/), 'Asia/Calcutta');
+  await user.click(screen.getByRole('option', { name: /Asia\/Calcutta/ }));
   await user.clear(screen.getByLabelText('Time between emails (minutes)'));
   await user.type(screen.getByLabelText('Time between emails (minutes)'), '10');
   await user.clear(screen.getByLabelText('Emails per day (optional)'));
@@ -1156,5 +1157,42 @@ describe('CampaignWizard — paginated template dropdown', () => {
     await waitFor(() => {
       expect(screen.getByText('No results found.')).toBeInTheDocument();
     });
+  });
+});
+
+describe('CampaignWizard — timezone dropdown', () => {
+  it('renders TimezoneSelect on the Schedule step with system default timezone', async () => {
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(screen.getByRole('combobox', { name: 'Timezone' })).toBeInTheDocument();
+  });
+
+  it('allows searching and selecting a timezone from the dropdown', async () => {
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await user.click(screen.getByRole('combobox', { name: 'Timezone' }));
+    expect(screen.getByPlaceholderText(/Search timezone/)).toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText(/Search timezone/), 'Asia/Calcutta');
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: /Asia\/Calcutta/ })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('option', { name: /Asia\/Calcutta/ }));
+
+    expect(screen.getByRole('combobox', { name: 'Timezone' })).toHaveTextContent(/Asia\/Calcutta/);
   });
 });
