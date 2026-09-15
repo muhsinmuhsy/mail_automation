@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
 import { SchedulePreview } from '@/components/campaigns/SchedulePreview';
 
@@ -46,5 +47,34 @@ describe('sending preview', () => {
       { name: 'Ada Lovelace', email: 'ada@example.com' },
     ]} />);
     expect(screen.getByText(/Recipient: Ada Lovelace/)).toBeInTheDocument();
+  });
+  it('shows See more button with remaining count when emails exceed page size', () => {
+    render(<SchedulePreview {...props} count={25} dailyLimit="" />);
+    expect(screen.getByText(/See more \(15 remaining\)/)).toBeInTheDocument();
+    expect(screen.getByText('Last email (25)')).toBeInTheDocument();
+  });
+  it('loads 10 more rows on See more click', async () => {
+    const user = userEvent.setup();
+    render(<SchedulePreview {...props} count={25} dailyLimit="" />);
+    expect(screen.getByText('Email 10')).toBeInTheDocument();
+    expect(screen.queryByText('Email 11')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /See more/ }));
+    expect(screen.getByText('Email 11')).toBeInTheDocument();
+    expect(screen.getByText('Email 20')).toBeInTheDocument();
+    expect(screen.getByText(/See more \(5 remaining\)/)).toBeInTheDocument();
+  });
+  it('hides See more button when all emails are visible', async () => {
+    const user = userEvent.setup();
+    render(<SchedulePreview {...props} count={15} dailyLimit="" />);
+    expect(screen.getByRole('button', { name: /See more/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /See more/ }));
+    expect(screen.queryByRole('button', { name: /See more/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Email 15')).toBeInTheDocument();
+    expect(screen.queryByText(/Last email/)).not.toBeInTheDocument();
+  });
+  it('does not show See more when count is within page size', () => {
+    render(<SchedulePreview {...props} count={10} dailyLimit="" />);
+    expect(screen.queryByRole('button', { name: /See more/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Email 10')).toBeInTheDocument();
   });
 });
