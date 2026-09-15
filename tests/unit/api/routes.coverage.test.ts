@@ -59,6 +59,7 @@ import * as campaignById from '@/app/api/campaigns/[id]/route';
 import * as campaignCancel from '@/app/api/campaigns/[id]/cancel/route';
 import * as campaignPause from '@/app/api/campaigns/[id]/pause/route';
 import * as campaignResume from '@/app/api/campaigns/[id]/resume/route';
+import * as campaignRetryFailed from '@/app/api/campaigns/[id]/retry-failed/route';
 import * as contacts from '@/app/api/contacts/route';
 import * as contactById from '@/app/api/contacts/[id]/route';
 import * as contactsImport from '@/app/api/contacts/import-csv/route';
@@ -68,6 +69,7 @@ import * as emailAccountReactivate from '@/app/api/email-accounts/[id]/reactivat
 import * as emailAccountTest from '@/app/api/email-accounts/[id]/test/route';
 import * as emails from '@/app/api/emails/route';
 import * as emailById from '@/app/api/emails/[id]/route';
+import * as emailRetry from '@/app/api/emails/[id]/retry/route';
 import * as attachments from '@/app/api/attachments/route';
 import * as attachmentById from '@/app/api/attachments/[id]/route';
 import * as attachmentDefault from '@/app/api/attachments/[id]/default/route';
@@ -410,6 +412,18 @@ describe('app/api route handlers (unit coverage)', () => {
   it('emails/[id] GET returns the job with logs', async () => {
     prismaMock.emailJob.findUnique.mockResolvedValue({ id: UUID, email_logs: [] });
     await ok((await (emailById as any).GET(makeReq(), CTX({ id: UUID }))));
+  });
+
+  it('emails/[id]/retry resets a FAILED job to SCHEDULED', async () => {
+    prismaMock.emailJob.findUnique.mockResolvedValue({ id: UUID, status: 'FAILED', campaign_id: null });
+    prismaMock.emailJob.update.mockResolvedValue({ id: UUID });
+    await ok((await (emailRetry as any).POST(makeReq(), CTX({ id: UUID }))));
+  });
+
+  it('campaigns/[id]/retry-failed resets all FAILED jobs', async () => {
+    prismaMock.campaign.findUnique.mockResolvedValue({ id: UUID, status: 'ACTIVE' });
+    prismaMock.emailJob.updateMany.mockResolvedValue({ count: 1 });
+    await ok((await (campaignRetryFailed as any).POST(makeReq(), CTX({ id: UUID }))));
   });
 
   it('attachments GET lists attachments', async () => {

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Toast } from '@/components/ui/Toast';
 import { formatScheduledTime } from '@/lib/scheduling/time';
 
 interface CampaignDetails {
@@ -20,7 +21,7 @@ interface CampaignDetails {
 }
 
 type ApiEnvelope<T> =
-  | { success: true; data: T }
+  | { success: true; data: T; message?: string }
   | { success: false; error?: { message?: string } };
 
 export default function CampaignDetailPage() {
@@ -31,6 +32,11 @@ export default function CampaignDetailPage() {
   const [details, setDetails] = useState<CampaignDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error') =>
+    setToast({ id: Date.now(), message, type });
 
   useEffect(() => {
     if (!campaignId) return;
@@ -53,6 +59,38 @@ export default function CampaignDetailPage() {
     }, 0);
     return () => { controller.abort(); clearTimeout(timer); };
   }, [campaignId]);
+
+  const reload = async () => {
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}`, { credentials: 'include' });
+      const body = (await response.json()) as ApiEnvelope<CampaignDetails>;
+      if (body.success) setDetails(body.data);
+    } catch { /* keep stale data on reload failure */ }
+  };
+
+  const retryFailed = async () => {
+    setRetrying(true);
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/retry-failed`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const body = (await response.json()) as ApiEnvelope<null>;
+      if (body.success) {
+        showToast(body.message ?? 'Failed emails queued for retry.', 'success');
+        await reload();
+      } else {
+        showToast(body.error?.message ?? 'Failed to retry emails.', 'error');
+      }
+    } catch {
+      showToast('Failed to retry emails.', 'error');
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const failedCount = details?.email_jobs.filter((j) => j.status === 'FAILED').length ?? 0;
+  const canRetry = failedCount > 0 && details?.status !== 'CANCELLED';
 
   return (
     <div className="flex flex-col gap-8">
@@ -107,7 +145,14 @@ export default function CampaignDetailPage() {
           </div>
 
           <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
-            <h3 className="mb-2 font-semibold text-text-primary">Delivery progress</h3>
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="font-semibold text-text-primary">Delivery progress</h3>
+              {canRetry && (
+                <Button variant="secondary" size="sm" loading={retrying} onClick={retryFailed}>
+                  Retry all failed ({failedCount})
+                </Button>
+              )}
+            </div>
             <p className="mb-3 text-sm text-text-secondary">
               Showing {details.email_jobs.length} of {details._count.email_jobs} emails. Statuses refresh every 15 seconds.
             </p>
@@ -136,6 +181,10 @@ export default function CampaignDetailPage() {
           </div>
         </div>
       ) : null}
+
+      {toast && (
+        <Toast key={toast.id} message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      )}
     </div>
   );
 }

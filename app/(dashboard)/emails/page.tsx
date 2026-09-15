@@ -11,6 +11,7 @@ import { ListToolbar } from '@/components/ui/ListToolbar';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
+import { Toast } from '@/components/ui/Toast';
 
 const PAGE_SIZE = 20;
 
@@ -48,6 +49,11 @@ export default function EmailsPage() {
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error') =>
+    setToast({ id: Date.now(), message, type });
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -106,6 +112,32 @@ export default function EmailsPage() {
     void load();
   };
 
+  const retryEmail = async (email: EmailRow) => {
+    setRetryingId(email.id);
+    try {
+      const response = await fetch(`/api/emails/${email.id}/retry`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const body = await response.json() as Envelope<null>;
+
+      if (response.status === 401) {
+        router.replace('/login');
+        return;
+      }
+      if (body.success) {
+        showToast(body.message ?? 'Email queued for retry.', 'success');
+        await load();
+      } else {
+        showToast(body.error.message, 'error');
+      }
+    } catch {
+      showToast('Failed to retry email.', 'error');
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
   const filtered = Boolean(status || search.trim());
 
   return (
@@ -159,7 +191,7 @@ export default function EmailsPage() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <EmailList emails={emails} />
+          <EmailList emails={emails} onRetry={retryEmail} retryingId={retryingId} />
 
           {meta && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -172,6 +204,10 @@ export default function EmailsPage() {
             </div>
           )}
         </div>
+      )}
+
+      {toast && (
+        <Toast key={toast.id} message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
     </div>
   );

@@ -3,6 +3,7 @@
 import { formatScheduledTime } from '@/lib/scheduling/time';
 import { DataTable } from '@/components/ui/DataTable';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Button } from '@/components/ui/Button';
 
 export interface EmailRow {
   id: string;
@@ -23,7 +24,13 @@ function formatDateTime(value: string | null): string {
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString();
 }
 
-export function EmailList({ emails }: { emails: EmailRow[] }) {
+interface EmailListProps {
+  emails: EmailRow[];
+  onRetry?: (email: EmailRow) => void;
+  retryingId?: string | null;
+}
+
+export function EmailList({ emails, onRetry, retryingId = null }: EmailListProps) {
   return (
     <DataTable
       data={emails}
@@ -61,6 +68,22 @@ export function EmailList({ emails }: { emails: EmailRow[] }) {
           render: (email) => (
             <span className="text-text-secondary">{formatDateTime(email.sent_at)}</span>
           ),
+        },
+        {
+          key: 'actions',
+          header: 'Actions',
+          render: (email) =>
+            email.status === 'FAILED' && onRetry ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={retryingId === email.id}
+                disabled={retryingId !== null && retryingId !== email.id}
+                onClick={() => onRetry(email)}
+              >
+                Retry
+              </Button>
+            ) : null,
         },
       ]}
     />
