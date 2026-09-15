@@ -637,30 +637,40 @@ export function CampaignWizard({
             {isZeroEligible && (
               <div role="alert" className="rounded-[var(--radius-md)] border border-error/30 bg-error-light p-4">
                 <p className="font-medium text-error">No emails will be scheduled</p>
-                <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded:</p>
-                <ul className="mt-1 space-y-1 text-sm text-text-secondary">
-                  {excludedReasons && excludedReasons.pending > 0 && (
-                    <li>{excludedReasons.pending} Already scheduled (emails in queue — wait for them to complete or cancel the existing campaigns)</li>
-                  )}
-                  {excludedReasons && excludedReasons.previouslySent > 0 && (
-                    <li>{excludedReasons.previouslySent} Previously emailed (use follow-ups to resend)</li>
-                  )}
-                  {excludedReasons && excludedReasons.deliveryUnknown > 0 && (
-                    <li>{excludedReasons.deliveryUnknown} Delivery needs review (admin action required)</li>
-                  )}
-                  {excludedReasons && excludedReasons.duplicateAddress > 0 && (
-                    <li>{excludedReasons.duplicateAddress} Same address selected twice</li>
-                  )}
-                  {excludedReasons && excludedReasons.missingValues > 0 && (
-                    <li>{excludedReasons.missingValues} Missing personalization values</li>
-                  )}
-                </ul>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {excludedReasons && excludedReasons.previouslySent > 0 && (
-                    <Button variant="secondary" size="sm" onClick={() => setShowFollowUps(true)}>Choose follow-ups</Button>
-                  )}
-                  <Button variant="secondary" size="sm" onClick={() => setStep(1)}>Use a different template or sending account</Button>
-                </div>
+                {eligibility.isFetching && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+                    <p className="text-sm text-text-secondary">Updating…</p>
+                  </div>
+                )}
+                {!eligibility.isFetching && (
+                  <>
+                    <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded:</p>
+                    <ul className="mt-1 space-y-1 text-sm text-text-secondary">
+                      {excludedReasons && excludedReasons.pending > 0 && (
+                        <li>{excludedReasons.pending} Already scheduled (emails in queue — wait for them to complete or cancel the existing campaigns)</li>
+                      )}
+                      {excludedReasons && excludedReasons.previouslySent > 0 && (
+                        <li>{excludedReasons.previouslySent} Previously emailed (use follow-ups to resend)</li>
+                      )}
+                      {excludedReasons && excludedReasons.deliveryUnknown > 0 && (
+                        <li>{excludedReasons.deliveryUnknown} Delivery needs review (admin action required)</li>
+                      )}
+                      {excludedReasons && excludedReasons.duplicateAddress > 0 && (
+                        <li>{excludedReasons.duplicateAddress} Same address selected twice</li>
+                      )}
+                      {excludedReasons && excludedReasons.missingValues > 0 && (
+                        <li>{excludedReasons.missingValues} Missing personalization values</li>
+                      )}
+                    </ul>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {excludedReasons && excludedReasons.previouslySent > 0 && (
+                        <Button variant="secondary" size="sm" onClick={() => setShowFollowUps(true)}>Choose follow-ups</Button>
+                      )}
+                      <Button variant="secondary" size="sm" onClick={() => setStep(1)}>Use a different template or sending account</Button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -790,8 +800,18 @@ export function CampaignWizard({
             {isZeroEligible && (
               <div className="md:col-span-2 rounded-[var(--radius-md)] border border-error/30 bg-error-light p-4" role="alert">
                 <p className="font-medium text-error">No emails will be scheduled</p>
-                <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded. Go back to Contacts to choose eligible recipients or select follow-ups.</p>
-                <Button variant="secondary" size="sm" onClick={() => setStep(2)} className="mt-2">Back to Contacts</Button>
+                {eligibility.isFetching && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+                    <p className="text-sm text-text-secondary">Updating…</p>
+                  </div>
+                )}
+                {!eligibility.isFetching && (
+                  <>
+                    <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded. Go back to Contacts to choose eligible recipients or select follow-ups.</p>
+                    <Button variant="secondary" size="sm" onClick={() => setStep(2)} className="mt-2">Back to Contacts</Button>
+                  </>
+                )}
               </div>
             )}
             <DateTimePicker
@@ -844,8 +864,18 @@ export function CampaignWizard({
             {isZeroEligible && (
               <div className="rounded-[var(--radius-md)] border border-error/30 bg-error-light p-4" role="alert">
                 <p className="font-medium text-error">No eligible recipients</p>
-                <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded. Go back to Contacts to choose eligible recipients or select follow-ups.</p>
-                <Button variant="secondary" size="sm" onClick={() => setStep(2)} className="mt-2">Back to Contacts</Button>
+                {eligibility.isFetching && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+                    <p className="text-sm text-text-secondary">Updating…</p>
+                  </div>
+                )}
+                {!eligibility.isFetching && (
+                  <>
+                    <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded. Go back to Contacts to choose eligible recipients or select follow-ups.</p>
+                    <Button variant="secondary" size="sm" onClick={() => setStep(2)} className="mt-2">Back to Contacts</Button>
+                  </>
+                )}
               </div>
             )}
             {eligibility.isFetching && (
