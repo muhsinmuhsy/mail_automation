@@ -1001,3 +1001,160 @@ describe('CampaignWizard — Contacts step sort and date range filter', () => {
     });
   });
 });
+
+describe('CampaignWizard — paginated template dropdown', () => {
+  it('renders SearchableSelect with search input when templates prop is empty', async () => {
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (typeof url === 'string' && url.startsWith('/api/templates')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: [{ id: 'tpl-1', name: 'Welcome Email' }, { id: 'tpl-2', name: 'Follow-up Email' }],
+            pagination: { total: 2, page: 1, pageSize: 10, totalPages: 1 },
+          }),
+        };
+      }
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        const count = body.contactIds?.length ?? 0;
+        return {
+          ok: true,
+          json: async () => mockPreCheckResponse({
+            selectedCount: count, eligibleCount: count, totalContactCount: count,
+            recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { emailAccounts, contacts } = options;
+    const user = userEvent.setup();
+    render(<CampaignWizard emailAccounts={emailAccounts} contacts={contacts} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await user.click(screen.getByRole('combobox', { name: 'Template' }));
+    expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Welcome Email' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Follow-up Email' })).toBeInTheDocument();
+    });
+  });
+
+  it('fetches from /api/templates with page and limit params when dropdown opens', async () => {
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (typeof url === 'string' && url.startsWith('/api/templates')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: [{ id: 'tpl-1', name: 'Welcome' }],
+            pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 },
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { emailAccounts, contacts } = options;
+    const user = userEvent.setup();
+    render(<CampaignWizard emailAccounts={emailAccounts} contacts={contacts} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('combobox', { name: 'Template' }));
+
+    await waitFor(() => {
+      const templateCall = fetchMock.mock.calls.find((call) => {
+        const u = call[0] as string;
+        return u.includes('/api/templates') && u.includes('page=1') && u.includes('limit=10');
+      });
+      expect(templateCall).toBeDefined();
+    });
+  });
+
+  it('selects a template from the paginated dropdown and shows it in Review', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (typeof url === 'string' && url.startsWith('/api/templates')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: [{ id: 'tpl-welcome', name: 'Welcome Email' }],
+            pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 },
+          }),
+        };
+      }
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        const count = body.contactIds?.length ?? 0;
+        return {
+          ok: true,
+          json: async () => mockPreCheckResponse({
+            selectedCount: count, eligibleCount: count, totalContactCount: count,
+            recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const { emailAccounts, contacts } = options;
+    const user = userEvent.setup();
+    render(<CampaignWizard emailAccounts={emailAccounts} contacts={contacts} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test Campaign');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await user.click(screen.getByRole('combobox', { name: 'Template' }));
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Welcome Email' })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('option', { name: 'Welcome Email' }));
+
+    expect(screen.getByRole('combobox', { name: 'Template' })).toHaveTextContent('Welcome Email');
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Welcome Email')).toBeInTheDocument();
+    });
+  });
+
+  it('shows no results message when template search returns empty', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string) => {
+      if (typeof url === 'string' && url.startsWith('/api/templates')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: [],
+            pagination: { total: 0, page: 1, pageSize: 10, totalPages: 0 },
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const { emailAccounts, contacts } = options;
+    const user = userEvent.setup();
+    render(<CampaignWizard emailAccounts={emailAccounts} contacts={contacts} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('combobox', { name: 'Template' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('No results found.')).toBeInTheDocument();
+    });
+  });
+});

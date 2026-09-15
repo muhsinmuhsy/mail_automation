@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Badge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import { SortSelect } from '@/components/ui/SortSelect';
@@ -136,6 +137,7 @@ export function CampaignWizard({
   const [attachmentIds, setAttachmentIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [templateId, setTemplateId] = useState('');
+  const [selectedTemplateLabel, setSelectedTemplateLabel] = useState('');
   const [contactIds, setContactIds] = useState<string[]>([]);
   const [contactSearch, setContactSearch] = useState('');
   const [contactPage, setContactPage] = useState(1);
@@ -179,14 +181,16 @@ export function CampaignWizard({
   const attachmentPolicy = getAttachmentPolicy(provider);
   const attachmentError = effectiveEmailAccountId ? attachmentSelectionError(selectedAttachments, provider) : null;
   const attachmentBytes = selectedAttachments.reduce((sum, item) => sum + (item.size_bytes ?? MAX_FILE_BYTES), 0);
-  const effectiveTemplateId = templateId || templates[0]?.id || '';
+  const usePaginatedTemplates = templates.length === 0;
+  const effectiveTemplateId = templateId || (!usePaginatedTemplates ? templates[0]?.id : '') || '';
 
   const selected = useMemo(
     () => ({
       emailAccount: emailAccounts.find((item) => item.id === effectiveEmailAccountId),
-      template: templates.find((item) => item.id === effectiveTemplateId),
+      template: templates.find((item) => item.id === effectiveTemplateId)
+        ?? (selectedTemplateLabel ? { id: effectiveTemplateId, label: selectedTemplateLabel } : undefined),
     }),
-    [effectiveEmailAccountId, effectiveTemplateId, emailAccounts, templates]
+    [effectiveEmailAccountId, effectiveTemplateId, emailAccounts, templates, selectedTemplateLabel]
   );
 
   const eligibility = useEligibility({
@@ -459,20 +463,42 @@ export function CampaignWizard({
               error={errors.emailAccountId}
               required
             />
-            <Select
-              label="Template"
-              value={effectiveTemplateId}
-              onChange={(event) => {
-                setTemplateId(event.target.value);
-                if (resendRecipients.length > 0) {
-                  setResendRecipients([]);
-                  setFollowUpNotice('Follow-up choices cleared because the template changed.');
-                }
-              }}
-              options={optionList('Select template', templates)}
-              error={errors.templateId}
-              required
-            />
+            {usePaginatedTemplates ? (
+              <SearchableSelect
+                label="Template"
+                value={effectiveTemplateId}
+                onChange={(event) => {
+                  setTemplateId(event.target.value);
+                  if (event.target.label) setSelectedTemplateLabel(event.target.label);
+                  if (resendRecipients.length > 0) {
+                    setResendRecipients([]);
+                    setFollowUpNotice('Follow-up choices cleared because the template changed.');
+                  }
+                }}
+                fetchUrl="/api/templates"
+                pageSize={10}
+                selectedLabel={selectedTemplateLabel}
+                mapItem={(item) => ({ value: item.id, label: item.name ?? item.id })}
+                error={errors.templateId}
+                required
+                placeholder="Select template"
+              />
+            ) : (
+              <Select
+                label="Template"
+                value={effectiveTemplateId}
+                onChange={(event) => {
+                  setTemplateId(event.target.value);
+                  if (resendRecipients.length > 0) {
+                    setResendRecipients([]);
+                    setFollowUpNotice('Follow-up choices cleared because the template changed.');
+                  }
+                }}
+                options={optionList('Select template', templates)}
+                error={errors.templateId}
+                required
+              />
+            )}
             <fieldset className="md:col-span-3 flex flex-col gap-3 border-t border-neutral-200 pt-5">
               <legend className="font-medium text-text-primary">Attachments (optional)</legend>
               <p id="attachment-help" className="text-sm text-text-secondary">Send without attachments, or choose files for {attachmentPolicy?.name ?? 'your sender'}. Up to {attachmentPolicy?.maxCount ?? 0} files, {(attachmentPolicy?.maxFileBytes ?? 0) / 1024 / 1024} MB each and {(attachmentPolicy?.maxTotalBytes ?? 0) / 1024 / 1024} MB total (app sending limits).</p>

@@ -218,15 +218,15 @@ describe('GET /api/campaigns/options', () => {
   it('returns only owned, enabled sender choices and no sensitive account fields', async () => {
     mockPrisma.emailAccount.findMany.mockResolvedValue([{ id: EMAIL_ACCOUNT_ID, email: 'me@gmail.com', provider: 'gmail' }, { id: 'future', email: 'me@outlook.com', provider: 'microsoft' }]);
     mockPrisma.attachment.findMany.mockResolvedValue([{ id: ATTACHMENT_ID, filename: 'notes.txt', size_bytes: 12 }]);
-    mockPrisma.template.findMany.mockResolvedValue([]);
     mockPrisma.contact.findMany.mockResolvedValue([]);
     const response = await getCampaignOptions(new NextRequest('http://localhost/api/campaigns/options'));
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toBe('private, no-store');
-    const body = await response.json() as { data: { emailAccounts: unknown[]; attachments: { size_bytes: number }[] } };
+    const body = await response.json() as { data: { emailAccounts: unknown[]; attachments: { size_bytes: number }[]; templates: unknown[] } };
     expect(body.data.emailAccounts).toEqual([{ id: EMAIL_ACCOUNT_ID, label: 'me@gmail.com', provider: 'gmail' }]);
     expect(body.data.attachments[0].size_bytes).toBe(12);
-    for (const model of [mockPrisma.emailAccount, mockPrisma.attachment, mockPrisma.template, mockPrisma.contact]) {
+    expect(body.data.templates).toEqual([]);
+    for (const model of [mockPrisma.emailAccount, mockPrisma.attachment, mockPrisma.contact]) {
       expect(model.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ user_id: 'user-1' }) }));
     }
   });
