@@ -17,7 +17,7 @@ describe('campaign option loading', () => {
     const view = render(<CampaignsPage />);
     await waitFor(() => expect(fetcher).toHaveBeenCalledWith('/api/campaigns/options', expect.anything()));
     await user.click(screen.getAllByRole('button', { name: 'Create campaign' })[0]);
-    await user.type(screen.getByLabelText('Campaign name'), 'Fast campaign');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Fast campaign');
     expect(screen.queryByText('Loading campaign options...')).not.toBeInTheDocument();
     expect(screen.queryByText('Refresh available options')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Continue' }));

@@ -107,8 +107,8 @@ describe('TemplatesPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
     );
-    expect(screen.getByLabelText('Template name')).toBeInTheDocument();
-    expect(screen.getByLabelText('Subject')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Template name/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Subject/)).toBeInTheDocument();
   });
 
   it('submits a plain text template and reloads the list', async () => {
@@ -153,8 +153,8 @@ describe('TemplatesPage', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
 
-    await user.type(screen.getByLabelText('Template name'), 'New template');
-    await user.type(screen.getByLabelText('Subject'), 'New subject');
+    await user.type(screen.getByLabelText(/Template name/), 'New template');
+    await user.type(screen.getByLabelText(/Subject/), 'New subject');
     await user.type(screen.getByLabelText('Plain text body'), 'Body text');
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 
@@ -200,8 +200,8 @@ describe('TemplatesPage', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
 
-    await user.type(screen.getByLabelText('Template name'), 'Bad template');
-    await user.type(screen.getByLabelText('Subject'), 'Subject');
+    await user.type(screen.getByLabelText(/Template name/), 'Bad template');
+    await user.type(screen.getByLabelText(/Subject/), 'Subject');
     await user.type(screen.getByLabelText('Plain text body'), 'Body');
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 
@@ -236,8 +236,8 @@ describe('TemplatesPage', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
 
-    await user.type(screen.getByLabelText('Template name'), 'Slow template');
-    await user.type(screen.getByLabelText('Subject'), 'Subject');
+    await user.type(screen.getByLabelText(/Template name/), 'Slow template');
+    await user.type(screen.getByLabelText(/Subject/), 'Subject');
     await user.type(screen.getByLabelText('Plain text body'), 'Body');
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 
@@ -285,8 +285,8 @@ describe('TemplatesPage', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
 
-    await user.type(screen.getByLabelText('Template name'), 'Persisted');
-    await user.type(screen.getByLabelText('Subject'), 'Subject');
+    await user.type(screen.getByLabelText(/Template name/), 'Persisted');
+    await user.type(screen.getByLabelText(/Subject/), 'Subject');
     await user.type(screen.getByLabelText('Plain text body'), 'Body');
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 

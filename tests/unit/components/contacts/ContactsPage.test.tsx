@@ -128,7 +128,7 @@ describe('ContactsPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Add contact' }));
     await user.type(screen.getByLabelText('Name'), 'New Contact');
-    await user.type(screen.getByLabelText('Email'), 'new@example.com');
+    await user.type(screen.getByLabelText(/Email/), 'new@example.com');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() =>
@@ -177,7 +177,7 @@ describe('ContactsPage', () => {
     await waitFor(() => expect(screen.getByLabelText('T-shirt size')).toBeInTheDocument());
 
     await user.type(screen.getByLabelText('Name'), 'Jane');
-    await user.type(screen.getByLabelText('Email'), 'jane@example.com');
+    await user.type(screen.getByLabelText(/Email/), 'jane@example.com');
     await user.type(screen.getByLabelText('T-shirt size'), 'M');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -209,7 +209,7 @@ describe('ContactsPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Add contact' }));
     await user.type(screen.getByLabelText('Name'), 'Bad Contact');
-    await user.type(screen.getByLabelText('Email'), 'bad@example.com');
+    await user.type(screen.getByLabelText(/Email/), 'bad@example.com');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() =>

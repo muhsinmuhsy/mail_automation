@@ -34,8 +34,8 @@ describe('TemplateEditorDialog', () => {
 
   it('renders name and subject inputs', () => {
     render(<TemplateEditorDialog open={true} onOpenChange={vi.fn()} />);
-    expect(screen.getByLabelText('Template name')).toBeInTheDocument();
-    expect(screen.getByLabelText('Subject')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Template name/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Subject/)).toBeInTheDocument();
   });
 
   it('renders Visual and Plain text mode tabs', () => {
@@ -96,8 +96,8 @@ describe('TemplateEditorDialog', () => {
     );
 
     await user.click(screen.getByRole('tab', { name: 'Plain text' }));
-    await user.type(screen.getByLabelText('Template name'), 'My template');
-    await user.type(screen.getByLabelText('Subject'), 'Hello');
+    await user.type(screen.getByLabelText(/Template name/), 'My template');
+    await user.type(screen.getByLabelText(/Subject/), 'Hello');
     await user.type(screen.getByLabelText('Plain text body'), 'Body content');
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 
@@ -146,8 +146,8 @@ describe('TemplateEditorDialog', () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/templates/t1'));
 
-    await user.clear(screen.getByLabelText('Template name'));
-    await user.type(screen.getByLabelText('Template name'), 'Updated name');
+    await user.clear(screen.getByLabelText(/Template name/));
+    await user.type(screen.getByLabelText(/Template name/), 'Updated name');
 
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -174,8 +174,8 @@ describe('TemplateEditorDialog', () => {
     render(<TemplateEditorDialog open={true} onOpenChange={vi.fn()} />);
 
     await user.click(screen.getByRole('tab', { name: 'Plain text' }));
-    await user.type(screen.getByLabelText('Template name'), 'Bad');
-    await user.type(screen.getByLabelText('Subject'), 'Subject');
+    await user.type(screen.getByLabelText(/Template name/), 'Bad');
+    await user.type(screen.getByLabelText(/Subject/), 'Subject');
     await user.type(screen.getByLabelText('Plain text body'), 'Body');
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 
@@ -210,9 +210,9 @@ describe('TemplateEditorDialog', () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByLabelText('Template name')).toHaveValue('Existing')
+      expect(screen.getByLabelText(/Template name/)).toHaveValue('Existing')
     );
-    expect(screen.getByLabelText('Subject')).toHaveValue('Existing subject');
+    expect(screen.getByLabelText(/Subject/)).toHaveValue('Existing subject');
   });
 
   it('switches to plain text mode when loading a legacy template without body_json', async () => {

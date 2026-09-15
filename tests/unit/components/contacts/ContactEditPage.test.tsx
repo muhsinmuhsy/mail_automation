@@ -76,7 +76,7 @@ describe('ContactEditPage', () => {
 
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeInTheDocument());
     expect(screen.getByLabelText('Name')).toHaveValue('Jane Doe');
-    expect(screen.getByLabelText('Email')).toHaveValue('jane@example.com');
+    expect(screen.getByLabelText(/Email/)).toHaveValue('jane@example.com');
   });
 
   it('shows custom field inputs in the form pre-filled with their values', async () => {
@@ -122,7 +122,7 @@ describe('ContactEditPage', () => {
 
     render(<ContactEditPage />);
 
-    await waitFor(() => expect(screen.getByLabelText('Email')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByLabelText(/Email/)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() =>
@@ -165,7 +165,7 @@ describe('ContactEditPage', () => {
 
     render(<ContactEditPage />);
 
-    await waitFor(() => expect(screen.getByLabelText('Email')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByLabelText(/Email/)).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Email already in use.'));

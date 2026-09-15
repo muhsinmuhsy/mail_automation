@@ -65,7 +65,7 @@ async function completeWizard(onSubmit = vi.fn()) {
   const user = userEvent.setup();
   render(<CampaignWizard {...options} onSubmit={onSubmit} />);
 
-  await user.type(screen.getByLabelText('Campaign name'), 'Hiring outreach');
+  await user.type(screen.getByLabelText(/Campaign name/), 'Hiring outreach');
   await user.click(screen.getByRole('button', { name: 'Continue' }));
 
   expect(screen.getByRole('combobox', { name: 'Sending account' })).toHaveTextContent('sender@example.com (gmail)');
@@ -83,8 +83,8 @@ async function completeWizard(onSubmit = vi.fn()) {
   await user.click(screen.getByRole('combobox', { name: 'Timezone' }));
   await user.type(screen.getByPlaceholderText(/Search timezone/), 'Asia/Calcutta');
   await user.click(screen.getByRole('option', { name: /Asia\/Calcutta/ }));
-  await user.clear(screen.getByLabelText('Time between emails (minutes)'));
-  await user.type(screen.getByLabelText('Time between emails (minutes)'), '10');
+  await user.clear(screen.getByLabelText(/Time between emails/));
+  await user.type(screen.getByLabelText(/Time between emails/), '10');
   await user.click(screen.getByRole('button', { name: 'Continue' }));
 
   return { user, onSubmit };
@@ -95,7 +95,7 @@ describe('CampaignWizard', () => {
     const onSubmit = vi.fn();
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Single email');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Single email');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -107,8 +107,8 @@ describe('CampaignWizard', () => {
     await user.click(screen.getByRole('button', { name: 'Back' }));
     await user.click(screen.getByLabelText(/Grace Hopper/));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    await user.clear(screen.getByLabelText('Time between emails (minutes)'));
-    await user.type(screen.getByLabelText('Time between emails (minutes)'), '0');
+    await user.clear(screen.getByLabelText(/Time between emails/));
+    await user.type(screen.getByLabelText(/Time between emails/), '0');
     await user.click(screen.getByRole('button', { name: 'Back' }));
     await user.click(screen.getByLabelText(/Grace Hopper/));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
@@ -121,20 +121,20 @@ describe('CampaignWizard', () => {
   it('explains the schedule and lets users remove the daily cap explicitly', async () => {
     const { user } = await completeWizard();
     await user.click(screen.getByRole('button', { name: 'Back' }));
-    expect(screen.getByLabelText('Time between emails (minutes)')).toHaveAttribute('aria-describedby', 'interval-help');
+    expect(screen.getByLabelText(/Time between emails/)).toHaveAttribute('aria-describedby', 'interval-help');
     expect(screen.getByText(/Space out your emails/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Use no daily cap' }));
     expect(screen.getByLabelText('Emails per day (optional)')).toHaveValue(null);
     expect(screen.getByText(/Send 1 email every 10 minutes/)).toHaveTextContent('no daily cap');
-    await user.clear(screen.getByLabelText('Time between emails (minutes)'));
-    await user.type(screen.getByLabelText('Time between emails (minutes)'), '0');
+    await user.clear(screen.getByLabelText(/Time between emails/));
+    await user.type(screen.getByLabelText(/Time between emails/), '0');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByText('Enter at least 1 minute, using a whole number.')).toBeInTheDocument();
   });
   it('defaults emails per day to the total email count', async () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Defaults');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Defaults');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -148,7 +148,7 @@ describe('CampaignWizard', () => {
   it('shows an error when emails per day exceeds the total email count', async () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Exceeds');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Exceeds');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -165,7 +165,7 @@ describe('CampaignWizard', () => {
   it('allows emails per day equal to the total email count', async () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Equal');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Equal');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -180,7 +180,7 @@ describe('CampaignWizard', () => {
   it('allows emails per day less than the total email count', async () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Less');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Less');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -197,7 +197,7 @@ describe('CampaignWizard', () => {
   it('selects multiple files, preserves them on Back, and clears the selection', async () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} attachments={[{ id: 'a', label: 'One.pdf', size_bytes: 1024 }, { id: 'b', label: 'Two.pdf', size_bytes: 1024 }]} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Multiple');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Multiple');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('checkbox', { name: /One.pdf/ }));
     await user.click(screen.getByRole('checkbox', { name: /Two.pdf/ }));
@@ -212,7 +212,7 @@ describe('CampaignWizard', () => {
   it('blocks excessive combined size and allows continuing after clearing files', async () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} attachments={Array.from({ length: 5 }, (_, i) => ({ id: String(i), label: `File${i}.pdf`, size_bytes: 5 * 1024 * 1024 }))} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Limits');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Limits');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     for (const checkbox of screen.getAllByRole('checkbox')) await user.click(checkbox);
     await user.click(screen.getByRole('button', { name: 'Continue' }));
@@ -239,14 +239,14 @@ describe('CampaignWizard', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(screen.getByText('Campaign name is required.')).toBeInTheDocument();
-    expect(screen.getByLabelText('Campaign name')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Campaign name/)).toBeInTheDocument();
   });
 
   it('shows real account, attachment, and template options instead of empty selects', async () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Real options');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Real options');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await user.click(screen.getByRole('combobox', { name: 'Sending account' }));
@@ -261,7 +261,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'No contacts');
+    await user.type(screen.getByLabelText(/Campaign name/), 'No contacts');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
@@ -300,7 +300,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Incomplete');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Incomplete');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -310,7 +310,7 @@ describe('CampaignWizard', () => {
   it('shows a loading state while campaign prerequisites are loading', () => {
     render(<CampaignWizard loading onSubmit={vi.fn()} />);
 
-    expect(screen.getByLabelText('Campaign name')).toBeEnabled();
+    expect(screen.getByLabelText(/Campaign name/)).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
   });
 
@@ -318,7 +318,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -333,7 +333,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -373,7 +373,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -414,7 +414,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -447,7 +447,7 @@ describe('CampaignWizard', () => {
 
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Check');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Check');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -560,7 +560,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -585,7 +585,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -619,7 +619,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -652,7 +652,7 @@ describe('CampaignWizard', () => {
 
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -692,7 +692,7 @@ describe('CampaignWizard', () => {
 
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -730,7 +730,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -774,7 +774,7 @@ describe('CampaignWizard', () => {
 
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -821,7 +821,7 @@ describe('CampaignWizard', () => {
 
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -877,7 +877,7 @@ describe('CampaignWizard', () => {
 
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -925,7 +925,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -959,7 +959,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -991,7 +991,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -1022,7 +1022,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -1055,7 +1055,7 @@ describe('CampaignWizard', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -1074,7 +1074,7 @@ describe('CampaignWizard — Schedule step Continue button with zero eligible', 
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -1126,7 +1126,7 @@ describe('CampaignWizard — Schedule step Continue button with zero eligible', 
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -1178,7 +1178,7 @@ describe('CampaignWizard — Contacts step sort and date range filter', () => {
     const { emailAccounts, attachments, templates } = options;
     render(<CampaignWizard emailAccounts={emailAccounts} attachments={attachments} templates={templates} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -1215,7 +1215,7 @@ describe('CampaignWizard — Contacts step sort and date range filter', () => {
     const { emailAccounts, attachments, templates } = options;
     render(<CampaignWizard emailAccounts={emailAccounts} attachments={attachments} templates={templates} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -1261,7 +1261,7 @@ describe('CampaignWizard — Contacts step sort and date range filter', () => {
     const { emailAccounts, attachments, templates } = options;
     render(<CampaignWizard emailAccounts={emailAccounts} attachments={attachments} templates={templates} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -1305,7 +1305,7 @@ describe('CampaignWizard — Contacts step sort and date range filter', () => {
     const { emailAccounts, attachments, templates } = options;
     render(<CampaignWizard emailAccounts={emailAccounts} attachments={attachments} templates={templates} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -1360,7 +1360,7 @@ describe('CampaignWizard — paginated template dropdown', () => {
     const user = userEvent.setup();
     render(<CampaignWizard emailAccounts={emailAccounts} contacts={contacts} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await user.click(screen.getByRole('combobox', { name: 'Template' }));
@@ -1392,7 +1392,7 @@ describe('CampaignWizard — paginated template dropdown', () => {
     const user = userEvent.setup();
     render(<CampaignWizard emailAccounts={emailAccounts} contacts={contacts} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('combobox', { name: 'Template' }));
 
@@ -1435,7 +1435,7 @@ describe('CampaignWizard — paginated template dropdown', () => {
     const user = userEvent.setup();
     render(<CampaignWizard emailAccounts={emailAccounts} contacts={contacts} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test Campaign');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test Campaign');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await user.click(screen.getByRole('combobox', { name: 'Template' }));
@@ -1475,7 +1475,7 @@ describe('CampaignWizard — paginated template dropdown', () => {
     const user = userEvent.setup();
     render(<CampaignWizard emailAccounts={emailAccounts} contacts={contacts} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('combobox', { name: 'Template' }));
 
@@ -1490,7 +1490,7 @@ describe('CampaignWizard — timezone dropdown', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));
@@ -1503,7 +1503,7 @@ describe('CampaignWizard — timezone dropdown', () => {
     const user = userEvent.setup();
     render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
 
-    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.type(screen.getByLabelText(/Campaign name/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.click(screen.getByLabelText(/Ada Lovelace/));

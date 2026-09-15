@@ -6,7 +6,7 @@ import { FieldForm } from '@/components/settings/FieldForm';
 describe('FieldForm', () => {
   it('renders label, token, type, and required inputs', () => {
     render(<FieldForm onSubmit={vi.fn()} />);
-    expect(screen.getByLabelText('Field label')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Field label/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Token/)).toBeInTheDocument();
     expect(screen.getByLabelText('Field type')).toBeInTheDocument();
     expect(screen.getByText('Required')).toBeInTheDocument();
@@ -15,21 +15,21 @@ describe('FieldForm', () => {
   it('auto-generates token from label', async () => {
     const user = userEvent.setup();
     render(<FieldForm onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Field label'), 'T-shirt size');
+    await user.type(screen.getByLabelText(/Field label/), 'T-shirt size');
     expect(screen.getByLabelText(/Token/)).toHaveValue('t_shirt_size');
   });
 
   it('shows the token in {{token}} format', async () => {
     const user = userEvent.setup();
     render(<FieldForm onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Field label'), 'Shirt size');
+    await user.type(screen.getByLabelText(/Field label/), 'Shirt size');
     expect(screen.getByText(/\{\{shirt_size\}\}/)).toBeInTheDocument();
   });
 
   it('allows editing the token manually', async () => {
     const user = userEvent.setup();
     render(<FieldForm onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Field label'), 'Test Field');
+    await user.type(screen.getByLabelText(/Field label/), 'Test Field');
     await user.click(screen.getByRole('button', { name: 'Edit token' }));
     const tokenInput = screen.getByLabelText(/Token/);
     await user.clear(tokenInput);
@@ -40,7 +40,7 @@ describe('FieldForm', () => {
   it('returns to auto-generate when toggled off', async () => {
     const user = userEvent.setup();
     render(<FieldForm onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Field label'), 'Test Field');
+    await user.type(screen.getByLabelText(/Field label/), 'Test Field');
     await user.click(screen.getByRole('button', { name: 'Edit token' }));
     await user.click(screen.getByRole('button', { name: 'Auto-generate' }));
     expect(screen.getByLabelText(/Token/)).toHaveValue('test_field');
@@ -49,7 +49,7 @@ describe('FieldForm', () => {
   it('shows validation error for invalid token', async () => {
     const user = userEvent.setup();
     render(<FieldForm onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Field label'), 'Test');
+    await user.type(screen.getByLabelText(/Field label/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Edit token' }));
     const tokenInput = screen.getByLabelText(/Token/);
     await user.clear(tokenInput);
@@ -60,7 +60,7 @@ describe('FieldForm', () => {
   it('shows error for duplicate token', async () => {
     const user = userEvent.setup();
     render(<FieldForm onSubmit={vi.fn()} existingTokens={['existing_field']} />);
-    await user.type(screen.getByLabelText('Field label'), 'Test');
+    await user.type(screen.getByLabelText(/Field label/), 'Test');
     await user.click(screen.getByRole('button', { name: 'Edit token' }));
     const tokenInput = screen.getByLabelText(/Token/);
     await user.clear(tokenInput);
@@ -82,7 +82,7 @@ describe('FieldForm', () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<FieldForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Field label'), 'T-shirt size');
+    await user.type(screen.getByLabelText(/Field label/), 'T-shirt size');
     await user.click(screen.getByText('Required'));
     await user.click(screen.getByRole('button', { name: 'Save field' }));
     expect(onSubmit).toHaveBeenCalledWith({
@@ -106,7 +106,7 @@ describe('FieldForm', () => {
   it('shows options editor when dropdown type is selected', async () => {
     const user = userEvent.setup();
     render(<FieldForm onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Field label'), 'Shirt size');
+    await user.type(screen.getByLabelText(/Field label/), 'Shirt size');
     fireEvent.click(screen.getByRole('combobox', { name: 'Field type' }));
     await user.click(screen.getByRole('option', { name: 'Dropdown' }));
     expect(screen.getByText('Options')).toBeInTheDocument();
@@ -122,7 +122,7 @@ describe('FieldForm', () => {
   it('allows adding and removing options', async () => {
     const user = userEvent.setup();
     render(<FieldForm onSubmit={vi.fn()} />);
-    await user.type(screen.getByLabelText('Field label'), 'Shirt size');
+    await user.type(screen.getByLabelText(/Field label/), 'Shirt size');
     fireEvent.click(screen.getByRole('combobox', { name: 'Field type' }));
     await user.click(screen.getByRole('option', { name: 'Dropdown' }));
     await user.click(screen.getByRole('button', { name: 'Add option' }));
@@ -138,7 +138,7 @@ describe('FieldForm', () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<FieldForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Field label'), 'Shirt size');
+    await user.type(screen.getByLabelText(/Field label/), 'Shirt size');
     fireEvent.click(screen.getByRole('combobox', { name: 'Field type' }));
     await user.click(screen.getByRole('option', { name: 'Dropdown' }));
     await user.click(screen.getByRole('button', { name: 'Add option' }));
@@ -171,7 +171,7 @@ describe('FieldForm', () => {
         }}
       />
     );
-    expect(screen.getByLabelText('Field label')).toHaveValue('Size');
+    expect(screen.getByLabelText(/Field label/)).toHaveValue('Size');
     expect(screen.getByRole('combobox', { name: 'Field type' })).toHaveTextContent('Dropdown');
     expect(screen.getByText('Options')).toBeInTheDocument();
   });
@@ -183,7 +183,7 @@ describe('FieldForm', () => {
         initialValues={{ label: 'Size', name: 'size', field_type: 'text', is_required: true }}
       />
     );
-    expect(screen.getByLabelText('Field label')).toHaveValue('Size');
+    expect(screen.getByLabelText(/Field label/)).toHaveValue('Size');
     expect(screen.getByLabelText(/Token/)).toHaveValue('size');
     expect(screen.getByRole('combobox', { name: 'Field type' })).toHaveTextContent('Text');
     expect(screen.getByRole('checkbox', { name: /Required/ })).toBeChecked();
