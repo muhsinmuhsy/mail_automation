@@ -425,6 +425,44 @@ describe('CampaignWizard', () => {
     }, { timeout: 5000 });
   });
 
+  it('disables Continue and shows Checking… while eligibility is fetching on Contacts step', async () => {
+    let resolvePreCheck: (value: unknown) => void = () => {};
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        const count = body.contactIds?.length ?? 0;
+        await new Promise(resolve => { resolvePreCheck = resolve; });
+        return {
+          ok: true,
+          json: async () => mockPreCheckResponse({
+            selectedCount: count,
+            eligibleCount: count,
+            totalContactCount: count,
+            recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Check');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Checking…' })).toBeDisabled();
+    });
+
+    resolvePreCheck({});
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+    });
+  });
+
   it('uses effective count in the schedule button label', async () => {
     const onSubmit = vi.fn();
     const { user } = await completeWizard(onSubmit);

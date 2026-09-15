@@ -899,8 +899,8 @@ export function CampaignWizard({
             {eligibility.isFetching ? 'Checking…' : submitting ? 'Scheduling…' : `Schedule ${effectiveCount} ${effectiveCount === 1 ? 'email' : 'emails'}`}
           </Button>
         ) : (
-          <Button onClick={goNext} disabled={(loading && step > 0 && emailAccounts.length === 0) || ((step === 2 || step === 3) && isZeroEligible)}>
-            {(step === 2 || step === 3) && isZeroEligible ? 'No eligible recipients' : 'Continue'}
+          <Button onClick={goNext} disabled={(loading && step > 0 && emailAccounts.length === 0) || ((step === 2 || step === 3) && isZeroEligible) || ((step === 2 || step === 3) && eligibility.isFetching)}>
+            {(step === 2 || step === 3) && eligibility.isFetching ? 'Checking…' : (step === 2 || step === 3) && isZeroEligible ? 'No eligible recipients' : 'Continue'}
           </Button>
         )}
       </div>
