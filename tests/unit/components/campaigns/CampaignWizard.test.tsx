@@ -85,8 +85,6 @@ async function completeWizard(onSubmit = vi.fn()) {
   await user.click(screen.getByRole('option', { name: /Asia\/Calcutta/ }));
   await user.clear(screen.getByLabelText('Time between emails (minutes)'));
   await user.type(screen.getByLabelText('Time between emails (minutes)'), '10');
-  await user.clear(screen.getByLabelText('Emails per day (optional)'));
-  await user.type(screen.getByLabelText('Emails per day (optional)'), '20');
   await user.click(screen.getByRole('button', { name: 'Continue' }));
 
   return { user, onSubmit };
@@ -132,6 +130,69 @@ describe('CampaignWizard', () => {
     await user.type(screen.getByLabelText('Time between emails (minutes)'), '0');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByText('Enter at least 1 minute, using a whole number.')).toBeInTheDocument();
+  });
+  it('defaults emails per day to the total email count', async () => {
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Defaults');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Emails per day (optional)')).toHaveValue(2);
+    });
+    expect(screen.getByText(/You have 2 emails total/)).toBeInTheDocument();
+  });
+  it('shows an error when emails per day exceeds the total email count', async () => {
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Exceeds');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Emails per day (optional)')).toHaveValue(2);
+    });
+    await user.clear(screen.getByLabelText('Emails per day (optional)'));
+    await user.type(screen.getByLabelText('Emails per day (optional)'), '3');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByText('Daily limit cannot exceed 2 (your total emails).')).toBeInTheDocument();
+  });
+  it('allows emails per day equal to the total email count', async () => {
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Equal');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Emails per day (optional)')).toHaveValue(2);
+    });
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.queryByText('Daily limit cannot exceed 2 (your total emails).')).not.toBeInTheDocument();
+  });
+  it('allows emails per day less than the total email count', async () => {
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Less');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByLabelText(/Ada Lovelace/));
+    await user.click(screen.getByLabelText(/Grace Hopper/));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Emails per day (optional)')).toHaveValue(2);
+    });
+    await user.clear(screen.getByLabelText('Emails per day (optional)'));
+    await user.type(screen.getByLabelText('Emails per day (optional)'), '1');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.queryByText('Daily limit cannot exceed 2 (your total emails).')).not.toBeInTheDocument();
   });
   it('selects multiple files, preserves them on Back, and clears the selection', async () => {
     const user = userEvent.setup();
@@ -226,7 +287,7 @@ describe('CampaignWizard', () => {
       startAt: '2026-09-03T04:00:00.000Z',
       timezone: 'Asia/Calcutta',
       intervalMinutes: 10,
-      dailyLimit: 20,
+      dailyLimit: 2,
       missingValueAction: 'exclude',
       unknownTokenAction: 'fix',
       previewFingerprint: VALID_FINGERPRINT,

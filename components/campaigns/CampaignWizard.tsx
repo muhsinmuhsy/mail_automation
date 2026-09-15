@@ -160,7 +160,7 @@ export function CampaignWizard({
     }
   });
   const [intervalMinutes, setIntervalMinutes] = useState('5');
-  const [dailyLimit, setDailyLimit] = useState('20');
+  const [dailyLimit, setDailyLimit] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDetails, setShowDetails] = useState(false);
   const [showFollowUps, setShowFollowUps] = useState(false);
@@ -235,6 +235,9 @@ export function CampaignWizard({
       if (effectiveCount > 1 && parsedLimit !== null && (!Number.isInteger(parsedLimit) || parsedLimit <= 0)) {
         nextErrors.dailyLimit = 'Enter at least 1 email, or leave this blank for no campaign cap.';
       }
+      if (effectiveCount > 1 && parsedLimit !== null && Number.isInteger(parsedLimit) && parsedLimit > effectiveCount) {
+        nextErrors.dailyLimit = `Daily limit cannot exceed ${effectiveCount} (your total emails).`;
+      }
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -243,6 +246,12 @@ export function CampaignWizard({
   const selectedCount = contactIds.length;
   const effectiveCount = eligibility.isReady ? eligibility.effectiveCount : selectedCount;
   const singleRecipient = selectedCount === 1;
+
+  useEffect(() => {
+    if (singleRecipient || effectiveCount <= 1) return;
+    const timer = setTimeout(() => setDailyLimit(String(effectiveCount)), 0);
+    return () => clearTimeout(timer);
+  }, [effectiveCount, singleRecipient]);
 
   const canSubmit =
     name.trim() &&
@@ -803,7 +812,7 @@ export function CampaignWizard({
               onChange={(event) => setDailyLimit(event.target.value)}
               error={errors.dailyLimit}
             />
-            <p id="daily-help" className="text-sm text-text-secondary">Send up to this many emails in each daily batch. Leave blank to keep sending without a campaign cap.</p>
+            <p id="daily-help" className="text-sm text-text-secondary">You have {effectiveCount} emails total. Send up to this many emails in each daily batch. Leave blank to keep sending without a campaign cap.</p>
             <Button variant="secondary" size="sm" onClick={() => setDailyLimit('')} disabled={!dailyLimit}>Use no daily cap</Button></div></>}
             <div className="md:col-span-2"><SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={effectiveCount} /></div>
             <p className="md:col-span-2 text-sm text-text-secondary">Personalization values are captured when the campaign is scheduled. Editing contacts afterward will not affect already-scheduled emails.</p>
