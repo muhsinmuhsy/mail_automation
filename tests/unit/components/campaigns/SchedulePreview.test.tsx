@@ -33,4 +33,18 @@ describe('sending preview', () => {
     expect(screen.queryByText(/Send 1 email/)).not.toBeInTheDocument();
     expect(screen.queryByText(/recipients/)).not.toBeInTheDocument();
   });
+  it('shows recipient email next to each Email N when recipients prop is provided', () => {
+    render(<SchedulePreview {...props} count={2} recipients={[
+      { name: 'Ada Lovelace', email: 'ada@example.com' },
+      { name: 'Grace Hopper', email: 'grace@example.com' },
+    ]} />);
+    expect(screen.getByText(/Email 1/)).toHaveTextContent('Ada Lovelace <ada@example.com>');
+    expect(screen.getByText(/Email 2/)).toHaveTextContent('Grace Hopper <grace@example.com>');
+  });
+  it('shows recipient email in single email mode', () => {
+    render(<SchedulePreview {...props} count={1} recipients={[
+      { name: 'Ada Lovelace', email: 'ada@example.com' },
+    ]} />);
+    expect(screen.getByText(/Recipient: Ada Lovelace/)).toBeInTheDocument();
+  });
 });
