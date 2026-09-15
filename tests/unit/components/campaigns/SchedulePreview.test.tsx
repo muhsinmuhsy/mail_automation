@@ -27,4 +27,10 @@ describe('sending preview', () => {
     expect(screen.getByText(/Enter a valid start time/)).toBeInTheDocument();
     expect(screen.queryByText('Email 1')).not.toBeInTheDocument();
   });
+  it('shows Updating… spinner when loading prop is true', () => {
+    render(<SchedulePreview {...props} loading />);
+    expect(screen.getByText('Updating…')).toBeInTheDocument();
+    expect(screen.queryByText(/Send 1 email/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/recipients/)).not.toBeInTheDocument();
+  });
 });

@@ -845,9 +845,9 @@ export function CampaignWizard({
               onChange={(event) => setDailyLimit(event.target.value)}
               error={errors.dailyLimit}
             />
-            <p id="daily-help" className="text-sm text-text-secondary">You have {effectiveCount} emails total. Send up to this many emails in each daily batch. Leave blank to keep sending without a campaign cap.</p>
+            <p id="daily-help" className="text-sm text-text-secondary">{eligibility.isFetching ? 'Updating recipient count…' : `You have ${effectiveCount} emails total. Send up to this many emails in each daily batch. Leave blank to keep sending without a campaign cap.`}</p>
             <Button variant="secondary" size="sm" onClick={() => setDailyLimit('')} disabled={!dailyLimit}>Use no daily cap</Button></div></>}
-            <div className="md:col-span-2"><SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={effectiveCount} /></div>
+            <div className="md:col-span-2"><SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={effectiveCount} loading={eligibility.isFetching} /></div>
             <p className="md:col-span-2 text-sm text-text-secondary">Personalization values are captured when the campaign is scheduled. Editing contacts afterward will not affect already-scheduled emails.</p>
           </div>
         ) : (
@@ -910,7 +910,7 @@ export function CampaignWizard({
               </div>
               <div>
                 <dt className="text-caption text-text-secondary">Recipients</dt>
-                <dd className="font-medium text-text-primary">{effectiveCount} {effectiveCount === 1 ? 'email' : 'emails'}{hasExclusions ? ` (${contactIds.length} selected, ${eligibility.result!.excludedCount} excluded)` : ''}</dd>
+                <dd className="font-medium text-text-primary">{eligibility.isFetching ? 'Updating…' : `${effectiveCount} ${effectiveCount === 1 ? 'email' : 'emails'}${hasExclusions ? ` (${contactIds.length} selected, ${eligibility.result!.excludedCount} excluded)` : ''}`}</dd>
               </div>
               <div>
                 <dt className="text-caption text-text-secondary">Schedule</dt>
@@ -927,7 +927,7 @@ export function CampaignWizard({
                 <dd className="font-medium text-text-primary">{followUpSelectedCount} {followUpSelectedCount === 1 ? 'recipient' : 'recipients'} chosen for follow-up</dd>
               </div>}
             </dl>
-            <SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={effectiveCount} />
+            <SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={effectiveCount} loading={eligibility.isFetching} />
           </div>
         )}
       </div>

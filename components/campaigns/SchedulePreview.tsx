@@ -1,9 +1,17 @@
 import { campaignEmailTime } from '@/lib/scheduling/campaign';
 import { formatScheduledTime, zonedDateTimeToIso } from '@/lib/scheduling/time';
 
-export function SchedulePreview({ startAt, timezone, intervalMinutes, dailyLimit, count }: {
-  startAt: string; timezone: string; intervalMinutes: string; dailyLimit: string; count: number;
+export function SchedulePreview({ startAt, timezone, intervalMinutes, dailyLimit, count, loading }: {
+  startAt: string; timezone: string; intervalMinutes: string; dailyLimit: string; count: number; loading?: boolean;
 }) {
+  if (loading) {
+    return <section aria-label="Your sending plan" className="rounded-[var(--radius-md)] border border-neutral-200 bg-surface p-4">
+      <div className="flex items-center gap-2">
+        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+        <p className="font-medium text-text-secondary">Updating…</p>
+      </div>
+    </section>;
+  }
   let rows: { label: string; time: Date }[] = [];
   let singleTime: string | null = null;
   const interval = Number(intervalMinutes);
