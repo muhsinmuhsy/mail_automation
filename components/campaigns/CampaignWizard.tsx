@@ -554,97 +554,93 @@ export function CampaignWizard({
 
             {eligibility.isReady && (
               <div aria-live="polite" className="rounded-[var(--radius-md)] border border-neutral-200 bg-surface p-4">
-                <p className="font-medium text-text-primary">
-                  {effectiveCount} {effectiveCount === 1 ? 'email' : 'emails'} will be scheduled
-                </p>
-                {hasExclusions && (
-                  <p className="mt-1 text-sm text-text-secondary">
-                    {eligibility.result!.excludedCount} {eligibility.result!.excludedCount === 1 ? 'contact' : 'contacts'} excluded.
-                    <button type="button" onClick={() => setShowDetails(d => !d)} className="ml-1 text-information hover:underline">
-                      {showDetails ? 'Hide details' : 'View details'}
-                    </button>
-                    {hasFollowUpCandidates && !showFollowUps && (
-                      <button type="button" onClick={() => setShowFollowUps(true)} className="ml-2 text-information hover:underline">
-                        Choose follow-ups
-                      </button>
+                {eligibility.isFetching ? (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+                    <p className="font-medium text-text-secondary">Updating…</p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="font-medium text-text-primary">
+                      {effectiveCount} {effectiveCount === 1 ? 'email' : 'emails'} will be scheduled
+                    </p>
+                    {hasExclusions && (
+                      <p className="mt-1 text-sm text-text-secondary">
+                        {eligibility.result!.excludedCount} {eligibility.result!.excludedCount === 1 ? 'contact' : 'contacts'} excluded.
+                        <button type="button" onClick={() => setShowDetails(d => !d)} className="ml-1 text-information hover:underline">
+                          {showDetails ? 'Hide details' : 'View details'}
+                        </button>
+                        {hasFollowUpCandidates && !showFollowUps && (
+                          <button type="button" onClick={() => setShowFollowUps(true)} className="ml-2 text-information hover:underline">
+                            Choose follow-ups
+                          </button>
+                        )}
+                      </p>
                     )}
-                  </p>
-                )}
-                {eligibility.isReady && eligibility.result!.includedPreviousCount > 0 && (
-                  <p className="mt-1 text-sm text-text-secondary">
-                    {eligibility.result!.includedWithoutPreviousSendCount} new {eligibility.result!.includedPreviousCount === 1 ? 'recipient' : 'recipients'} + {eligibility.result!.includedPreviousCount} {eligibility.result!.includedPreviousCount === 1 ? 'follow-up' : 'follow-ups'}
-                  </p>
-                )}
-                {eligibility.isFetching && eligibility.isStale && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
-                    <p className="text-sm text-text-secondary">Updating…</p>
-                  </div>
-                )}
-                {eligibility.isFetching && eligibility.isChecking && eligibility.isReady && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
-                    <p className="text-sm text-text-secondary">Checking recipients…</p>
-                  </div>
-                )}
-                {eligibility.status === 'error' && (
-                  <p className="mt-1 text-sm text-error">
-                    {eligibility.errorMessage}
-                    <button type="button" onClick={eligibility.retry} className="ml-2 text-information hover:underline">Try again</button>
-                  </p>
-                )}
-                {hasUnknownTokens && (
-                  <div className="mt-2 rounded-[var(--radius-sm)] border border-error/20 bg-error-light p-3">
-                    <p className="text-sm text-error">Unknown tokens: {eligibility.result!.unknownTokens.join(', ')}</p>
-                    <div className="mt-2 flex gap-2">
-                      <Button variant="secondary" size="sm" onClick={() => setUnknownTokenAction('fix')}>Fix template</Button>
-                      <Button variant="secondary" size="sm" onClick={() => setUnknownTokenAction('continue')}>Continue anyway</Button>
-                    </div>
-                  </div>
-                )}
-                {showDetails && eligibility.result && (
-                  <div className="mt-3 space-y-2 border-t border-neutral-200 pt-3 text-sm">
-                    <p className="text-text-secondary">Selected: {eligibility.result.selectedCount} · Eligible: {eligibility.result.eligibleCount} · Excluded: {eligibility.result.excludedCount}</p>
-                    {excludedReasons && (excludedReasons.duplicateAddress > 0 || excludedReasons.previouslySent > 0 || excludedReasons.pending > 0 || excludedReasons.deliveryUnknown > 0 || excludedReasons.missingValues > 0) && (
-                      <ul className="space-y-1 text-text-secondary">
-                        {excludedReasons.duplicateAddress > 0 && <li>Same address selected twice: {excludedReasons.duplicateAddress}</li>}
-                        {excludedReasons.previouslySent > 0 && <li>Previously emailed using this template: {excludedReasons.previouslySent}</li>}
-                        {excludedReasons.pending > 0 && <li>Already scheduled: {excludedReasons.pending}</li>}
-                        {excludedReasons.deliveryUnknown > 0 && <li>Delivery needs review: {excludedReasons.deliveryUnknown}</li>}
-                        {excludedReasons.missingValues > 0 && <li>Missing personalization values: {excludedReasons.missingValues}</li>}
-                      </ul>
+                    {eligibility.isReady && eligibility.result!.includedPreviousCount > 0 && (
+                      <p className="mt-1 text-sm text-text-secondary">
+                        {eligibility.result!.includedWithoutPreviousSendCount} new {eligibility.result!.includedPreviousCount === 1 ? 'recipient' : 'recipients'} + {eligibility.result!.includedPreviousCount} {eligibility.result!.includedPreviousCount === 1 ? 'follow-up' : 'follow-ups'}
+                      </p>
                     )}
-                    <p className="text-text-secondary">Checks previous emails using this template and sending account, including earlier versions of the template.</p>
-                    {hasMissingValues && (
-                      <div className="mt-2">
-                        <p className="font-medium text-text-primary">Missing personalization values</p>
-                        <ul className="mt-1 space-y-1 text-text-secondary">
-                          {eligibility.result.missingValues.map(mv => (
-                            <li key={mv.token}>{mv.label} ({`{{${mv.token}}}`}): {mv.contactCount} contact(s)</li>
-                          ))}
-                        </ul>
+                    {eligibility.status === 'error' && (
+                      <p className="mt-1 text-sm text-error">
+                        {eligibility.errorMessage}
+                        <button type="button" onClick={eligibility.retry} className="ml-2 text-information hover:underline">Try again</button>
+                      </p>
+                    )}
+                    {hasUnknownTokens && (
+                      <div className="mt-2 rounded-[var(--radius-sm)] border border-error/20 bg-error-light p-3">
+                        <p className="text-sm text-error">Unknown tokens: {eligibility.result!.unknownTokens.join(', ')}</p>
                         <div className="mt-2 flex gap-2">
-                          <Button variant="secondary" size="sm" onClick={() => setMissingValueAction('exclude')}>Exclude affected contacts</Button>
-                          <Button variant="secondary" size="sm" onClick={() => setMissingValueAction('continue')}>Send with missing values</Button>
+                          <Button variant="secondary" size="sm" onClick={() => setUnknownTokenAction('fix')}>Fix template</Button>
+                          <Button variant="secondary" size="sm" onClick={() => setUnknownTokenAction('continue')}>Continue anyway</Button>
                         </div>
                       </div>
                     )}
-                  </div>
+                    {showDetails && eligibility.result && (
+                      <div className="mt-3 space-y-2 border-t border-neutral-200 pt-3 text-sm">
+                        <p className="text-text-secondary">Selected: {eligibility.result.selectedCount} · Eligible: {eligibility.result.eligibleCount} · Excluded: {eligibility.result.excludedCount}</p>
+                        {excludedReasons && (excludedReasons.duplicateAddress > 0 || excludedReasons.previouslySent > 0 || excludedReasons.pending > 0 || excludedReasons.deliveryUnknown > 0 || excludedReasons.missingValues > 0) && (
+                          <ul className="space-y-1 text-text-secondary">
+                            {excludedReasons.duplicateAddress > 0 && <li>Same address selected twice: {excludedReasons.duplicateAddress}</li>}
+                            {excludedReasons.previouslySent > 0 && <li>Previously emailed using this template: {excludedReasons.previouslySent}</li>}
+                            {excludedReasons.pending > 0 && <li>Already scheduled: {excludedReasons.pending}</li>}
+                            {excludedReasons.deliveryUnknown > 0 && <li>Delivery needs review: {excludedReasons.deliveryUnknown}</li>}
+                            {excludedReasons.missingValues > 0 && <li>Missing personalization values: {excludedReasons.missingValues}</li>}
+                          </ul>
+                        )}
+                        <p className="text-text-secondary">Checks previous emails using this template and sending account, including earlier versions of the template.</p>
+                        {hasMissingValues && (
+                          <div className="mt-2">
+                            <p className="font-medium text-text-primary">Missing personalization values</p>
+                            <ul className="mt-1 space-y-1 text-text-secondary">
+                              {eligibility.result.missingValues.map(mv => (
+                                <li key={mv.token}>{mv.label} ({`{{${mv.token}}}`}): {mv.contactCount} contact(s)</li>
+                              ))}
+                            </ul>
+                            <div className="mt-2 flex gap-2">
+                              <Button variant="secondary" size="sm" onClick={() => setMissingValueAction('exclude')}>Exclude affected contacts</Button>
+                              <Button variant="secondary" size="sm" onClick={() => setMissingValueAction('continue')}>Send with missing values</Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
 
             {isZeroEligible && (
               <div role="alert" className="rounded-[var(--radius-md)] border border-error/30 bg-error-light p-4">
-                <p className="font-medium text-error">No emails will be scheduled</p>
-                {eligibility.isFetching && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
-                    <p className="text-sm text-text-secondary">Updating…</p>
+                {eligibility.isFetching ? (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+                    <p className="font-medium text-text-secondary">Updating…</p>
                   </div>
-                )}
-                {!eligibility.isFetching && (
+                ) : (
                   <>
+                    <p className="font-medium text-error">No emails will be scheduled</p>
                     <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded:</p>
                     <ul className="mt-1 space-y-1 text-sm text-text-secondary">
                       {excludedReasons && excludedReasons.pending > 0 && (
@@ -799,15 +795,14 @@ export function CampaignWizard({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {isZeroEligible && (
               <div className="md:col-span-2 rounded-[var(--radius-md)] border border-error/30 bg-error-light p-4" role="alert">
-                <p className="font-medium text-error">No emails will be scheduled</p>
-                {eligibility.isFetching && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
-                    <p className="text-sm text-text-secondary">Updating…</p>
+                {eligibility.isFetching ? (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+                    <p className="font-medium text-text-secondary">Updating…</p>
                   </div>
-                )}
-                {!eligibility.isFetching && (
+                ) : (
                   <>
+                    <p className="font-medium text-error">No emails will be scheduled</p>
                     <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded. Go back to Contacts to choose eligible recipients or select follow-ups.</p>
                     <Button variant="secondary" size="sm" onClick={() => setStep(2)} className="mt-2">Back to Contacts</Button>
                   </>
@@ -863,15 +858,14 @@ export function CampaignWizard({
             </div>
             {isZeroEligible && (
               <div className="rounded-[var(--radius-md)] border border-error/30 bg-error-light p-4" role="alert">
-                <p className="font-medium text-error">No eligible recipients</p>
-                {eligibility.isFetching && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
-                    <p className="text-sm text-text-secondary">Updating…</p>
+                {eligibility.isFetching ? (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-information" aria-hidden="true" />
+                    <p className="font-medium text-text-secondary">Updating…</p>
                   </div>
-                )}
-                {!eligibility.isFetching && (
+                ) : (
                   <>
+                    <p className="font-medium text-error">No eligible recipients</p>
                     <p className="mt-1 text-sm text-text-secondary">All selected contacts are excluded. Go back to Contacts to choose eligible recipients or select follow-ups.</p>
                     <Button variant="secondary" size="sm" onClick={() => setStep(2)} className="mt-2">Back to Contacts</Button>
                   </>
