@@ -629,6 +629,78 @@ describe('CampaignWizard', () => {
     }, { timeout: 5000 });
   });
 
+  it('disables Continue button and shows Checking… while recipient status is loading', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/recipient-status') {
+        return new Promise(() => {});
+      }
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        const count = body.contactIds?.length ?? 0;
+        return {
+          ok: true,
+          json: async () => mockPreCheckResponse({
+            selectedCount: count,
+            eligibleCount: count,
+            totalContactCount: count,
+            recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Checking…' })).toBeDisabled();
+    }, { timeout: 5000 });
+  });
+
+  it('shows green Eligible badge for contacts with no issues after status check', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/campaigns/recipient-status' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        const ids: string[] = body.contactIds ?? [];
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: { statuses: ids.map(id => ({ contactId: id, classification: 'ELIGIBLE', lastSentAt: null })) },
+          }),
+        };
+      }
+      if (url === '/api/campaigns/pre-check' && init?.body) {
+        const body = JSON.parse(init.body as string);
+        const count = body.contactIds?.length ?? 0;
+        return {
+          ok: true,
+          json: async () => mockPreCheckResponse({
+            selectedCount: count,
+            eligibleCount: count,
+            totalContactCount: count,
+            recipients: (body.contactIds ?? []).map((id: string) => ({ contactId: id, included: true, followUpSelected: false, canSelectFollowUp: false, primaryReason: null })),
+          }),
+        };
+      }
+      return { ok: true, json: async () => mockPreCheckResponse() };
+    }));
+
+    const user = userEvent.setup();
+    render(<CampaignWizard {...options} onSubmit={vi.fn()} />);
+    await user.type(screen.getByLabelText('Campaign name'), 'Test');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Eligible').length).toBeGreaterThan(0);
+    }, { timeout: 5000 });
+  });
+
   it('shows Updating spinner during stale refetch', async () => {
     let preCheckCallCount = 0;
     vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {

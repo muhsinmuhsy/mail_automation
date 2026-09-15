@@ -171,6 +171,7 @@ export function CampaignWizard({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [recipientStatuses, setRecipientStatuses] = useState<Map<string, { classification: string; lastSentAt?: string }>>(new Map());
   const [recipientStatusLoading, setRecipientStatusLoading] = useState(false);
+  const [recipientStatusDone, setRecipientStatusDone] = useState(false);
   const [followUpNotice, setFollowUpNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement | null>(null);
   const recipientStatusAbort = useRef<AbortController | null>(null);
@@ -370,12 +371,12 @@ export function CampaignWizard({
 
   useEffect(() => {
     if (step !== 2 || !effectiveTemplateId || !effectiveEmailAccountId) {
-      const timer = setTimeout(() => { setRecipientStatuses(new Map()); setRecipientStatusLoading(false); }, 0);
+      const timer = setTimeout(() => { setRecipientStatuses(new Map()); setRecipientStatusLoading(false); setRecipientStatusDone(false); }, 0);
       return () => clearTimeout(timer);
     }
     const visibleIds = displayContacts.slice(0, 100).map(c => c.id);
     if (visibleIds.length === 0) {
-      const timer = setTimeout(() => { setRecipientStatuses(new Map()); setRecipientStatusLoading(false); }, 0);
+      const timer = setTimeout(() => { setRecipientStatuses(new Map()); setRecipientStatusLoading(false); setRecipientStatusDone(false); }, 0);
       return () => clearTimeout(timer);
     }
     if (recipientStatusDebounce.current) clearTimeout(recipientStatusDebounce.current);
@@ -384,6 +385,7 @@ export function CampaignWizard({
       const controller = new AbortController();
       recipientStatusAbort.current = controller;
       setRecipientStatusLoading(true);
+      setRecipientStatusDone(false);
       fetch('/api/campaigns/recipient-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -402,6 +404,7 @@ export function CampaignWizard({
             }
           }
           setRecipientStatuses(map);
+          setRecipientStatusDone(true);
         })
         .catch(() => { if (!controller.signal.aborted) return; })
         .finally(() => { if (!controller.signal.aborted) setRecipientStatusLoading(false); });
@@ -756,6 +759,9 @@ export function CampaignWizard({
                         {!badgeReason && !preSelectReason && recipientStatusLoading && (
                           <span className="inline-block h-5 w-24 animate-pulse rounded-full bg-neutral-200" aria-label="Checking status" />
                         )}
+                        {!badgeReason && !preSelectReason && !recipientStatusLoading && recipientStatusDone && (
+                          <Badge variant="success" title="This contact is eligible to receive emails with this template and sending account.">Eligible</Badge>
+                        )}
                       </span>
                     </label>
                   );
@@ -899,8 +905,8 @@ export function CampaignWizard({
             {eligibility.isFetching ? 'Checking…' : submitting ? 'Scheduling…' : `Schedule ${effectiveCount} ${effectiveCount === 1 ? 'email' : 'emails'}`}
           </Button>
         ) : (
-          <Button onClick={goNext} disabled={(loading && step > 0 && emailAccounts.length === 0) || ((step === 2 || step === 3) && isZeroEligible) || ((step === 2 || step === 3) && eligibility.isFetching)}>
-            {(step === 2 || step === 3) && eligibility.isFetching ? 'Checking…' : (step === 2 || step === 3) && isZeroEligible ? 'No eligible recipients' : 'Continue'}
+          <Button onClick={goNext} disabled={(loading && step > 0 && emailAccounts.length === 0) || ((step === 2 || step === 3) && isZeroEligible) || ((step === 2 || step === 3) && eligibility.isFetching) || (step === 2 && recipientStatusLoading)}>
+            {(step === 2 || step === 3) && eligibility.isFetching ? 'Checking…' : step === 2 && recipientStatusLoading ? 'Checking…' : (step === 2 || step === 3) && isZeroEligible ? 'No eligible recipients' : 'Continue'}
           </Button>
         )}
       </div>
