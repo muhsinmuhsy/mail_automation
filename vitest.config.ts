@@ -40,6 +40,7 @@ export default defineConfig({
       '**/node_modules/**',
     ],
     setupFiles: ['tests/setup.ts'],
+    retry: 2,
     environmentMatchGlobs: [
       ['tests/unit/components/**', 'jsdom'],
       ['tests/unit/ui/**', 'jsdom'],

@@ -189,16 +189,15 @@ describe.skipIf(!connectionString)('contact-fields serializable concurrency (rea
       await clientA.query('BEGIN');
       await clientA.query(`SET LOCAL search_path TO "${schema}"`);
       await clientA.query('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
-      await clientA.query('SELECT label FROM contact_fields WHERE id = $1', [fieldId]);
+      await clientA.query(`SELECT label FROM "${schema}"."contact_fields" WHERE id = $1`, [fieldId]);
 
-      await clientB.query(`SET search_path TO "${schema}"`);
       await clientB.query(
-        'UPDATE contact_fields SET label = $1, version = version + 1 WHERE id = $2',
+        `UPDATE "${schema}"."contact_fields" SET label = $1, version = version + 1 WHERE id = $2`,
         ['Changed by B', fieldId]
       );
 
       await expect(
-        clientA.query('UPDATE contact_fields SET label = $1, version = version + 1 WHERE id = $2', ['Changed by A', fieldId])
+        clientA.query(`UPDATE "${schema}"."contact_fields" SET label = $1, version = version + 1 WHERE id = $2`, ['Changed by A', fieldId])
       ).rejects.toThrow(/could not serialize|P2034|concurrent/i);
 
       await clientA.query('ROLLBACK');
