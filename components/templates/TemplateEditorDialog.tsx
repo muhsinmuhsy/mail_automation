@@ -10,7 +10,6 @@ import type { TemplateContent, MergeTagsConfig, MergeTag } from '@templatical/ty
 const BUILTIN_MERGE_TAGS: MergeTag[] = [
   { label: 'Name', value: 'name' },
   { label: 'Email', value: 'email' },
-  { label: 'First Name', value: 'first_name' },
 ];
 
 type EditorMode = 'visual' | 'plaintext';
@@ -300,7 +299,7 @@ export function TemplateEditorDialog({
             className="h-full w-full rounded-[var(--radius-md)] border border-neutral-200 bg-background p-4 text-sm focus:outline-none focus:ring-2 focus:ring-information"
             value={plainBody}
             onChange={(e) => setPlainBody(e.target.value)}
-            placeholder="Enter plain text email body. Use {{name}}, {{email}}, {{first_name}} for merge tags."
+            placeholder="Enter plain text email body. Use {{name}}, {{email}} for merge tags."
           />
         )}
       </div>
