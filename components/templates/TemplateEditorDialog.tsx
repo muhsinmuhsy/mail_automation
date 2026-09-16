@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import VisualEmailEditorLazy from '@/components/templates/VisualEmailEditorLazy';
+import { StarterGallery } from '@/components/templates/StarterGallery';
 import type { TemplateContent, MergeTagsConfig, MergeTag } from '@templatical/types';
+import type { Starter } from '@/components/templates/starters/starterTemplates';
 
 const BUILTIN_MERGE_TAGS: MergeTag[] = [
   { label: 'Name', value: 'name' },
@@ -60,6 +62,7 @@ export function TemplateEditorDialog({
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState<'gallery' | 'editor'>('editor');
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; subject?: string }>({});
   const [mergeTags, setMergeTags] = useState<MergeTagsConfig | undefined>(undefined);
 
@@ -76,6 +79,7 @@ export function TemplateEditorDialog({
     setError(null);
     setFieldErrors({});
     contentRef.current = null;
+    setStep('gallery');
   }, []);
 
   useEffect(() => {
@@ -141,6 +145,7 @@ export function TemplateEditorDialog({
     if (!open) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset state when dialog opens
     reset();
+    setStep(templateId ? 'editor' : 'gallery');
     if (templateId) {
       void loadTemplate(templateId);
     }
@@ -159,6 +164,24 @@ export function TemplateEditorDialog({
 
   const handleEditorChange = useCallback((next: TemplateContent) => {
     contentRef.current = next;
+  }, []);
+
+  const handlePickStarter = useCallback((starter: Starter) => {
+    setSubject(starter.subject);
+    if (starter.format === 'visual') {
+      setMode('visual');
+      setContent(starter.content);
+      contentRef.current = starter.content;
+      setPlainBody('');
+    } else {
+      setMode('plaintext');
+      setPlainBody(starter.body);
+      setContent(null);
+      contentRef.current = null;
+    }
+    setError(null);
+    setFieldErrors({});
+    setStep('editor');
   }, []);
 
   const handleSave = async () => {
@@ -216,93 +239,107 @@ export function TemplateEditorDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
-        <h2 className="text-lg font-semibold text-text-primary">
-          {isEdit ? 'Edit template' : 'New template'}
-        </h2>
-        <div className="flex items-center gap-3">
-          <div role="tablist" aria-label="Editor mode" className="flex items-center gap-1">
-            <button
-              role="tab"
-              aria-selected={mode === 'visual'}
-              onClick={() => { setMode('visual'); setError(null); }}
-              className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium ${
-                mode === 'visual'
-                  ? 'bg-information text-white'
-                  : 'text-text-secondary hover:bg-selected'
-              }`}
-            >
-              Visual
-            </button>
-            <button
-              role="tab"
-              aria-selected={mode === 'plaintext'}
-              onClick={() => { setMode('plaintext'); setError(null); }}
-              className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium ${
-                mode === 'plaintext'
-                  ? 'bg-information text-white'
-                  : 'text-text-secondary hover:bg-selected'
-              }`}
-            >
-              Plain text
-            </button>
+      {step === 'gallery' ? (
+        <>
+          <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
+            <h2 className="text-lg font-semibold text-text-primary">New template</h2>
+            <Button variant="secondary" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
           </div>
-          <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} loading={saving} disabled={loading}>
-            Save template
-          </Button>
-        </div>
-      </div>
+          <StarterGallery onPick={handlePickStarter} />
+        </>
+      ) : (
+        <>
+          <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
+            <h2 className="text-lg font-semibold text-text-primary">
+              {isEdit ? 'Edit template' : 'New template'}
+            </h2>
+            <div className="flex items-center gap-3">
+              <div role="tablist" aria-label="Editor mode" className="flex items-center gap-1">
+                <button
+                  role="tab"
+                  aria-selected={mode === 'visual'}
+                  onClick={() => { setMode('visual'); setError(null); }}
+                  className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium ${
+                    mode === 'visual'
+                      ? 'bg-information text-white'
+                      : 'text-text-secondary hover:bg-selected'
+                  }`}
+                >
+                  Visual
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={mode === 'plaintext'}
+                  onClick={() => { setMode('plaintext'); setError(null); }}
+                  className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium ${
+                    mode === 'plaintext'
+                      ? 'bg-information text-white'
+                      : 'text-text-secondary hover:bg-selected'
+                  }`}
+                >
+                  Plain text
+                </button>
+              </div>
+              <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} loading={saving} disabled={loading}>
+                Save template
+              </Button>
+            </div>
+          </div>
 
-      <div className="flex-shrink-0 border-b border-neutral-200 px-6 py-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input
-            label="Template name"
-            value={name}
-            onChange={(e) => { setName(e.target.value); setFieldErrors((fe) => ({ ...fe, name: undefined })); }}
-            error={fieldErrors.name}
-            required
-          />
-          <Input
-            label="Subject"
-            value={subject}
-            onChange={(e) => { setSubject(e.target.value); setFieldErrors((fe) => ({ ...fe, subject: undefined })); }}
-            error={fieldErrors.subject}
-            required
-          />
-        </div>
-      </div>
+          <div className="flex-shrink-0 border-b border-neutral-200 px-6 py-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input
+                label="Template name"
+                value={name}
+                onChange={(e) => { setName(e.target.value); setFieldErrors((fe) => ({ ...fe, name: undefined })); }}
+                error={fieldErrors.name}
+                required
+              />
+              <Input
+                label="Subject"
+                value={subject}
+                onChange={(e) => { setSubject(e.target.value); setFieldErrors((fe) => ({ ...fe, subject: undefined })); }}
+                error={fieldErrors.subject}
+                required
+              />
+            </div>
+          </div>
 
-      <div className="flex-1 overflow-hidden px-6 py-4">
-        {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-[var(--radius-md)] border border-error/30 bg-error/10 px-4 py-3">
-            <p role="alert" className="text-sm text-error">{error}</p>
+          <div className="flex-1 overflow-hidden px-6 py-4">
+            {error && (
+              <div className="mb-4 flex items-center gap-2 rounded-[var(--radius-md)] border border-error/30 bg-error/10 px-4 py-3">
+                <p role="alert" className="text-sm text-error">{error}</p>
+              </div>
+            )}
+            {loading ? (
+              <div className="flex h-full items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : mode === 'visual' ? (
+              <div className="h-full">
+                <VisualEmailEditorLazy
+                  content={content ?? undefined}
+                  onChange={handleEditorChange}
+                  mergeTags={mergeTags}
+                />
+              </div>
+            ) : (
+              <textarea
+                aria-label="Plain text body"
+                className="h-full w-full rounded-[var(--radius-md)] border border-neutral-200 bg-background p-4 text-sm focus:outline-none focus:ring-2 focus:ring-information"
+                value={plainBody}
+                onChange={(e) => setPlainBody(e.target.value)}
+                placeholder="Enter plain text email body. Use {{name}}, {{email}} for merge tags."
+              />
+            )}
           </div>
-        )}
-        {loading ? (
-          <div className="flex h-full items-center justify-center">
-            <LoadingSpinner size="lg" />
-          </div>
-        ) : mode === 'visual' ? (
-          <div className="h-full">
-            <VisualEmailEditorLazy
-              content={content ?? undefined}
-              onChange={handleEditorChange}
-              mergeTags={mergeTags}
-            />
-          </div>
-        ) : (
-          <textarea
-            aria-label="Plain text body"
-            className="h-full w-full rounded-[var(--radius-md)] border border-neutral-200 bg-background p-4 text-sm focus:outline-none focus:ring-2 focus:ring-information"
-            value={plainBody}
-            onChange={(e) => setPlainBody(e.target.value)}
-            placeholder="Enter plain text email body. Use {{name}}, {{email}} for merge tags."
-          />
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

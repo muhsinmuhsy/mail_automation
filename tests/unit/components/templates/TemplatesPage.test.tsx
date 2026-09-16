@@ -107,6 +107,7 @@ describe('TemplatesPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
     );
+    fireEvent.click(screen.getAllByText('Start from scratch')[0]);
     expect(screen.getByLabelText(/Template name/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Subject/)).toBeInTheDocument();
   });
@@ -150,6 +151,8 @@ describe('TemplatesPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
     );
+
+    fireEvent.click(screen.getAllByText('Start from scratch')[0]);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
 
@@ -198,6 +201,8 @@ describe('TemplatesPage', () => {
       expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
     );
 
+    fireEvent.click(screen.getAllByText('Start from scratch')[0]);
+
     fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
 
     await user.type(screen.getByLabelText(/Template name/), 'Bad template');
@@ -233,6 +238,8 @@ describe('TemplatesPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
     );
+
+    fireEvent.click(screen.getAllByText('Start from scratch')[0]);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
 
@@ -282,6 +289,8 @@ describe('TemplatesPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'New template' })).toBeInTheDocument()
     );
+
+    fireEvent.click(screen.getAllByText('Start from scratch')[0]);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Plain text' }));
 

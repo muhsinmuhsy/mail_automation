@@ -32,8 +32,10 @@ describe('TemplateEditorDialog', () => {
     expect(screen.getByRole('heading', { name: 'Edit template' })).toBeInTheDocument();
   });
 
-  it('renders name and subject inputs', () => {
+  it('renders name and subject inputs', async () => {
+    const user = userEvent.setup();
     render(<TemplateEditorDialog open={true} onOpenChange={vi.fn()} />);
+    await user.click(screen.getAllByText('Start from scratch')[0]);
     expect(screen.getByLabelText(/Template name/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Subject/)).toBeInTheDocument();
   });
@@ -48,6 +50,7 @@ describe('TemplateEditorDialog', () => {
     const user = userEvent.setup();
     render(<TemplateEditorDialog open={true} onOpenChange={vi.fn()} />);
 
+    await user.click(screen.getAllByText('Start from scratch')[0]);
     await user.click(screen.getByRole('tab', { name: 'Plain text' }));
 
     expect(screen.getByLabelText('Plain text body')).toBeInTheDocument();
@@ -72,6 +75,7 @@ describe('TemplateEditorDialog', () => {
     const user = userEvent.setup();
     render(<TemplateEditorDialog open={true} onOpenChange={vi.fn()} />);
 
+    await user.click(screen.getAllByText('Start from scratch')[0]);
     await user.click(screen.getByRole('button', { name: 'Save template' }));
 
     expect(screen.getByText('Template name is required.')).toBeInTheDocument();
@@ -95,6 +99,7 @@ describe('TemplateEditorDialog', () => {
       />
     );
 
+    await user.click(screen.getAllByText('Start from scratch')[0]);
     await user.click(screen.getByRole('tab', { name: 'Plain text' }));
     await user.type(screen.getByLabelText(/Template name/), 'My template');
     await user.type(screen.getByLabelText(/Subject/), 'Hello');
@@ -173,6 +178,7 @@ describe('TemplateEditorDialog', () => {
 
     render(<TemplateEditorDialog open={true} onOpenChange={vi.fn()} />);
 
+    await user.click(screen.getAllByText('Start from scratch')[0]);
     await user.click(screen.getByRole('tab', { name: 'Plain text' }));
     await user.type(screen.getByLabelText(/Template name/), 'Bad');
     await user.type(screen.getByLabelText(/Subject/), 'Subject');

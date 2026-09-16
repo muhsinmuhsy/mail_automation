@@ -19,6 +19,7 @@
     "test:unit": "vitest run tests/unit",
     "check:local-production": "node scripts/check-production-readiness.mjs --local",
     "check:production": "node scripts/check-production-readiness.mjs",
+    "render:thumbnails": "npx tsx scripts/render-starter-thumbnails.ts",
     "postinstall": "node scripts/strip-editor-font.mjs"
   },
   "dependencies": {
