@@ -19,9 +19,9 @@ const _POST = defineRoute(async (_req, ctx) => {
   if (!job) {
     return respondError(new NotFoundError('Email not found.'), ctx.requestId);
   }
-  if (job.status !== 'FAILED') {
+  if (job.status !== 'FAILED' && job.status !== 'RETRY_WAIT') {
     return respondError(
-      new AppError('Only failed emails can be retried.', 409, 'BUSINESS_ERROR'),
+      new AppError('Only failed or waiting emails can be retried.', 409, 'BUSINESS_ERROR'),
       ctx.requestId
     );
   }

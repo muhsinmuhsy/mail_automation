@@ -73,7 +73,7 @@ export function EmailList({ emails, onRetry, retryingId = null }: EmailListProps
           key: 'actions',
           header: 'Actions',
           render: (email) =>
-            email.status === 'FAILED' && onRetry ? (
+            (email.status === 'FAILED' || email.status === 'RETRY_WAIT') && onRetry ? (
               <Button
                 variant="secondary"
                 size="sm"

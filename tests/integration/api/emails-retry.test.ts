@@ -188,7 +188,7 @@ describe('POST /api/emails/[id]/retry', () => {
     expect(body.error?.type).toBe('NOT_FOUND');
   });
 
-  it('returns 409 when the job is not FAILED', async () => {
+  it('returns 409 when the job is not FAILED or RETRY_WAIT', async () => {
     authenticated();
     mockPrisma.emailJob.findUnique.mockResolvedValue({
       id: JOB_ID, status: 'SENT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
@@ -202,7 +202,7 @@ describe('POST /api/emails/[id]/retry', () => {
     expect(response.status).toBe(409);
     expect(body.success).toBe(false);
     expect(body.error?.type).toBe('BUSINESS_ERROR');
-    expect(body.error?.message).toBe('Only failed emails can be retried.');
+    expect(body.error?.message).toBe('Only failed or waiting emails can be retried.');
   });
 
   it('returns 409 when the campaign is CANCELLED', async () => {
