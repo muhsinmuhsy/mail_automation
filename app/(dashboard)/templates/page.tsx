@@ -46,8 +46,9 @@ export default function TemplatesPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sortOrder });
+  const load = useCallback(async (overridePage?: number) => {
+    const effectivePage = overridePage ?? page;
+    const params = new URLSearchParams({ page: String(effectivePage), limit: String(PAGE_SIZE), sortOrder });
     if (search) params.set('search', search);
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
@@ -192,7 +193,7 @@ export default function TemplatesPage() {
         open={editorOpen}
         onOpenChange={setEditorOpen}
         templateId={editingId}
-        onSaved={() => { setPage(1); void load(); }}
+        onSaved={() => { setPage(1); void load(1); }}
       />
 
       <TemplatePreviewDialog

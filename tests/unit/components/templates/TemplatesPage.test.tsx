@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('@/components/templates/VisualEmailEditorLazy', () => ({
@@ -546,5 +546,42 @@ describe('TemplatesPage', () => {
       await waitFor(() => expect(screen.getByText('Page1 Contact')).toBeInTheDocument());
       expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
     });
+  });
+});
+
+describe('TemplatesPage real-time refresh', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('reloads the list immediately after a successful delete', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    fetchMock.mockResolvedValueOnce(
+      mockListResponse([mockTemplate('t1', 'Welcome', 'Hi there')], 1)
+    );
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, data: null }),
+    } as Response);
+    fetchMock.mockResolvedValueOnce(mockListResponse([], 0));
+
+    render(<TemplatesPage />);
+
+    await waitFor(() => expect(screen.getByText('Welcome')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    const dialog = screen.getByText('Delete template').parentElement!;
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => expect(screen.getByText('No templates yet')).toBeInTheDocument());
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/templates/t1');
+    expect(fetchMock.mock.calls[1][1]?.method).toBe('DELETE');
+    const reloadCall = fetchMock.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('/api/templates?page=1') && !call[1]?.method
+    );
+    expect(reloadCall).toBeDefined();
   });
 });

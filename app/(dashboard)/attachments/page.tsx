@@ -42,8 +42,9 @@ export default function AttachmentsPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sortOrder });
+  const load = useCallback(async (overridePage?: number) => {
+    const effectivePage = overridePage ?? page;
+    const params = new URLSearchParams({ page: String(effectivePage), limit: String(PAGE_SIZE), sortOrder });
     if (search) params.set('search', search);
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
@@ -141,7 +142,7 @@ export default function AttachmentsPage() {
           if (!response.ok) throw new Error(payload.error?.message || payload.message || 'Unable to upload attachment.');
           setUploadOpen(false);
           setPage(1);
-          await load();
+          await load(1);
         }} />
       </Dialog>
 

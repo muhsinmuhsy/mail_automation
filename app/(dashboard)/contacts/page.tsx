@@ -72,8 +72,9 @@ export default function ContactsPage() {
     }
   }, []);
 
-  const load = useCallback(async () => {
-    const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE), sortOrder });
+  const load = useCallback(async (overridePage?: number) => {
+    const effectivePage = overridePage ?? page;
+    const params = new URLSearchParams({ page: String(effectivePage), limit: String(PAGE_SIZE), sortOrder });
     if (search) params.set('search', search);
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
@@ -129,7 +130,7 @@ export default function ContactsPage() {
       if (!response.ok) { const message = payload.message || 'Unable to save contact.'; setFormError(message); return; }
       setShowAddContact(false);
       setPage(1);
-      await load();
+      await load(1);
     } catch {
       setFormError('Unable to save contact.');
     } finally {
@@ -164,7 +165,7 @@ export default function ContactsPage() {
       setImportSessionId(null);
       setShowImport(false);
       setPage(1);
-      await load();
+      await load(1);
       await loadFields();
     } catch {
       setError('Unable to import contacts.');

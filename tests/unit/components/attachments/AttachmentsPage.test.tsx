@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import AttachmentsPage from '@/app/(dashboard)/attachments/page';
@@ -182,12 +182,10 @@ describe('AttachmentsPage pagination', () => {
       json: async () => ({ data: page1, pagination: mockPagination(25, 1) }),
     });
     fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [mockAttachment('p2-0', 'page2-0.pdf')], pagination: mockPagination(25, 2) }),
+      ok: true, json: async () => ({ data: [mockAttachment('p2-0', 'page2-0.pdf')], pagination: mockPagination(25, 2) }),
     });
     fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [mockAttachment('p1-0', 'page1-0.pdf')], pagination: mockPagination(25, 1) }),
+      ok: true, json: async () => ({ data: [mockAttachment('p1-0', 'page1-0.pdf')], pagination: mockPagination(25, 1) }),
     });
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
@@ -199,5 +197,61 @@ describe('AttachmentsPage pagination', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/attachments?page=1&limit=20&sortOrder=desc'));
     await waitFor(() => expect(screen.getByText('page1-0.pdf')).toBeInTheDocument());
     expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+  });
+});
+
+describe('AttachmentsPage real-time refresh', () => {
+  it('reloads the list immediately after a successful delete', async () => {
+    const fetchMock = vi.fn();
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: [mockAttachment('a1', 'cv.pdf')], pagination: mockPagination(1, 1) }),
+    });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: null, message: 'Deleted.' }),
+    });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: [], pagination: mockPagination(0, 1) }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    render(<AttachmentsPage />);
+    await waitFor(() => expect(screen.getByText('cv.pdf')).toBeInTheDocument());
+    await user.click(screen.getAllByRole('button', { name: 'Delete' })[0]);
+    const dialog = screen.getByText('Delete attachment').parentElement!;
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(screen.getByText('No attachments uploaded yet')).toBeInTheDocument());
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/attachments/a1');
+    expect(fetchMock.mock.calls[1][1].method).toBe('DELETE');
+    expect(fetchMock.mock.calls[2][0]).toContain('/api/attachments?page=1');
+  });
+
+  it('reloads the list immediately after a successful upload', async () => {
+    const fetchMock = vi.fn();
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: [], pagination: mockPagination(0, 1) }),
+    });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: mockAttachment('a1', 'new.pdf', 500), pagination: mockPagination(1, 1) }),
+    });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: [mockAttachment('a1', 'new.pdf', 500)], pagination: mockPagination(1, 1) }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    const { container } = render(<AttachmentsPage />);
+    await waitFor(() => expect(screen.getByText('No attachments uploaded yet')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: 'Upload Attachment' }));
+    const file = new File(['%PDF-1.7'], 'new.pdf', { type: 'application/pdf' });
+    await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, file);
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+    await waitFor(() => expect(screen.getByText('new.pdf')).toBeInTheDocument());
+    expect(fetchMock.mock.calls[1][1].method).toBe('POST');
+    expect(fetchMock.mock.calls[2][0]).toContain('/api/attachments?page=1');
   });
 });

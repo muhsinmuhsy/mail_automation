@@ -322,6 +322,34 @@ describe('ContactsPage', () => {
     expect(screen.getByText('Alice')).toBeInTheDocument();
   });
 
+  it('reloads the list with a fetch call after delete (real-time refresh)', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    fetchMock.mockResolvedValueOnce(
+      mockListResponse([mockContact('c1', 'Alice', 'alice@example.com')], 1)
+    );
+    fetchMock.mockResolvedValueOnce(mockFieldsResponse());
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, data: null }),
+    } as Response);
+    fetchMock.mockResolvedValueOnce(mockListResponse([], 0));
+
+    render(<ContactsPage />);
+
+    await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    const dialog = screen.getByText('Delete contact').parentElement!;
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => expect(screen.getByText('No contacts yet')).toBeInTheDocument());
+    const reloadCall = fetchMock.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('/api/contacts?page=1') && !call[1]?.method
+    );
+    expect(reloadCall).toBeDefined();
+  });
+
   describe('pagination', () => {
     it('shows the total contact count', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(
