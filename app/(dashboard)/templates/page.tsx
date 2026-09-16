@@ -11,6 +11,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Button } from '@/components/ui/Button';
 import { useCallback, useEffect, useState } from 'react';
 
 const PAGE_SIZE = 20;
@@ -129,12 +130,9 @@ export default function TemplatesPage() {
         title="Templates"
         description="Create and manage email templates."
         actions={
-          <button
-            onClick={handleNew}
-            className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
-          >
+          <Button variant="primary" onClick={handleNew}>
             New template
-          </button>
+          </Button>
         }
       />
 
