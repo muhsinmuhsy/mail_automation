@@ -62,7 +62,7 @@ export function TemplateEditorDialog({
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<'gallery' | 'editor'>('editor');
+  const [step, setStep] = useState<'gallery' | 'editor'>(templateId ? 'editor' : 'gallery');
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; subject?: string }>({});
   const [mergeTags, setMergeTags] = useState<MergeTagsConfig | undefined>(undefined);
 
