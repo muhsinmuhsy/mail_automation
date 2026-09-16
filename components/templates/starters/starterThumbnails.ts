@@ -26,7 +26,7 @@ export const starterThumbnails: Record<string, string> = {
   'event-visual': doc(
     '<h2>You are Invited</h2><p>Join us for an event you will not want to miss.</p><p>Date: Saturday, March 15 at 2:00 PM</p><p>Location: Online via Zoom</p><span class="btn">RSVP Now</span>',
   ),
-  'reset-visual': doc(
-    '<p>Hi {{name}},</p><p>We received a request to reset your password. Click the button below to choose a new one.</p><span class="btn">Reset Password</span><p class="muted">If you did not request this, you can safely ignore this email.</p>',
+  'job-application-visual': doc(
+    '<h2>Thank you for applying!</h2><p>Hi {{name}}, thanks for your interest in joining our team.</p><p>We have received your application and will review it carefully.</p><p>1. Our hiring team reviews your application</p><p>2. If your profile matches, we will reach out to schedule an interview</p><p>3. You will hear from us within 5-7 business days</p><span class="btn">View Application Status</span><hr><p class="muted">Questions? Reply to this email anytime.</p>',
   ),
 };

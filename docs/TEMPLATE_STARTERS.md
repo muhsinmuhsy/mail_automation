@@ -127,7 +127,7 @@ Only use merge tags `{{name}}` and `{{email}}` (safe across all accounts — bui
 | `newsletter-visual` | Newsletter | Recurring content round-up | Header + intro + 2-3 article blocks (title + text + link) + footer |
 | `product-visual` | Product announcement | Single product highlight | Header + product image + title + description + price + CTA + footer |
 | `event-visual` | Event invitation | Date/time + RSVP | Header + event title + date/time + location + description + RSVP CTA + footer |
-| `reset-visual` | Password reset | Transactional, single link | Minimal header + "Hi {{name}}, reset your password" + link button + footer |
+| `job-application-visual` | Job application | Application confirmation | Header + "Hi {{name}}" + thank you + next steps list + CTA + footer |
 
 ### 6.2 Plain text
 

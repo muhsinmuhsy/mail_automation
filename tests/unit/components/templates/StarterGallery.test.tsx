@@ -24,7 +24,7 @@ describe('StarterGallery', () => {
     expect(screen.getByText('Newsletter')).toBeInTheDocument();
     expect(screen.getByText('Product announcement')).toBeInTheDocument();
     expect(screen.getByText('Event invitation')).toBeInTheDocument();
-    expect(screen.getByText('Password reset')).toBeInTheDocument();
+    expect(screen.getByText('Job application')).toBeInTheDocument();
     expect(screen.getByText('Welcome (plain)')).toBeInTheDocument();
     expect(screen.getByText('Receipt / confirmation')).toBeInTheDocument();
     expect(screen.getByText('Notification')).toBeInTheDocument();
@@ -36,7 +36,7 @@ describe('StarterGallery', () => {
     await user.click(screen.getByRole('tab', { name: 'Visual' }));
     expect(screen.getAllByText('Start from scratch')).toHaveLength(1);
     expect(screen.getByText('Welcome email')).toBeInTheDocument();
-    expect(screen.getByText('Password reset')).toBeInTheDocument();
+    expect(screen.getByText('Job application')).toBeInTheDocument();
     expect(screen.queryByText('Welcome (plain)')).not.toBeInTheDocument();
     expect(screen.queryByText('Notification')).not.toBeInTheDocument();
   });
