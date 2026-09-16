@@ -20,7 +20,7 @@ const { mockRequireAdmin, mockCheckApiRateLimit } = vi.hoisted(() => ({
 }));
 
 const mockPrisma = createMockPrisma() as unknown as {
-  systemSetting: { findUnique: Mock; update: Mock };
+  systemSetting: { upsert: Mock };
 };
 
 vi.mock('@/lib/auth/guards', () => ({
@@ -111,10 +111,7 @@ function validBody(overrides: Record<string, unknown> = {}): Record<string, unkn
 beforeEach(() => {
   asAdmin();
   mockCheckApiRateLimit.mockResolvedValue(null);
-  mockPrisma.systemSetting.findUnique.mockResolvedValue(STORED_SETTINGS);
-  mockPrisma.systemSetting.update.mockImplementation(
-    async ({ data }: { data: Record<string, unknown> }) => ({ ...STORED_SETTINGS, ...data })
-  );
+  mockPrisma.systemSetting.upsert.mockResolvedValue(STORED_SETTINGS);
 });
 
 describe('GET /api/admin/settings', () => {
@@ -131,18 +128,16 @@ describe('GET /api/admin/settings', () => {
       email_sending_enabled: true,
     });
     expect(response.headers.get('X-Request-ID')).toBeTruthy();
-    expect(mockPrisma.systemSetting.findUnique).toHaveBeenCalledWith({ where: { id: 1 } });
-  });
-
-  it('returns null data when the settings row has not been seeded', async () => {
-    mockPrisma.systemSetting.findUnique.mockResolvedValue(null);
-
-    const response = await getSettings(getRequest());
-    const body = (await response.json()) as ApiBody;
-
-    expect(response.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.data).toBeNull();
+    expect(mockPrisma.systemSetting.upsert).toHaveBeenCalledWith({
+      where: { id: 1 },
+      update: {},
+      create: {
+        id: 1,
+        default_daily_email_limit: 20,
+        global_daily_email_limit: 500,
+        email_sending_enabled: true,
+      },
+    });
   });
 
   it('returns 403 AUTHORIZATION_ERROR for a non-admin caller', async () => {
@@ -154,7 +149,7 @@ describe('GET /api/admin/settings', () => {
     expect(response.status).toBe(403);
     expect(body.success).toBe(false);
     expect(body.error?.type).toBe('AUTHORIZATION_ERROR');
-    expect(mockPrisma.systemSetting.findUnique).not.toHaveBeenCalled();
+    expect(mockPrisma.systemSetting.upsert).not.toHaveBeenCalled();
   });
 
   it('returns 401 when there is no session', async () => {
@@ -168,7 +163,7 @@ describe('GET /api/admin/settings', () => {
   });
 
   it('returns 500 when the read fails', async () => {
-    mockPrisma.systemSetting.findUnique.mockRejectedValue(new Error('connection lost'));
+    mockPrisma.systemSetting.upsert.mockRejectedValue(new Error('connection lost'));
 
     const response = await getSettings(getRequest());
     const body = (await response.json()) as ApiBody;
@@ -180,6 +175,10 @@ describe('GET /api/admin/settings', () => {
 
 describe('PATCH /api/admin/settings', () => {
   it('updates the global limits and the sending kill switch', async () => {
+    mockPrisma.systemSetting.upsert.mockImplementation(
+      async ({ update }: { update: Record<string, unknown> }) => ({ ...STORED_SETTINGS, ...update })
+    );
+
     const response = await patchSettings(patchRequest(validBody()));
     const body = (await response.json()) as ApiBody;
 
@@ -191,9 +190,15 @@ describe('PATCH /api/admin/settings', () => {
       global_daily_email_limit: 7500,
       email_sending_enabled: false,
     });
-    expect(mockPrisma.systemSetting.update).toHaveBeenCalledWith({
+    expect(mockPrisma.systemSetting.upsert).toHaveBeenCalledWith({
       where: { id: 1 },
-      data: {
+      update: {
+        default_daily_email_limit: 75,
+        global_daily_email_limit: 7500,
+        email_sending_enabled: false,
+      },
+      create: {
+        id: 1,
         default_daily_email_limit: 75,
         global_daily_email_limit: 7500,
         email_sending_enabled: false,
@@ -216,9 +221,15 @@ describe('PATCH /api/admin/settings', () => {
     );
 
     expect(response.status).toBe(200);
-    expect(mockPrisma.systemSetting.update).toHaveBeenCalledWith({
+    expect(mockPrisma.systemSetting.upsert).toHaveBeenCalledWith({
       where: { id: 1 },
-      data: {
+      update: {
+        default_daily_email_limit: 120,
+        global_daily_email_limit: 12000,
+        email_sending_enabled: true,
+      },
+      create: {
+        id: 1,
         default_daily_email_limit: 120,
         global_daily_email_limit: 12000,
         email_sending_enabled: true,
@@ -236,7 +247,7 @@ describe('PATCH /api/admin/settings', () => {
     expect(body.success).toBe(false);
     expect(body.error?.type).toBe('VALIDATION_ERROR');
     expect(body.error?.message).toBe('Please correct the highlighted fields.');
-    expect(mockPrisma.systemSetting.update).not.toHaveBeenCalled();
+    expect(mockPrisma.systemSetting.upsert).not.toHaveBeenCalled();
   });
 
   it('returns 400 VALIDATION_ERROR for non-positive or non-integer limits', async () => {
@@ -254,7 +265,7 @@ describe('PATCH /api/admin/settings', () => {
     // The route passes the field map as `details` rather than `{ fields }`, so
     // the error handler never surfaces it as `error.fields`.
     expect(body.error?.fields).toBeUndefined();
-    expect(mockPrisma.systemSetting.update).not.toHaveBeenCalled();
+    expect(mockPrisma.systemSetting.upsert).not.toHaveBeenCalled();
   });
 
   it('returns 500 when the body is not valid JSON', async () => {
@@ -263,7 +274,7 @@ describe('PATCH /api/admin/settings', () => {
 
     expect(response.status).toBe(500);
     expect(body.error?.type).toBe('INTERNAL_ERROR');
-    expect(mockPrisma.systemSetting.update).not.toHaveBeenCalled();
+    expect(mockPrisma.systemSetting.upsert).not.toHaveBeenCalled();
   });
 
   it('returns the limiter response when rate limited', async () => {
@@ -275,7 +286,7 @@ describe('PATCH /api/admin/settings', () => {
     expect(response.status).toBe(429);
     expect(body.error?.type).toBe('RATE_LIMITED');
     expect(response.headers.get('Retry-After')).toBe('60');
-    expect(mockPrisma.systemSetting.update).not.toHaveBeenCalled();
+    expect(mockPrisma.systemSetting.upsert).not.toHaveBeenCalled();
   });
 
   it('returns 403 for a non-admin caller and never touches the limiter', async () => {
@@ -290,7 +301,7 @@ describe('PATCH /api/admin/settings', () => {
   });
 
   it('returns 500 when the update fails', async () => {
-    mockPrisma.systemSetting.update.mockRejectedValue(new Error('write failed'));
+    mockPrisma.systemSetting.upsert.mockRejectedValue(new Error('write failed'));
 
     const response = await patchSettings(patchRequest(validBody()));
     const body = (await response.json()) as ApiBody;
@@ -300,7 +311,7 @@ describe('PATCH /api/admin/settings', () => {
   });
 
   it('returns 500 (not 404) when the settings row is missing, since P2025 is not mapped', async () => {
-    mockPrisma.systemSetting.update.mockRejectedValue(
+    mockPrisma.systemSetting.upsert.mockRejectedValue(
       Object.assign(new Error('An operation failed because it depends on one or more records'), {
         code: 'P2025',
       })
