@@ -28,6 +28,11 @@ export async function ensureSessionUserProfile(user: SessionUser): Promise<void>
     .filter(Boolean);
   const shouldBeAdmin = adminEmails.includes(user.email.toLowerCase());
 
+  const settings = await prisma.systemSetting.findUnique({
+    where: { id: 1 },
+    select: { default_daily_email_limit: true },
+  });
+
   await prisma.user.upsert({
     where: { id: user.id },
     update: {
@@ -40,6 +45,9 @@ export async function ensureSessionUserProfile(user: SessionUser): Promise<void>
       email: user.email,
       name: user.name,
       ...(shouldBeAdmin ? { role: 'ADMIN' } : {}),
+      ...(settings?.default_daily_email_limit
+        ? { daily_email_limit_override: settings.default_daily_email_limit }
+        : {}),
     },
   });
 }

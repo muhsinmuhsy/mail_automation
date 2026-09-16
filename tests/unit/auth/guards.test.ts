@@ -7,6 +7,9 @@ const mockPrisma = {
     findUnique: vi.fn(),
     upsert: vi.fn(),
   },
+  systemSetting: {
+    findUnique: vi.fn(),
+  },
 };
 
 vi.mock('@/lib/auth/neon-auth', () => ({
@@ -25,6 +28,7 @@ describe('lib/auth/guards', () => {
     vi.clearAllMocks();
     mockPrisma.user.findUnique.mockResolvedValue({ role: 'USER', is_active: true });
     mockPrisma.user.upsert.mockResolvedValue({ id: 'u1' });
+    mockPrisma.systemSetting.findUnique.mockResolvedValue({ default_daily_email_limit: 20 });
   });
 
   it('requireUser throws when unauthenticated', async () => {
@@ -36,6 +40,17 @@ describe('lib/auth/guards', () => {
     vi.mocked(getSession).mockResolvedValue({ user: { id: 'u1', email: 'a@b.com' } } as never);
     const user = await requireUser();
     expect(user.id).toBe('u1');
+    expect(mockPrisma.user.upsert).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      update: { email: 'a@b.com', name: undefined },
+      create: { id: 'u1', email: 'a@b.com', name: undefined, daily_email_limit_override: 20 },
+    });
+  });
+
+  it('requireUser creates without override when settings row is missing', async () => {
+    vi.mocked(getSession).mockResolvedValue({ user: { id: 'u1', email: 'a@b.com' } } as never);
+    mockPrisma.systemSetting.findUnique.mockResolvedValue(null);
+    await requireUser();
     expect(mockPrisma.user.upsert).toHaveBeenCalledWith({
       where: { id: 'u1' },
       update: { email: 'a@b.com', name: undefined },
