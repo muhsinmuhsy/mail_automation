@@ -78,7 +78,7 @@ export function useEligibility(params: UseEligibilityParams) {
       }
       requestIdRef.current += 1;
       if (status !== 'idle') {
-        const t = setTimeout(() => { setStatus('idle'); setResult(null); }, 0);
+        const t = setTimeout(() => { setStatus('idle'); }, 0);
         return () => clearTimeout(t);
       }
       return;
