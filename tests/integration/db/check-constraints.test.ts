@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const migration = readFileSync(
-  join(process.cwd(), 'prisma/migrations/20260910020208_initail/migration.sql'),
+  join(process.cwd(), 'prisma/migrations/20260913170017_initial/migration.sql'),
   'utf8'
 );
 
 const dedupMigration = readFileSync(
-  join(process.cwd(), 'prisma/migrations/20260913120000_campaign_deduplication/migration.sql'),
+  join(process.cwd(), 'prisma/migrations/20260913170017_initial/migration.sql'),
   'utf8'
 );
 

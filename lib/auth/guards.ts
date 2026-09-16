@@ -26,7 +26,7 @@ export async function ensureSessionUserProfile(user: SessionUser): Promise<void>
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  const shouldBeAdmin = adminEmails.includes(user.email.toLowerCase());
+  const shouldBeAdmin = user.email ? adminEmails.includes(user.email.toLowerCase()) : false;
 
   const settings = await prisma.systemSetting.findUnique({
     where: { id: 1 },

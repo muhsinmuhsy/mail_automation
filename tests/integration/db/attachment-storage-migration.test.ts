@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const migration = readFileSync(
-  'prisma/migrations/20260910020208_initail/migration.sql', 'utf8',
+  'prisma/migrations/20260913170017_initial/migration.sql', 'utf8',
 );
 
 describe('attachment storage_key column (consolidated migration)', () => {
