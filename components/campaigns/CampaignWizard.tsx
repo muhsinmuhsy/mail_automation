@@ -23,6 +23,11 @@ const steps = ['Campaign', 'Content', 'Contacts', 'Schedule', 'Review'];
 const MAX_CAMPAIGN_CONTACTS = 1000;
 const CONTACT_PAGE_SIZE = 20;
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 function generateUuid(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
   return '00000000-0000-4000-8000-000000000000'.replace(/0/g, () => Math.floor(Math.random() * 16).toString(16));
@@ -517,13 +522,13 @@ export function CampaignWizard({
               <legend className="font-medium text-text-primary">Attachments (optional)</legend>
               <p id="attachment-help" className="text-sm text-text-secondary">Send without attachments, or choose files for {attachmentPolicy?.name ?? 'your sender'}. Up to {attachmentPolicy?.maxCount ?? 0} files, {(attachmentPolicy?.maxFileBytes ?? 0) / 1024 / 1024} MB each and {(attachmentPolicy?.maxTotalBytes ?? 0) / 1024 / 1024} MB total (app sending limits).</p>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span role="status">{attachmentIds.length} files selected — {(attachmentBytes / 1024 / 1024).toFixed(1)} / {(attachmentPolicy?.maxTotalBytes ?? 0) / 1024 / 1024} MB</span>
+                <span role="status">{attachmentIds.length} files selected — {formatFileSize(attachmentBytes)} / {(attachmentPolicy?.maxTotalBytes ?? 0) / 1024 / 1024} MB</span>
                 {attachmentIds.length > 0 && <Button variant="secondary" size="sm" onClick={() => setAttachmentIds([])}>Clear attachments</Button>}
               </div>
               <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
                 {attachments.map(file => <label key={file.id} className={`flex items-center gap-3 rounded-[var(--radius-md)] border p-3 ${attachmentIds.includes(file.id) ? 'border-information bg-surface' : 'border-neutral-200'}`}>
                   <input type="checkbox" aria-describedby="attachment-help" checked={attachmentIds.includes(file.id)} onChange={() => setAttachmentIds(ids => ids.includes(file.id) ? ids.filter(id => id !== file.id) : [...ids, file.id])} className="h-4 w-4 accent-information" />
-                  <span className="min-w-0 break-words text-sm">{file.label}<span className="block text-caption text-text-secondary">{file.size_bytes == null ? 'Size unavailable; reserves 5 MB' : `${(file.size_bytes / 1024 / 1024).toFixed(1)} MB`}</span></span>
+                  <span className="min-w-0 break-words text-sm">{file.label}<span className="block text-caption text-text-secondary">{file.size_bytes == null ? 'Size unavailable; reserves 5 MB' : formatFileSize(file.size_bytes)}</span></span>
                 </label>)}
               </div>
               {attachments.length === 0 && <p className="text-sm text-text-secondary">No files uploaded. You can continue without attachments.</p>}
