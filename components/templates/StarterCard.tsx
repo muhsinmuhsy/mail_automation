@@ -56,7 +56,7 @@ export function StarterCard({ starter, onPick, disabled, loading }: StarterCardP
           srcDoc={starter.thumbnailHtml}
           sandbox=""
           title={starter.name}
-          className="h-32 w-full rounded-[var(--radius-sm)] border border-neutral-200"
+          className="pointer-events-none h-32 w-full rounded-[var(--radius-sm)] border border-neutral-200"
         />
       ) : starter.format === 'plaintext' ? (
         <div className="h-32 w-full overflow-hidden rounded-[var(--radius-sm)] border border-neutral-200 bg-selected p-3">
