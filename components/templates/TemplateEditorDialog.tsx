@@ -70,17 +70,25 @@ export function TemplateEditorDialog({
 
   const isEdit = !!templateId;
 
-  const reset = useCallback(() => {
-    setName('');
-    setSubject('');
-    setMode('visual');
-    setContent(null);
-    setPlainBody('');
-    setError(null);
-    setFieldErrors({});
-    contentRef.current = null;
-    setStep('gallery');
-  }, []);
+  const [prevOpen, setPrevOpen] = useState(false);
+  const [prevTemplateId, setPrevTemplateId] = useState<string | null>(null);
+  const currentTemplateId = templateId ?? null;
+  if (open !== prevOpen || (open && currentTemplateId !== prevTemplateId)) {
+    setPrevOpen(open);
+    setPrevTemplateId(currentTemplateId);
+    if (open) {
+      setName('');
+      setSubject('');
+      setMode('visual');
+      setContent(null);
+      setPlainBody('');
+      setError(null);
+      setFieldErrors({});
+      setLoading(templateId ? true : false);
+      contentRef.current = null;
+      setStep(templateId ? 'editor' : 'gallery');
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -142,14 +150,9 @@ export function TemplateEditorDialog({
   }, []);
 
   useEffect(() => {
-    if (!open) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset state when dialog opens
-    reset();
-    setStep(templateId ? 'editor' : 'gallery');
-    if (templateId) {
-      void loadTemplate(templateId);
-    }
-  }, [open, templateId, reset, loadTemplate]);
+    if (!open || !templateId) return;
+    void loadTemplate(templateId);
+  }, [open, templateId, loadTemplate]);
 
   useEffect(() => {
     if (open) {

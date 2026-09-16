@@ -37,6 +37,18 @@ export function TemplatePreviewDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [prevOpen, setPrevOpen] = useState(false);
+  const [prevTemplateId, setPrevTemplateId] = useState<string | null>(null);
+  if (open !== prevOpen || (open && templateId !== prevTemplateId)) {
+    setPrevOpen(open);
+    setPrevTemplateId(templateId);
+    if (open) {
+      setPreview(null);
+      setError(null);
+      setLoading(true);
+    }
+  }
+
   const loadPreview = useCallback(async (id: string) => {
     setLoading(true);
     setError(null);
@@ -61,7 +73,6 @@ export function TemplatePreviewDialog({
 
   useEffect(() => {
     if (!open || !templateId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- load preview when dialog opens
     void loadPreview(templateId);
   }, [open, templateId, loadPreview]);
 
