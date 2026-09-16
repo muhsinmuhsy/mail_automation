@@ -259,60 +259,66 @@ export function TemplateEditorDialog({
               <h2 className="text-lg font-semibold text-text-primary">
                 {isEdit ? 'Edit template' : 'New template'}
               </h2>
-              <Input
-                label="Template name"
-                value={name}
-                onChange={(e) => { setName(e.target.value); setFieldErrors((fe) => ({ ...fe, name: undefined })); }}
-                error={fieldErrors.name}
-                required
-                className="w-64"
-              />
+              {!loading && (
+                <Input
+                  label="Template name"
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setFieldErrors((fe) => ({ ...fe, name: undefined })); }}
+                  error={fieldErrors.name}
+                  required
+                  className="w-64"
+                />
+              )}
             </div>
-            <div className="flex items-center gap-3">
-              <div role="tablist" aria-label="Editor mode" className="flex items-center gap-1">
-                <button
-                  role="tab"
-                  aria-selected={mode === 'visual'}
-                  onClick={() => { setMode('visual'); setError(null); }}
-                  className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium ${
-                    mode === 'visual'
-                      ? 'bg-information text-white'
-                      : 'text-text-secondary hover:bg-selected'
-                  }`}
-                >
-                  Visual
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={mode === 'plaintext'}
-                  onClick={() => { setMode('plaintext'); setError(null); }}
-                  className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium ${
-                    mode === 'plaintext'
-                      ? 'bg-information text-white'
-                      : 'text-text-secondary hover:bg-selected'
-                  }`}
-                >
-                  Plain text
-                </button>
+            {!loading && (
+              <div className="flex items-center gap-3">
+                <div role="tablist" aria-label="Editor mode" className="flex items-center gap-1">
+                  <button
+                    role="tab"
+                    aria-selected={mode === 'visual'}
+                    onClick={() => { setMode('visual'); setError(null); }}
+                    className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium ${
+                      mode === 'visual'
+                        ? 'bg-information text-white'
+                        : 'text-text-secondary hover:bg-selected'
+                    }`}
+                  >
+                    Visual
+                  </button>
+                  <button
+                    role="tab"
+                    aria-selected={mode === 'plaintext'}
+                    onClick={() => { setMode('plaintext'); setError(null); }}
+                    className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium ${
+                      mode === 'plaintext'
+                        ? 'bg-information text-white'
+                        : 'text-text-secondary hover:bg-selected'
+                    }`}
+                  >
+                    Plain text
+                  </button>
+                </div>
+                <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} loading={saving} disabled={loading}>
+                  Save template
+                </Button>
               </div>
-              <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave} loading={saving} disabled={loading}>
-                Save template
-              </Button>
-            </div>
+            )}
           </div>
 
-          <div className="flex-shrink-0 border-b border-neutral-200 bg-surface px-6 py-3">
-            <Input
-              label="Subject"
-              value={subject}
-              onChange={(e) => { setSubject(e.target.value); setFieldErrors((fe) => ({ ...fe, subject: undefined })); }}
-              error={fieldErrors.subject}
-              required
-            />
-          </div>
+          {!loading && (
+            <div className="flex-shrink-0 border-b border-neutral-200 bg-surface px-6 py-3">
+              <Input
+                label="Subject"
+                value={subject}
+                onChange={(e) => { setSubject(e.target.value); setFieldErrors((fe) => ({ ...fe, subject: undefined })); }}
+                error={fieldErrors.subject}
+                required
+              />
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto px-6 py-4">
             {error && (
