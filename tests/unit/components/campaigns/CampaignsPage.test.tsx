@@ -31,3 +31,42 @@ describe('campaign option loading', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('CampaignsPage real-time refresh', () => {
+  it('reloads the list immediately after a pause action', async () => {
+    const fetchMock = vi.fn();
+
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      json: async () => ({ success: true, data: { emailAccounts: [], attachments: [], templates: [], contacts: [] } }),
+    });
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      json: async () => ({ success: true, data: [{ id: 'c1', name: 'Test Campaign', status: 'ACTIVE', total_emails: 10, sent: 5, failed: 0, created_at: '2026-09-01T00:00:00Z' }] }),
+    });
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      json: async () => ({ success: true, data: null, message: 'Campaign paused.' }),
+    });
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      json: async () => ({ success: true, data: [{ id: 'c1', name: 'Test Campaign', status: 'PAUSED', total_emails: 10, sent: 5, failed: 0, created_at: '2026-09-01T00:00:00Z' }] }),
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    render(<CampaignsPage />);
+
+    await waitFor(() => expect(screen.getByText('Test Campaign')).toBeInTheDocument(), { timeout: 5000 });
+
+    await user.click(screen.getByRole('button', { name: 'Pause' }));
+
+    await waitFor(() => expect(fetchMock.mock.calls.some(c => c[0] === '/api/campaigns/c1/pause')).toBe(true), { timeout: 5000 });
+    const reloadCall = fetchMock.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('/api/campaigns?page=1')
+    );
+    expect(reloadCall).toBeDefined();
+
+    vi.unstubAllGlobals();
+  });
+});

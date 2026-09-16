@@ -100,8 +100,9 @@ export default function CampaignsPage() {
     setToast({ id: Date.now(), message, type });
 
   const load = useCallback(
-    async (signal?: AbortSignal) => {
-      const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+    async (overridePage?: number, signal?: AbortSignal) => {
+      const effectivePage = overridePage ?? page;
+      const params = new URLSearchParams({ page: String(effectivePage), limit: String(PAGE_SIZE) });
       if (status) params.set('status', status);
       if (search.trim()) params.set('search', search.trim());
       if (startDate) params.set('startDate', startDate);
@@ -137,9 +138,9 @@ export default function CampaignsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const timer = setTimeout(() => void load(controller.signal), 250);
+    const timer = setTimeout(() => void load(undefined, controller.signal), 250);
     const refresh = setInterval(() => {
-      if (document.visibilityState === 'visible') void load(controller.signal);
+      if (document.visibilityState === 'visible') void load(undefined, controller.signal);
     }, 15_000);
     return () => {
       clearInterval(refresh);
@@ -237,7 +238,7 @@ export default function CampaignsPage() {
       showToast(body.message ?? 'Campaign created.', 'success');
       setShowWizard(false);
       setPage(1);
-      await load();
+      await load(1);
     } else {
       showToast(body.error.message, 'error');
     }

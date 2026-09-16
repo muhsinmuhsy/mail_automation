@@ -61,8 +61,9 @@ export default function CustomFieldsPage() {
   const [deleting, setDeleting] = useState(false);
   const [usageLoading, setUsageLoading] = useState(false);
 
-  const load = useCallback(async () => {
-    const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+  const load = useCallback(async (overridePage?: number) => {
+    const effectivePage = overridePage ?? page;
+    const params = new URLSearchParams({ page: String(effectivePage), limit: String(PAGE_SIZE) });
     try {
       const response = await fetch(`/api/contact-fields?${params.toString()}`);
       const payload = (await response.json()) as ApiEnvelope<ContactField[]>;
@@ -107,7 +108,7 @@ export default function CustomFieldsPage() {
       }
       setShowForm(false);
       setPage(1);
-      await load();
+      await load(1);
     } catch {
       setFormError('Unable to save field.');
     } finally {
