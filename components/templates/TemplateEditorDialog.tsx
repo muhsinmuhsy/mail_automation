@@ -261,7 +261,8 @@ export function TemplateEditorDialog({
               </h2>
               {!loading && (
                 <Input
-                  label="Template name"
+                  placeholder="Template name"
+                  aria-label="Template name"
                   value={name}
                   onChange={(e) => { setName(e.target.value); setFieldErrors((fe) => ({ ...fe, name: undefined })); }}
                   error={fieldErrors.name}
