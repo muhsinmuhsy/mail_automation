@@ -81,7 +81,7 @@ export function AdminSettingsForm({
           onChange={(event) => setDefaultLimit(event.target.value)}
         />
         <p className="mt-1 text-caption text-text-secondary">
-          Applied to every user without a per-user override.
+          Starting daily limit for new users when they sign up.
         </p>
         <InlineFieldError message={errorFor('default_daily_email_limit')} />
       </div>
