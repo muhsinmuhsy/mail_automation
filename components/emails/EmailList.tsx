@@ -83,7 +83,7 @@ export function EmailList({ emails, onRetry, retryingId = null }: EmailListProps
               >
                 Retry
               </Button>
-            ) : null,
+            ) : <span className="text-text-secondary">—</span>,
         },
       ]}
     />
