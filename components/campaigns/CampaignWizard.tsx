@@ -181,6 +181,7 @@ export function CampaignWizard({
   const errorRef = useRef<HTMLDivElement | null>(null);
   const recipientStatusAbort = useRef<AbortController | null>(null);
   const recipientStatusDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [userDailyLimit, setUserDailyLimit] = useState<number | null>(null);
 
   const effectiveEmailAccountId = emailAccountId || emailAccounts[0]?.id || '';
   const selectedAttachments = attachments.filter(item => attachmentIds.includes(item.id));
@@ -244,6 +245,9 @@ export function CampaignWizard({
       if (effectiveCount > 1 && parsedLimit !== null && Number.isInteger(parsedLimit) && parsedLimit > effectiveCount) {
         nextErrors.dailyLimit = `Daily limit cannot exceed ${effectiveCount} (your total emails).`;
       }
+      if (effectiveCount > 1 && parsedLimit !== null && Number.isInteger(parsedLimit) && userDailyLimit !== null && parsedLimit > userDailyLimit) {
+        nextErrors.dailyLimit = `Your daily email limit is ${userDailyLimit}. Enter a value up to ${userDailyLimit}.`;
+      }
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -252,12 +256,29 @@ export function CampaignWizard({
   const selectedCount = contactIds.length;
   const effectiveCount = eligibility.isReady ? eligibility.effectiveCount : selectedCount;
   const singleRecipient = selectedCount === 1;
+  const cappedDailyDefault = userDailyLimit ? Math.min(effectiveCount, userDailyLimit) : effectiveCount;
 
   useEffect(() => {
     if (singleRecipient || effectiveCount <= 1) return;
-    const timer = setTimeout(() => setDailyLimit(String(effectiveCount)), 0);
+    const timer = setTimeout(() => setDailyLimit(String(cappedDailyDefault)), 0);
     return () => clearTimeout(timer);
-  }, [effectiveCount, singleRecipient]);
+  }, [cappedDailyDefault, singleRecipient, effectiveCount]);
+
+  useEffect(() => {
+    if (step < 3 || userDailyLimit !== null) return;
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const res = await fetch('/api/user/email-limit', { signal: controller.signal });
+        if (!res.ok) return;
+        const body = (await res.json()) as { success?: boolean; data?: { dailyEmailLimit?: number } };
+        if (body.success && typeof body.data?.dailyEmailLimit === 'number') {
+          setUserDailyLimit(body.data.dailyEmailLimit);
+        }
+      } catch { /* aborted */ }
+    })();
+    return () => controller.abort();
+  }, [step, userDailyLimit]);
 
   const canSubmit =
     name.trim() &&
@@ -851,7 +872,7 @@ export function CampaignWizard({
               onChange={(event) => setDailyLimit(event.target.value)}
               error={errors.dailyLimit}
             />
-            <p id="daily-help" className="text-sm text-text-secondary">{eligibility.isFetching ? 'Updating recipient count…' : `You have ${effectiveCount} emails total. Send up to this many emails in each daily batch. Leave blank to keep sending without a campaign cap.`}</p>
+            <p id="daily-help" className="text-sm text-text-secondary">{eligibility.isFetching ? 'Updating recipient count…' : `You have ${effectiveCount} emails total.${userDailyLimit ? ` Your daily email limit is ${userDailyLimit}, so at most ${Math.min(effectiveCount, userDailyLimit)} will send per day.` : ''} Leave blank for no campaign cap.`}</p>
             <Button variant="secondary" size="sm" onClick={() => setDailyLimit('')} disabled={!dailyLimit}>Use no daily cap</Button></div></>}
             <div className="md:col-span-2"><SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={effectiveCount} loading={eligibility.isFetching} recipients={previewRecipients} /></div>
             <p className="md:col-span-2 text-sm text-text-secondary">Personalization values are captured when the campaign is scheduled. Editing contacts afterward will not affect already-scheduled emails.</p>

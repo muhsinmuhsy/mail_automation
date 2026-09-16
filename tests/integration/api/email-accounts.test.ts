@@ -15,6 +15,7 @@ const mockPrisma = {
     create: vi.fn(),
     count: vi.fn().mockResolvedValue(1),
   },
+  systemSetting: { findUnique: vi.fn().mockResolvedValue(null) },
   user: {
     upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
   },

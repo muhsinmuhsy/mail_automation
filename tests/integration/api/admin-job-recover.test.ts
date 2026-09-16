@@ -5,6 +5,7 @@ import { POST } from '@/app/api/admin/jobs/[id]/recover/route';
 const mockResolve = vi.fn();
 
 const mockPrisma = {
+  systemSetting: { findUnique: vi.fn().mockResolvedValue(null) },
   user: {
     findUnique: vi.fn().mockResolvedValue({ role: 'ADMIN', is_active: true }),
     upsert: vi.fn().mockResolvedValue({ id: 'admin' }),
