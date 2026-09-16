@@ -60,6 +60,7 @@ export default function CustomFieldsPage() {
   const [deleteUsage, setDeleteUsage] = useState<FieldUsage | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [usageLoading, setUsageLoading] = useState(false);
+  const [togglingFieldId, setTogglingFieldId] = useState<string | null>(null);
 
   const load = useCallback(async (overridePage?: number) => {
     const effectivePage = overridePage ?? page;
@@ -117,6 +118,7 @@ export default function CustomFieldsPage() {
   };
 
   const handleToggleRequired = async (field: ContactField) => {
+    setTogglingFieldId(field.id);
     try {
       const response = await fetch(`/api/contact-fields/${field.id}`, {
         method: 'PATCH',
@@ -134,6 +136,8 @@ export default function CustomFieldsPage() {
       await load();
     } catch {
       setError('Unable to update field.');
+    } finally {
+      setTogglingFieldId(null);
     }
   };
 
@@ -313,6 +317,7 @@ export default function CustomFieldsPage() {
                         <Button
                           variant="secondary"
                           size="sm"
+                          disabled={togglingFieldId !== null}
                           onClick={() => handleToggleRequired(field)}
                         >
                           {field.is_required ? 'Unrequire' : 'Require'}
