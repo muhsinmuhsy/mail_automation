@@ -231,21 +231,23 @@ export default function ContactsPage() {
         }
       />
 
-      <ListToolbar
-        search={search}
-        onSearchChange={handleSearchChange}
-        sortOrder={sortOrder}
-        onSortOrderChange={handleSortOrderChange}
-        filters={
-          <DateRangeFilter
-            startDate={startDate}
-            endDate={endDate}
-            onStartChange={(v) => { setStartDate(v); setPage(1); }}
-            onEndChange={(v) => { setEndDate(v); setPage(1); }}
-            onClear={handleDateClear}
-          />
-        }
-      />
+      {!showAddContact && !showImport && (
+        <ListToolbar
+          search={search}
+          onSearchChange={handleSearchChange}
+          sortOrder={sortOrder}
+          onSortOrderChange={handleSortOrderChange}
+          filters={
+            <DateRangeFilter
+              startDate={startDate}
+              endDate={endDate}
+              onStartChange={(v) => { setStartDate(v); setPage(1); }}
+              onEndChange={(v) => { setEndDate(v); setPage(1); }}
+              onClear={handleDateClear}
+            />
+          }
+        />
+      )}
 
       {showAddContact && (
         <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
@@ -275,7 +277,7 @@ export default function ContactsPage() {
 
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
 
-      {loading ? (
+      {!showAddContact && !showImport && (loading ? (
         <div className="py-12 flex justify-center">
           <LoadingSpinner />
         </div>
@@ -307,7 +309,7 @@ export default function ContactsPage() {
             </div>
           )}
         </div>
-      )}
+      ))}
 
       <ConfirmDialog
         open={deleteTarget !== null}

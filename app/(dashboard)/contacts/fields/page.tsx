@@ -245,7 +245,7 @@ export default function CustomFieldsPage() {
 
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
 
-      {loading ? (
+      {!showForm && (loading ? (
         <div className="py-12 flex justify-center">
           <LoadingSpinner />
         </div>
@@ -346,7 +346,7 @@ export default function CustomFieldsPage() {
             </div>
           )}
         </div>
-      )}
+      ))}
 
       <ConfirmDialog
         open={deleteTarget !== null}

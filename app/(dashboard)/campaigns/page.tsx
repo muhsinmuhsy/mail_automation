@@ -293,37 +293,39 @@ export default function CampaignsPage() {
         </div>
       )}
 
-      <ListToolbar
-        search={search}
-        onSearchChange={(value) => {
-          setSearch(value);
-          setPage(1);
-        }}
-        filters={
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="sm:w-64">
-              <Select
-                label="Status"
-                options={STATUS_OPTIONS}
-                value={status}
-                onChange={(event) => {
-                  setStatus(event.target.value);
-                  setPage(1);
-                }}
+      {!showWizard && (
+        <ListToolbar
+          search={search}
+          onSearchChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          filters={
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="sm:w-64">
+                <Select
+                  label="Status"
+                  options={STATUS_OPTIONS}
+                  value={status}
+                  onChange={(event) => {
+                    setStatus(event.target.value);
+                    setPage(1);
+                  }}
+                />
+              </div>
+              <DateRangeFilter
+                startDate={startDate}
+                endDate={endDate}
+                onStartChange={(v) => { setStartDate(v); setPage(1); }}
+                onEndChange={(v) => { setEndDate(v); setPage(1); }}
+                onClear={() => { setStartDate(''); setEndDate(''); setPage(1); }}
               />
             </div>
-            <DateRangeFilter
-              startDate={startDate}
-              endDate={endDate}
-              onStartChange={(v) => { setStartDate(v); setPage(1); }}
-              onEndChange={(v) => { setEndDate(v); setPage(1); }}
-              onClear={() => { setStartDate(''); setEndDate(''); setPage(1); }}
-            />
-          </div>
-        }
-      />
+          }
+        />
+      )}
 
-      {loading ? (
+      {!showWizard && (loading ? (
         <div className="py-12">
           <LoadingSpinner />
         </div>
@@ -373,7 +375,7 @@ export default function CampaignsPage() {
             </div>
           )}
         </div>
-      )}
+      ))}
 
       <ConfirmDialog
         open={cancelTarget !== null}
