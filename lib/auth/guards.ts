@@ -22,16 +22,24 @@ export type AuthContext = {
  */
 export async function ensureSessionUserProfile(user: SessionUser): Promise<void> {
   const prisma = getPrisma();
+  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const shouldBeAdmin = adminEmails.includes(user.email.toLowerCase());
+
   await prisma.user.upsert({
     where: { id: user.id },
     update: {
       email: user.email,
       name: user.name,
+      ...(shouldBeAdmin ? { role: 'ADMIN' } : {}),
     },
     create: {
       id: user.id,
       email: user.email,
       name: user.name,
+      ...(shouldBeAdmin ? { role: 'ADMIN' } : {}),
     },
   });
 }
