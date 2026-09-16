@@ -3,10 +3,10 @@ import { getPrisma } from '@/lib/db';
 import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
-import { decryptSecret } from '@/lib/security/encryption';
+// import { decryptSecret } from '@/lib/security/encryption';
 import { NotFoundError, ExternalServiceError, ValidationError } from '@/lib/errors';
 import { gmailAccessToken } from '@/lib/email/accounts/credential-service';
-import { GmailApiProvider } from '@/lib/email/providers/gmail/provider';
+import { sendEmail } from '@/lib/email/service';
 import { ReconnectRequiredError } from '@/lib/email/providers/gmail/oauth';
 
 const _POST = defineRoute(async (req, ctx) => {
@@ -26,9 +26,21 @@ const _POST = defineRoute(async (req, ctx) => {
     if (account.user_id !== ctx.user.id) throw new ValidationError('Only the account owner can verify authorization.');
     try {
       const token = await gmailAccessToken(getPrisma(), account, process.env, true);
-      const result = await new GmailApiProvider().testConnection({ email: account.email, secret: token });
-      return respondOk({ connected: result.success, message: result.message }, ctx.requestId);
+      const result = await sendEmail({
+        provider: 'gmail',
+        from: account.email,
+        to: account.email,
+        subject: 'Test email from Mail Automation',
+        body: 'This is a test email to verify that your Gmail account can send emails. If you received this, your email setup is working correctly.',
+        credentials: { email: account.email, secret: token },
+        providerOptions: { authMethod: 'oauth2' as const },
+      });
+      if (result.success) {
+        return respondOk({ connected: true, message: 'Test email sent successfully. Check your inbox to confirm.' }, ctx.requestId);
+      }
+      throw new ExternalServiceError(result.error ?? 'Could not send test email. Please try reconnecting your Google account.');
     } catch (error) {
+      if (error instanceof ExternalServiceError) throw error;
       throw new ExternalServiceError(error instanceof ReconnectRequiredError ? error.message : 'Could not verify Google authorization. Please try again.');
     }
   }
