@@ -26,6 +26,13 @@
 .DS_Store
 *.pem
 
+# build/test logs
+.*-results.log
+.worker-tail.log
+
+# temporary images
+image.png
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -42,6 +49,7 @@ yarn-error.log*
 
 # prisma
 prisma/generated/
+/lib/generated/
 
 # typescript
 *.tsbuildinfo
