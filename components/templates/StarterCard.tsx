@@ -1,15 +1,18 @@
 'use client';
 
 import { Badge } from '@/components/ui/Badge';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import type { Starter } from './starters/starterTemplates';
 import { isBlankStarter } from './starters/starterTemplates';
 
 interface StarterCardProps {
   starter: Starter;
   onPick: (starter: Starter) => void;
+  disabled?: boolean;
+  loading?: boolean;
 }
 
-export function StarterCard({ starter, onPick }: StarterCardProps) {
+export function StarterCard({ starter, onPick, disabled, loading }: StarterCardProps) {
   const blank = isBlankStarter(starter);
 
   if (blank) {
@@ -17,11 +20,20 @@ export function StarterCard({ starter, onPick }: StarterCardProps) {
       <button
         type="button"
         onClick={() => onPick(starter)}
-        className="flex min-h-[160px] flex-col items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-neutral-300 bg-background p-4 text-center transition-colors hover:bg-selected"
+        disabled={disabled || loading}
+        className={`flex min-h-[160px] flex-col items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-neutral-300 bg-background p-4 text-center transition-colors ${
+          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-selected'
+        }`}
       >
-        <span className="text-2xl text-text-secondary">+</span>
-        <span className="font-medium text-text-primary">{starter.name}</span>
-        <Badge variant="default">{starter.format === 'visual' ? 'Visual' : 'Plain text'}</Badge>
+        {loading ? (
+          <LoadingSpinner size="sm" />
+        ) : (
+          <>
+            <span className="text-2xl text-text-secondary">+</span>
+            <span className="font-medium text-text-primary">{starter.name}</span>
+            <Badge variant="default">{starter.format === 'visual' ? 'Visual' : 'Plain text'}</Badge>
+          </>
+        )}
       </button>
     );
   }
@@ -30,9 +42,16 @@ export function StarterCard({ starter, onPick }: StarterCardProps) {
     <button
       type="button"
       onClick={() => onPick(starter)}
-      className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-neutral-200 bg-background p-4 text-left transition-colors hover:bg-selected"
+      disabled={disabled || loading}
+      className={`flex flex-col gap-3 rounded-[var(--radius-md)] border border-neutral-200 bg-background p-4 text-left transition-colors ${
+        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-selected'
+      }`}
     >
-      {starter.format === 'visual' && starter.thumbnailHtml ? (
+      {loading ? (
+        <div className="flex h-32 w-full items-center justify-center rounded-[var(--radius-sm)] border border-neutral-200 bg-selected">
+          <LoadingSpinner size="sm" />
+        </div>
+      ) : starter.format === 'visual' && starter.thumbnailHtml ? (
         <iframe
           srcDoc={starter.thumbnailHtml}
           sandbox=""

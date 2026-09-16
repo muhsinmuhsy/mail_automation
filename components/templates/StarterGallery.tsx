@@ -16,10 +16,17 @@ const FILTERS: { label: string; value: StarterFormat }[] = [
 
 export function StarterGallery({ onPick }: StarterGalleryProps) {
   const [filter, setFilter] = useState<StarterFormat>('all');
+  const [pickingId, setPickingId] = useState<string | null>(null);
 
   const visible = filter === 'all'
     ? STARTERS
     : STARTERS.filter((s) => s.format === filter);
+
+  function handlePick(starter: Starter) {
+    if (pickingId) return;
+    setPickingId(starter.id);
+    onPick(starter);
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -33,6 +40,7 @@ export function StarterGallery({ onPick }: StarterGalleryProps) {
               role="tab"
               aria-selected={filter === f.value}
               onClick={() => setFilter(f.value)}
+              disabled={pickingId !== null}
               className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium ${
                 filter === f.value
                   ? 'bg-information text-white'
@@ -47,7 +55,13 @@ export function StarterGallery({ onPick }: StarterGalleryProps) {
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {visible.map((starter) => (
-            <StarterCard key={starter.id} starter={starter} onPick={onPick} />
+            <StarterCard
+              key={starter.id}
+              starter={starter}
+              onPick={handlePick}
+              disabled={pickingId !== null && pickingId !== starter.id}
+              loading={pickingId === starter.id}
+            />
           ))}
         </div>
       </div>

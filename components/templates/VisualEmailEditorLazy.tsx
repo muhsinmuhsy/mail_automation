@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 /**
  * Client-only dynamic import of the VisualEmailEditor.
@@ -10,7 +11,14 @@ import dynamic from 'next/dynamic';
  */
 const VisualEmailEditorLazy = dynamic(
   () => import('@/components/templates/VisualEmailEditor'),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    ),
+  }
 );
 
 export default VisualEmailEditorLazy;
