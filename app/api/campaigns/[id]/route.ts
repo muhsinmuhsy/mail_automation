@@ -4,6 +4,7 @@ import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
 import { NotFoundError, ValidationError } from '@/lib/errors';
+import { getCampaignDailyUsage } from '@/lib/limits/email-limit-service';
 
 const _GET = defineRoute(async (_req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
@@ -11,23 +12,27 @@ const _GET = defineRoute(async (_req, ctx) => {
     return respondError(new ValidationError('Invalid ID.'), ctx.requestId);
   }
 
-  const campaign = await getPrisma().campaign.findUnique({
-    where: { id: parsed.data.id },
-    include: {
-      _count: { select: { email_jobs: true } },
-      email_jobs: {
-        select: { id: true, to_email: true, status: true, scheduled_at: true, sent_at: true },
-        orderBy: [{ scheduled_at: 'asc' }, { id: 'asc' }],
-        take: 100,
+  const prisma = getPrisma();
+  const [campaign, usageToday] = await Promise.all([
+    prisma.campaign.findUnique({
+      where: { id: parsed.data.id },
+      include: {
+        _count: { select: { email_jobs: true } },
+        email_jobs: {
+          select: { id: true, to_email: true, status: true, scheduled_at: true, sent_at: true },
+          orderBy: [{ scheduled_at: 'asc' }, { id: 'asc' }],
+          take: 100,
+        },
       },
-    },
-  });
+    }),
+    getCampaignDailyUsage(prisma, parsed.data.id),
+  ]);
 
   if (!campaign) {
     return respondError(new NotFoundError('Campaign not found.'), ctx.requestId);
   }
 
-  return respondOk(campaign, ctx.requestId);
+  return respondOk({ ...campaign, usageToday }, ctx.requestId);
 }, {
   auth: {
     ownership: async (params) => {

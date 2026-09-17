@@ -6,7 +6,14 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Toast } from '@/components/ui/Toast';
+import { UsageProgress } from '@/components/ui/UsageProgress';
 import { formatScheduledTime } from '@/lib/scheduling/time';
+
+interface CampaignUsageToday {
+  sent: number;
+  reserved: number;
+  limit: number | null;
+}
 
 interface CampaignDetails {
   name: string;
@@ -18,6 +25,7 @@ interface CampaignDetails {
   created_at: string;
   _count: { email_jobs: number };
   email_jobs: { id: string; to_email: string; status: string; scheduled_at: string; sent_at: string | null }[];
+  usageToday: CampaignUsageToday;
 }
 
 type ApiEnvelope<T> =
@@ -143,6 +151,15 @@ export default function CampaignDetailPage() {
               </div>
             </dl>
           </div>
+
+          {details.usageToday && details.usageToday.limit !== null && (
+            <UsageProgress
+              sent={details.usageToday.sent}
+              reserved={details.usageToday.reserved}
+              limit={details.usageToday.limit}
+              label="Campaign daily usage"
+            />
+          )}
 
           <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
             <div className="mb-2 flex items-center justify-between">

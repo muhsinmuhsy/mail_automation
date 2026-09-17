@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { UsageProgress } from '@/components/ui/UsageProgress';
 
 interface PaginationMeta {
   total: number;
@@ -83,6 +84,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<{ sent: number; reserved: number; limit: number } | null>(null);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -141,6 +143,21 @@ export default function DashboardPage() {
     return () => controller.abort();
   }, [load]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const res = await fetch('/api/user/email-limit', { credentials: 'include', signal: controller.signal });
+        if (!res.ok) return;
+        const body = await res.json() as { success?: boolean; data?: { sentToday?: number; reservedToday?: number; dailyEmailLimit?: number } };
+        if (body.success && body.data) {
+          setUsage({ sent: body.data.sentToday ?? 0, reserved: body.data.reservedToday ?? 0, limit: body.data.dailyEmailLimit ?? 0 });
+        }
+      } catch { /* aborted */ }
+    })();
+    return () => controller.abort();
+  }, []);
+
   const retry = () => {
     setLoading(true);
     setError(null);
@@ -181,6 +198,10 @@ export default function DashboardPage() {
                 Review emails
               </Link>
             </div>
+          )}
+
+          {usage && (
+            <UsageProgress sent={usage.sent} reserved={usage.reserved} limit={usage.limit} />
           )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">

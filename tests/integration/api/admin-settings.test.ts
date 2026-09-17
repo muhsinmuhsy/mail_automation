@@ -20,7 +20,8 @@ const { mockRequireAdmin, mockCheckApiRateLimit } = vi.hoisted(() => ({
 }));
 
 const mockPrisma = createMockPrisma() as unknown as {
-  systemSetting: { upsert: Mock };
+  systemSetting: { upsert: Mock; findUnique: Mock };
+  systemUsageDaily: { findUnique: Mock };
 };
 
 vi.mock('@/lib/auth/guards', () => ({
@@ -137,6 +138,19 @@ describe('GET /api/admin/settings', () => {
         global_daily_email_limit: 500,
         email_sending_enabled: true,
       },
+    });
+  });
+
+  it('includes usageToday with system daily usage', async () => {
+    mockPrisma.systemUsageDaily.findUnique.mockResolvedValue({ sent_count: 300, reserved_count: 25 });
+    mockPrisma.systemSetting.findUnique.mockResolvedValue({ global_daily_email_limit: 5000 });
+
+    const response = await getSettings(getRequest());
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(200);
+    expect(body.data).toMatchObject({
+      usageToday: { sent: 300, reserved: 25, limit: 5000 },
     });
   });
 

@@ -70,6 +70,9 @@ const mockPrisma = {
   contactFieldValue: {
     findMany: vi.fn().mockResolvedValue([]),
   },
+  campaignUsageDaily: {
+    findUnique: vi.fn().mockResolvedValue(null),
+  },
   $disconnect: vi.fn(),
 };
 mockPrisma.campaign.findUnique = mockPrisma.campaign.findFirst;
@@ -502,6 +505,28 @@ describe('GET /api/campaigns/[id]', () => {
     expect(mockPrisma.campaign.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: CAMPAIGN_ID } })
     );
+  });
+
+  it('includes usageToday in the campaign response', async () => {
+    mockPrisma.campaign.findFirst.mockResolvedValue({
+      id: CAMPAIGN_ID,
+      user_id: 'user-1',
+      name: 'Spring outreach',
+      status: 'ACTIVE',
+      daily_limit: 50,
+    });
+    mockPrisma.campaignUsageDaily.findUnique.mockResolvedValue({ sent_count: 20, reserved_count: 5 });
+
+    const response = await getCampaign(
+      new NextRequest(`http://localhost/api/campaigns/${CAMPAIGN_ID}`),
+      { params: Promise.resolve({ id: CAMPAIGN_ID }) }
+    );
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(200);
+    expect(body.data).toMatchObject({
+      usageToday: { sent: 20, reserved: 5, limit: 50 },
+    });
   });
 
   it('returns 404 when the campaign is missing or owned by someone else', async () => {

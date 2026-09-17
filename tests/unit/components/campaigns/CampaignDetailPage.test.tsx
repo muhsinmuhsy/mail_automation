@@ -27,6 +27,7 @@ const mockCampaign = (overrides: Partial<{
     scheduled_at: string;
     sent_at: string | null;
   }>;
+  usageToday: { sent: number; reserved: number; limit: number | null };
 }> = {}) => ({
   name: 'Q3 Outreach',
   status: 'ACTIVE',
@@ -187,5 +188,38 @@ describe('CampaignDetailPage', () => {
       expect(screen.getByRole('heading', { name: 'Q3 Outreach', level: 1 })).toBeInTheDocument()
     );
     expect(valueForLabel('Emails per day:')).toHaveTextContent('No campaign limit');
+  });
+
+  it('shows campaign daily usage progress when usageToday has a limit', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      mockCampaignResponse({
+        ...mockCampaign(),
+        usageToday: { sent: 12, reserved: 3, limit: 20 },
+      })
+    );
+
+    render(<CampaignDetailPage />);
+
+    await waitFor(() =>
+      expect(screen.getByText('Campaign daily usage')).toBeInTheDocument()
+    );
+    expect(screen.getByText(/of 20/)).toBeInTheDocument();
+    expect(screen.getByText(/5 remaining/)).toBeInTheDocument();
+  });
+
+  it('hides usage progress when campaign has no daily limit', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      mockCampaignResponse({
+        ...mockCampaign({ daily_limit: null }),
+        usageToday: { sent: 5, reserved: 0, limit: null },
+      })
+    );
+
+    render(<CampaignDetailPage />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Q3 Outreach', level: 1 })).toBeInTheDocument()
+    );
+    expect(screen.queryByText('Campaign daily usage')).not.toBeInTheDocument();
   });
 });

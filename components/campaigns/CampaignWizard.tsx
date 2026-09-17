@@ -182,6 +182,7 @@ export function CampaignWizard({
   const recipientStatusAbort = useRef<AbortController | null>(null);
   const recipientStatusDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [userDailyLimit, setUserDailyLimit] = useState<number | null>(null);
+  const [userUsage, setUserUsage] = useState<{ sent: number; reserved: number } | null>(null);
 
   const effectiveEmailAccountId = emailAccountId || emailAccounts[0]?.id || '';
   const selectedAttachments = attachments.filter(item => attachmentIds.includes(item.id));
@@ -271,9 +272,10 @@ export function CampaignWizard({
       try {
         const res = await fetch('/api/user/email-limit', { signal: controller.signal });
         if (!res.ok) return;
-        const body = (await res.json()) as { success?: boolean; data?: { dailyEmailLimit?: number } };
+        const body = (await res.json()) as { success?: boolean; data?: { dailyEmailLimit?: number; sentToday?: number; reservedToday?: number } };
         if (body.success && typeof body.data?.dailyEmailLimit === 'number') {
           setUserDailyLimit(body.data.dailyEmailLimit);
+          setUserUsage({ sent: body.data.sentToday ?? 0, reserved: body.data.reservedToday ?? 0 });
         }
       } catch { /* aborted */ }
     })();
@@ -872,7 +874,7 @@ export function CampaignWizard({
               onChange={(event) => setDailyLimit(event.target.value)}
               error={errors.dailyLimit}
             />
-            <p id="daily-help" className="text-sm text-text-secondary">{eligibility.isFetching ? 'Updating recipient count…' : `You have ${effectiveCount} emails total.${userDailyLimit ? ` Your daily email limit is ${userDailyLimit}, so at most ${Math.min(effectiveCount, userDailyLimit)} will send per day.` : ''} Leave blank for no campaign cap.`}</p>
+            <p id="daily-help" className="text-sm text-text-secondary">{eligibility.isFetching ? 'Updating recipient count…' : `You have ${effectiveCount} emails total.${userDailyLimit ? ` Your daily email limit is ${userDailyLimit}${userUsage ? ` (${userUsage.sent + userUsage.reserved} used today, ${Math.max(0, userDailyLimit - userUsage.sent - userUsage.reserved)} remaining)` : ''}, so at most ${Math.min(effectiveCount, userDailyLimit)} will send per day.` : ''} Leave blank for no campaign cap.`}</p>
             <Button variant="secondary" size="sm" onClick={() => setDailyLimit('')} disabled={!dailyLimit}>Use no daily cap</Button></div></>}
             <div className="md:col-span-2"><SchedulePreview startAt={startAt} timezone={timezone} intervalMinutes={intervalMinutes} dailyLimit={dailyLimit} count={effectiveCount} loading={eligibility.isFetching} recipients={previewRecipients} /></div>
             <p className="md:col-span-2 text-sm text-text-secondary">Personalization values are captured when the campaign is scheduled. Editing contacts afterward will not affect already-scheduled emails.</p>

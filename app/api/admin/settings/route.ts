@@ -4,19 +4,24 @@ import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
 import { ValidationError } from '@/lib/errors';
 import { adminSettingsSchema } from '@/lib/validation/admin';
+import { getSystemDailyUsage } from '@/lib/limits/email-limit-service';
 
 const _GET = defineRoute(async (_req, ctx) => {
-  const settings = await getPrisma().systemSetting.upsert({
-    where: { id: 1 },
-    update: {},
-    create: {
-      id: 1,
-      default_daily_email_limit: 20,
-      global_daily_email_limit: 500,
-      email_sending_enabled: true,
-    },
-  });
-  return respondOk(settings, ctx.requestId);
+  const prisma = getPrisma();
+  const [settings, usage] = await Promise.all([
+    prisma.systemSetting.upsert({
+      where: { id: 1 },
+      update: {},
+      create: {
+        id: 1,
+        default_daily_email_limit: 20,
+        global_daily_email_limit: 500,
+        email_sending_enabled: true,
+      },
+    }),
+    getSystemDailyUsage(prisma),
+  ]);
+  return respondOk({ ...settings, usageToday: usage }, ctx.requestId);
 }, { auth: 'admin' });
 
 const _PATCH = defineRoute(async (req, ctx) => {

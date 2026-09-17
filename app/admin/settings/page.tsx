@@ -6,6 +6,7 @@ import { AdminSettingsForm, type AdminSettingsValues } from '@/components/admin/
 import { ErrorState } from '@/components/ui/ErrorState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Toast } from '@/components/ui/Toast';
+import { UsageProgress } from '@/components/ui/UsageProgress';
 
 type Envelope<T> =
   | { success: true; data: T; message?: string }
@@ -31,6 +32,7 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<ApiRespo
 export default function AdminSettingsPage() {
   const router = useRouter();
   const [settings, setSettings] = useState<AdminSettingsValues | null>(null);
+  const [systemUsage, setSystemUsage] = useState<{ sent: number; reserved: number; limit: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export default function AdminSettingsPage() {
   const load = useCallback(
     async (signal?: AbortSignal) => {
       try {
-        const { status, body } = await requestJson<AdminSettingsValues | null>('/api/admin/settings', {
+        const { status, body } = await requestJson<(AdminSettingsValues & { usageToday?: { sent: number; reserved: number; limit: number } }) | null>('/api/admin/settings', {
           signal,
         });
         if (status === 401) {
@@ -53,7 +55,11 @@ export default function AdminSettingsPage() {
           return;
         }
         if (body.success) {
-          setSettings(body.data);
+          if (body.data) {
+            const { usageToday, ...settingsData } = body.data;
+            setSettings(settingsData);
+            if (usageToday) setSystemUsage(usageToday);
+          }
           setError(null);
         } else {
           setError(body.error.message);
@@ -140,6 +146,10 @@ export default function AdminSettingsPage() {
           />
         )}
       </div>
+
+      {systemUsage && (
+        <UsageProgress sent={systemUsage.sent} reserved={systemUsage.reserved} limit={systemUsage.limit} label="System-wide usage today" />
+      )}
 
       {toast && (
         <Toast key={toast.id} message={toast.message} type={toast.type} onClose={() => setToast(null)} />

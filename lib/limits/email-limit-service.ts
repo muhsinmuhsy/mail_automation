@@ -48,6 +48,70 @@ export async function getEffectiveDailyEmailLimit(
   return effectiveLimit;
 }
 
+export interface DailyUsageSummary {
+  sent: number;
+  reserved: number;
+  limit: number;
+  remaining: number;
+}
+
+export async function getUserDailyUsage(
+  prisma: PrismaClient,
+  userId: string
+): Promise<DailyUsageSummary> {
+  const today = utcToday();
+  const [usage, limit] = await Promise.all([
+    prisma.emailUsageDaily.findUnique({
+      where: { user_id_usage_date: { user_id: userId, usage_date: today } },
+      select: { sent_count: true, reserved_count: true },
+    }),
+    getEffectiveDailyEmailLimit(prisma, userId),
+  ]);
+  const sent = usage?.sent_count ?? 0;
+  const reserved = usage?.reserved_count ?? 0;
+  return { sent, reserved, limit, remaining: Math.max(0, limit - sent - reserved) };
+}
+
+export async function getCampaignDailyUsage(
+  prisma: PrismaClient,
+  campaignId: string
+): Promise<{ sent: number; reserved: number; limit: number | null }> {
+  const today = utcToday();
+  const [usage, campaign] = await Promise.all([
+    prisma.campaignUsageDaily.findUnique({
+      where: { campaign_id_usage_date: { campaign_id: campaignId, usage_date: today } },
+      select: { sent_count: true, reserved_count: true },
+    }),
+    prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { daily_limit: true },
+    }),
+  ]);
+  return {
+    sent: usage?.sent_count ?? 0,
+    reserved: usage?.reserved_count ?? 0,
+    limit: campaign?.daily_limit ?? null,
+  };
+}
+
+export async function getSystemDailyUsage(
+  prisma: PrismaClient
+): Promise<{ sent: number; reserved: number; limit: number }> {
+  const today = utcToday();
+  const [usage, settings] = await Promise.all([
+    prisma.systemUsageDaily.findUnique({
+      where: { usage_date: today },
+      select: { sent_count: true, reserved_count: true },
+    }),
+    prisma.systemSetting.findUnique({ where: { id: 1 } }),
+  ]);
+  return {
+    sent: usage?.sent_count ?? 0,
+    reserved: usage?.reserved_count ?? 0,
+    limit: settings?.global_daily_email_limit ?? 500,
+  };
+}
+
 async function computeLimit(tx: Tx, userId: string, campaignId?: string | null): Promise<number> {
   return getEffectiveDailyEmailLimit(tx as PrismaClient, userId, campaignId);
 }
