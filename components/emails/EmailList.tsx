@@ -4,6 +4,7 @@ import { formatScheduledTime } from '@/lib/scheduling/time';
 import { DataTable } from '@/components/ui/DataTable';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
+import { stripErrorCode } from '@/lib/limits/error-codes';
 
 export interface EmailRow {
   id: string;
@@ -48,7 +49,7 @@ export function EmailList({ emails, onRetry, retryingId = null }: EmailListProps
         {
           key: 'status',
           header: 'Status',
-          render: (email) => <div><StatusBadge status={email.status} />{email.error_message && email.status !== 'SENT' && <p className="mt-1 text-caption text-text-secondary">{email.error_message}</p>}{email.next_attempt_at && email.status === 'RETRY_WAIT' && <p className="text-caption">Retry: {formatScheduledTime(email.next_attempt_at, email.campaign?.timezone)}</p>}</div>,
+          render: (email) => <div><StatusBadge status={email.status} />{email.error_message && email.status !== 'SENT' && <p className="mt-1 text-caption text-text-secondary">{stripErrorCode(email.error_message)}</p>}{email.next_attempt_at && email.status === 'RETRY_WAIT' && <p className="text-caption">Retry: {formatScheduledTime(email.next_attempt_at, email.campaign?.timezone)}</p>}</div>,
         },
         {
           key: 'scheduled_at',

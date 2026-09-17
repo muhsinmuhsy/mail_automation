@@ -73,7 +73,7 @@ describe('GET /api/user/email-limit', () => {
   it('returns limit and usage for the authenticated user', async () => {
     authenticated();
     mockPrisma.emailUsageDaily.findUnique.mockResolvedValue({ sent_count: 15, reserved_count: 3 });
-    mockPrisma.systemSetting.findUnique.mockResolvedValue({ global_daily_email_limit: 500 });
+    mockPrisma.systemSetting.findUnique.mockResolvedValue({ global_daily_email_limit: 500, default_daily_email_limit: 20 });
     mockPrisma.user.findUnique.mockResolvedValue(null);
     mockPrisma.campaign.findUnique.mockResolvedValue(null);
 
@@ -83,10 +83,10 @@ describe('GET /api/user/email-limit', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data).toEqual({
-      dailyEmailLimit: 500,
+      dailyEmailLimit: 20,
       sentToday: 15,
       reservedToday: 3,
-      remaining: 482,
+      remaining: 2,
     });
   });
 

@@ -525,7 +525,7 @@ describe('GET /api/campaigns/[id]', () => {
 
     expect(response.status).toBe(200);
     expect(body.data).toMatchObject({
-      usageToday: { sent: 20, reserved: 5, limit: 50 },
+      usageToday: { sent: 20, reserved: 5, limit: 20, configuredLimit: 50, limitingScope: 'ACCOUNT', limitingLimit: 20 },
     });
   });
 

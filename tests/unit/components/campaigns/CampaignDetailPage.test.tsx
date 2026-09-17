@@ -29,7 +29,7 @@ const mockCampaign = (overrides: Partial<{
     error_message: string | null;
     next_attempt_at: string | null;
   }>;
-  usageToday: { sent: number; reserved: number; limit: number | null };
+  usageToday: { sent: number; reserved: number; limit: number; configuredLimit: number | null; limitingScope: 'SYSTEM' | 'ACCOUNT' | null; limitingLimit: number | null };
 }> = {}) => ({
   name: 'Q3 Outreach',
   status: 'ACTIVE',
@@ -197,7 +197,7 @@ describe('CampaignDetailPage', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       mockCampaignResponse({
         ...mockCampaign(),
-        usageToday: { sent: 12, reserved: 3, limit: 20 },
+        usageToday: { sent: 12, reserved: 3, limit: 20, configuredLimit: 20, limitingScope: null, limitingLimit: null },
       })
     );
 
@@ -214,7 +214,7 @@ describe('CampaignDetailPage', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       mockCampaignResponse({
         ...mockCampaign({ daily_limit: null }),
-        usageToday: { sent: 5, reserved: 0, limit: null },
+        usageToday: { sent: 5, reserved: 0, limit: 20, configuredLimit: null, limitingScope: null, limitingLimit: null },
       })
     );
 

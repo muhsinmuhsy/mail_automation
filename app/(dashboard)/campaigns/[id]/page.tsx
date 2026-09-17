@@ -8,11 +8,15 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Toast } from '@/components/ui/Toast';
 import { UsageProgress } from '@/components/ui/UsageProgress';
 import { formatScheduledTime } from '@/lib/scheduling/time';
+import { stripErrorCode } from '@/lib/limits/error-codes';
 
 interface CampaignUsageToday {
   sent: number;
   reserved: number;
-  limit: number | null;
+  limit: number;
+  configuredLimit: number | null;
+  limitingScope: 'SYSTEM' | 'ACCOUNT' | null;
+  limitingLimit: number | null;
 }
 
 interface CampaignDetails {
@@ -177,13 +181,20 @@ export default function CampaignDetailPage() {
             </dl>
           </div>
 
-          {details.usageToday && details.usageToday.limit !== null && (
-            <UsageProgress
-              sent={details.usageToday.sent}
-              reserved={details.usageToday.reserved}
-              limit={details.usageToday.limit}
-              label="Campaign daily usage"
-            />
+          {details.usageToday && details.usageToday.configuredLimit !== null && (
+            <div>
+              <UsageProgress
+                sent={details.usageToday.sent}
+                reserved={details.usageToday.reserved}
+                limit={details.usageToday.limit}
+                label="Campaign daily usage"
+              />
+              {details.usageToday.limitingScope === 'ACCOUNT' && details.usageToday.limitingLimit !== null && (
+                <p className="mt-1 text-caption text-text-secondary">
+                  {'\u24D8'} Limited by your account daily limit of {details.usageToday.limitingLimit}
+                </p>
+              )}
+            </div>
           )}
 
           <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
@@ -217,7 +228,7 @@ export default function CampaignDetailPage() {
                       <td className="p-2">
                         <StatusBadge status={job.status} />
                         {job.error_message && job.status !== 'SENT' && (
-                          <p className="mt-1 text-caption text-text-secondary">{job.error_message}</p>
+                          <p className="mt-1 text-caption text-text-secondary">{stripErrorCode(job.error_message)}</p>
                         )}
                         {job.next_attempt_at && job.status === 'RETRY_WAIT' && (
                           <p className="text-caption">Retry: {formatScheduledTime(job.next_attempt_at, details.timezone)}</p>

@@ -205,7 +205,7 @@ describe('POST /api/emails/[id]/retry', () => {
     expect(body.error?.message).toBe('Only failed or waiting emails can be retried.');
   });
 
-  it('returns 409 when the error is daily email limit reached', async () => {
+  it('returns 409 when the error is daily email limit reached (legacy)', async () => {
     authenticated();
     mockPrisma.emailJob.findUnique.mockResolvedValue({
       id: JOB_ID, status: 'RETRY_WAIT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
@@ -222,6 +222,75 @@ describe('POST /api/emails/[id]/retry', () => {
     expect(body.error?.type).toBe('BUSINESS_ERROR');
     expect(body.error?.message).toBe('Daily email limit reached. This email will be sent automatically tomorrow.');
     expect(mockPrisma.emailJob.update).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when the error has SYSTEM_DAILY_LIMIT code prefix', async () => {
+    authenticated();
+    mockPrisma.emailJob.findUnique.mockResolvedValue({
+      id: JOB_ID, status: 'RETRY_WAIT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
+      error_message: '[SYSTEM_DAILY_LIMIT] System daily limit reached (500 of 500). Try again tomorrow.',
+    });
+
+    const response = await retryEmail(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: JOB_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(409);
+    expect(body.success).toBe(false);
+    expect(mockPrisma.emailJob.update).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when the error has ACCOUNT_DAILY_LIMIT code prefix', async () => {
+    authenticated();
+    mockPrisma.emailJob.findUnique.mockResolvedValue({
+      id: JOB_ID, status: 'RETRY_WAIT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
+      error_message: '[ACCOUNT_DAILY_LIMIT] Account daily limit reached (20 of 20). Resets at midnight UTC.',
+    });
+
+    const response = await retryEmail(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: JOB_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(409);
+    expect(body.success).toBe(false);
+    expect(mockPrisma.emailJob.update).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when the error has CAMPAIGN_DAILY_LIMIT code prefix', async () => {
+    authenticated();
+    mockPrisma.emailJob.findUnique.mockResolvedValue({
+      id: JOB_ID, status: 'RETRY_WAIT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
+      error_message: '[CAMPAIGN_DAILY_LIMIT] Campaign daily limit reached (2 of 2). Resets at midnight UTC.',
+    });
+
+    const response = await retryEmail(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: JOB_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(409);
+    expect(body.success).toBe(false);
+    expect(mockPrisma.emailJob.update).not.toHaveBeenCalled();
+  });
+
+  it('allows retry when the error is QUOTA_TRANSACTION_CONFLICT (transient)', async () => {
+    authenticated();
+    mockPrisma.emailJob.findUnique.mockResolvedValue({
+      id: JOB_ID, status: 'RETRY_WAIT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
+      error_message: '[QUOTA_TRANSACTION_CONFLICT] Could not reserve email capacity after 3 attempts.',
+    });
+    mockPrisma.campaign.findUnique.mockResolvedValue({ status: 'ACTIVE' });
+
+    const response = await retryEmail(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: JOB_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(mockPrisma.emailJob.update).toHaveBeenCalled();
   });
 
   it('returns 409 when the campaign is CANCELLED', async () => {

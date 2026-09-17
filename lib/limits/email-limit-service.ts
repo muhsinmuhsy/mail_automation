@@ -1,7 +1,12 @@
 import { PrismaClient } from '../generated/prisma/client';
 import { NotFoundError, AppError } from '../errors';
+import { LIMIT_ERROR_CODES, TRANSIENT_ERROR_CODES } from './error-codes';
 
 type Tx = PrismaClient;
+
+const RESERVATION_MAX_ATTEMPTS = 3;
+const HARDCODED_GLOBAL_FALLBACK = 500;
+const HARDCODED_DEFAULT_FALLBACK = 20;
 
 function utcToday(d: Date = new Date()): Date {
   const t = new Date(d);
@@ -21,26 +26,23 @@ export async function getEffectiveDailyEmailLimit(
   campaignId?: string | null
 ): Promise<number> {
   const settings = await prisma.systemSetting.findUnique({ where: { id: 1 } });
-  if (!settings) {
-    return 20;
-  }
-
-  let effectiveLimit = settings.global_daily_email_limit;
+  const globalLimit = settings?.global_daily_email_limit ?? 500;
+  const defaultLimit = settings?.default_daily_email_limit ?? 20;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { daily_email_limit_override: true },
   });
-  if (user?.daily_email_limit_override && user.daily_email_limit_override > 0) {
-    effectiveLimit = Math.min(effectiveLimit, user.daily_email_limit_override);
-  }
+  const userLimit = user?.daily_email_limit_override ?? defaultLimit;
+
+  let effectiveLimit = Math.min(globalLimit, userLimit);
 
   if (campaignId) {
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
       select: { daily_limit: true },
     });
-    if (campaign?.daily_limit && campaign.daily_limit > 0) {
+    if (campaign?.daily_limit !== null && campaign?.daily_limit !== undefined) {
       effectiveLimit = Math.min(effectiveLimit, campaign.daily_limit);
     }
   }
@@ -72,10 +74,19 @@ export async function getUserDailyUsage(
   return { sent, reserved, limit, remaining: Math.max(0, limit - sent - reserved) };
 }
 
+export interface CampaignDailyUsage {
+  sent: number;
+  reserved: number;
+  limit: number;
+  configuredLimit: number | null;
+  limitingScope: 'SYSTEM' | 'ACCOUNT' | null;
+  limitingLimit: number | null;
+}
+
 export async function getCampaignDailyUsage(
   prisma: PrismaClient,
   campaignId: string
-): Promise<{ sent: number; reserved: number; limit: number | null }> {
+): Promise<CampaignDailyUsage> {
   const today = utcToday();
   const [usage, campaign] = await Promise.all([
     prisma.campaignUsageDaily.findUnique({
@@ -84,14 +95,47 @@ export async function getCampaignDailyUsage(
     }),
     prisma.campaign.findUnique({
       where: { id: campaignId },
-      select: { daily_limit: true },
+      select: { daily_limit: true, user_id: true },
     }),
   ]);
-  return {
-    sent: usage?.sent_count ?? 0,
-    reserved: usage?.reserved_count ?? 0,
-    limit: campaign?.daily_limit ?? null,
-  };
+
+  const sent = usage?.sent_count ?? 0;
+  const reserved = usage?.reserved_count ?? 0;
+  const configuredLimit = campaign?.daily_limit ?? null;
+
+  if (!campaign) {
+    return { sent, reserved, limit: 0, configuredLimit: null, limitingScope: null, limitingLimit: null };
+  }
+
+  const settings = await prisma.systemSetting.findUnique({ where: { id: 1 } });
+  const globalLimit = settings?.global_daily_email_limit ?? HARDCODED_GLOBAL_FALLBACK;
+  const defaultLimit = settings?.default_daily_email_limit ?? HARDCODED_DEFAULT_FALLBACK;
+
+  const user = await prisma.user.findUnique({
+    where: { id: campaign.user_id },
+    select: { daily_email_limit_override: true },
+  });
+  const userLimit = user?.daily_email_limit_override ?? defaultLimit;
+
+  const campaignLimit = configuredLimit;
+  const effective = campaignLimit !== null
+    ? Math.min(globalLimit, userLimit, campaignLimit)
+    : Math.min(globalLimit, userLimit);
+
+  let limitingScope: 'SYSTEM' | 'ACCOUNT' | null = null;
+  let limitingLimit: number | null = null;
+
+  if (campaignLimit !== null && effective < campaignLimit) {
+    if (effective === userLimit) {
+      limitingScope = 'ACCOUNT';
+      limitingLimit = userLimit;
+    } else {
+      limitingScope = 'SYSTEM';
+      limitingLimit = globalLimit;
+    }
+  }
+
+  return { sent, reserved, limit: effective, configuredLimit, limitingScope, limitingLimit };
 }
 
 export async function getSystemDailyUsage(
@@ -112,16 +156,22 @@ export async function getSystemDailyUsage(
   };
 }
 
-async function computeLimit(tx: Tx, userId: string, campaignId?: string | null): Promise<number> {
-  return getEffectiveDailyEmailLimit(tx as PrismaClient, userId, campaignId);
-}
-
 /**
  * Reserves one send for the given job attempt. All quota checks and the
  * per-day counter increments happen inside a single transaction. The
  * reservation is keyed by `(email_job_id, attempt_number)` so a retried job
  * (new attempt number) creates a fresh reservation while a re-driven identical
  * attempt is idempotent (reuses the existing reservation, no double count).
+ *
+ * Three independent checks run inside a Serializable transaction:
+ *   1. System  — systemUsageDaily vs global_daily_email_limit
+ *   2. Account — emailUsageDaily  vs user override ?? default_daily_email_limit
+ *   3. Campaign — campaignUsageDaily vs campaign.daily_limit (if set)
+ *
+ * A bounded retry loop (RESERVATION_MAX_ATTEMPTS = 3) handles P2034
+ * serialization conflicts. If all attempts fail, the function returns
+ * a transient error reason so the consumer can set the job to QUEUED
+ * (never SCHEDULED or RETRY_WAIT) for scheduler-driven retry.
  */
 export async function reserveEmailCapacity(
   prisma: PrismaClient,
@@ -134,74 +184,136 @@ export async function reserveEmailCapacity(
 ): Promise<ReservationResult> {
   const attemptNumber = params.attemptNumber ?? 1;
 
-  return prisma.$transaction(async (tx) => {
-    const t = tx as Tx;
-    const today = utcToday();
+  for (let attempt = 1; attempt <= RESERVATION_MAX_ATTEMPTS; attempt++) {
+    try {
+      return await prisma.$transaction(
+        async (tx) => {
+          const t = tx as Tx;
+          const today = utcToday();
 
-    const settings = await t.systemSetting.findUnique({ where: { id: 1 } });
-    if (!settings || !settings.email_sending_enabled) {
-      return { success: false, reason: 'Email sending is currently disabled.' };
+          const settings = await t.systemSetting.findUnique({ where: { id: 1 } });
+          if (!settings || !settings.email_sending_enabled) {
+            return { success: false, reason: 'Email sending is currently disabled.' };
+          }
+
+          const user = await t.user.findUnique({
+            where: { id: params.userId },
+            select: { is_active: true, daily_email_limit_override: true },
+          });
+          if (!user || !user.is_active) {
+            return { success: false, reason: 'User account is inactive.' };
+          }
+
+          const existing = await t.emailSendReservation.findFirst({
+            where: { email_job_id: params.emailJobId, attempt_number: attemptNumber, status: 'RESERVED' },
+          });
+          if (existing) {
+            return { success: true, reservationId: existing.id };
+          }
+
+          const globalLimit = settings.global_daily_email_limit ?? HARDCODED_GLOBAL_FALLBACK;
+          const defaultLimit = settings.default_daily_email_limit ?? HARDCODED_DEFAULT_FALLBACK;
+          const userLimit = user.daily_email_limit_override ?? defaultLimit;
+
+          let campaignLimit: number | null = null;
+          if (params.campaignId) {
+            const campaign = await t.campaign.findUnique({
+              where: { id: params.campaignId },
+              select: { daily_limit: true },
+            });
+            if (campaign?.daily_limit !== null && campaign?.daily_limit !== undefined) {
+              campaignLimit = campaign.daily_limit;
+            }
+          }
+
+          const systemUsage = await t.systemUsageDaily.upsert({
+            where: { usage_date: today },
+            update: {},
+            create: { usage_date: today, reserved_count: 0, sent_count: 0 },
+          });
+          if (systemUsage.sent_count + systemUsage.reserved_count >= globalLimit) {
+            return {
+              success: false,
+              reason: `${LIMIT_ERROR_CODES.SYSTEM} System daily limit reached (${systemUsage.sent_count + systemUsage.reserved_count} of ${globalLimit}). Try again tomorrow.`,
+            };
+          }
+
+          const userUsage = await t.emailUsageDaily.upsert({
+            where: { user_id_usage_date: { user_id: params.userId, usage_date: today } },
+            update: {},
+            create: { user_id: params.userId, usage_date: today },
+          });
+          if (userUsage.sent_count + userUsage.reserved_count >= userLimit) {
+            return {
+              success: false,
+              reason: `${LIMIT_ERROR_CODES.ACCOUNT} Account daily limit reached (${userUsage.sent_count + userUsage.reserved_count} of ${userLimit}). Resets at midnight UTC.`,
+            };
+          }
+
+          if (campaignLimit !== null) {
+            const campaignUsage = await t.campaignUsageDaily.upsert({
+              where: { campaign_id_usage_date: { campaign_id: params.campaignId!, usage_date: today } },
+              update: {},
+              create: { campaign_id: params.campaignId!, usage_date: today, reserved_count: 0, sent_count: 0 },
+            });
+            if (campaignUsage.sent_count + campaignUsage.reserved_count >= campaignLimit) {
+              return {
+                success: false,
+                reason: `${LIMIT_ERROR_CODES.CAMPAIGN} Campaign daily limit reached (${campaignUsage.sent_count + campaignUsage.reserved_count} of ${campaignLimit}). Resets at midnight UTC.`,
+              };
+            }
+          }
+
+          await t.emailUsageDaily.update({
+            where: { user_id_usage_date: { user_id: params.userId, usage_date: today } },
+            data: { reserved_count: { increment: 1 } },
+          });
+
+          await t.systemUsageDaily.update({
+            where: { usage_date: today },
+            data: { reserved_count: { increment: 1 } },
+          });
+
+          if (params.campaignId) {
+            await t.campaignUsageDaily.upsert({
+              where: { campaign_id_usage_date: { campaign_id: params.campaignId, usage_date: today } },
+              update: { reserved_count: { increment: 1 } },
+              create: { campaign_id: params.campaignId, usage_date: today, reserved_count: 1, sent_count: 0 },
+            });
+          }
+
+          const reservation = await t.emailSendReservation.create({
+            data: {
+              email_job_id: params.emailJobId,
+              attempt_number: attemptNumber,
+              user_id: params.userId,
+              campaign_id: params.campaignId ?? null,
+              usage_date: today,
+              status: 'RESERVED',
+            },
+          });
+
+          return { success: true, reservationId: reservation.id };
+        },
+        { isolationLevel: 'Serializable' }
+      );
+    } catch (error) {
+      const code = (error as { code?: string })?.code;
+      if (code === 'P2034' && attempt < RESERVATION_MAX_ATTEMPTS) continue;
+      if (code === 'P2034') {
+        return {
+          success: false,
+          reason: `${TRANSIENT_ERROR_CODES.QUOTA_CONFLICT} Could not reserve email capacity after ${RESERVATION_MAX_ATTEMPTS} attempts due to concurrent modifications. Job will be retried by the scheduler.`,
+        };
+      }
+      throw error;
     }
+  }
 
-    const user = await t.user.findUnique({
-      where: { id: params.userId },
-      select: { is_active: true },
-    });
-    if (!user || !user.is_active) {
-      return { success: false, reason: 'User account is inactive.' };
-    }
-
-    const existing = await t.emailSendReservation.findFirst({
-      where: { email_job_id: params.emailJobId, attempt_number: attemptNumber, status: 'RESERVED' },
-    });
-    if (existing) {
-      return { success: true, reservationId: existing.id };
-    }
-
-    const effectiveLimit = await computeLimit(t, params.userId, params.campaignId);
-    const usage = await t.emailUsageDaily.upsert({
-      where: { user_id_usage_date: { user_id: params.userId, usage_date: today } },
-      update: {},
-      create: { user_id: params.userId, usage_date: today },
-    });
-
-    const available = effectiveLimit - usage.sent_count - usage.reserved_count;
-    if (available <= 0) {
-      return { success: false, reason: 'Daily email limit reached.' };
-    }
-
-    await t.emailUsageDaily.update({
-      where: { user_id_usage_date: { user_id: params.userId, usage_date: today } },
-      data: { reserved_count: { increment: 1 } },
-    });
-
-    await t.systemUsageDaily.upsert({
-      where: { usage_date: today },
-      update: { reserved_count: { increment: 1 } },
-      create: { usage_date: today, reserved_count: 1, sent_count: 0 },
-    });
-
-    if (params.campaignId) {
-      await t.campaignUsageDaily.upsert({
-        where: { campaign_id_usage_date: { campaign_id: params.campaignId, usage_date: today } },
-        update: { reserved_count: { increment: 1 } },
-        create: { campaign_id: params.campaignId, usage_date: today, reserved_count: 1, sent_count: 0 },
-      });
-    }
-
-    const reservation = await t.emailSendReservation.create({
-      data: {
-        email_job_id: params.emailJobId,
-        attempt_number: attemptNumber,
-        user_id: params.userId,
-        campaign_id: params.campaignId ?? null,
-        usage_date: today,
-        status: 'RESERVED',
-      },
-    });
-
-    return { success: true, reservationId: reservation.id };
-  });
+  return {
+    success: false,
+    reason: `${TRANSIENT_ERROR_CODES.QUOTA_CONFLICT} Could not reserve email capacity after ${RESERVATION_MAX_ATTEMPTS} attempts.`,
+  };
 }
 
 /**

@@ -6,6 +6,7 @@ import {
   commitReservation,
   releaseReservation,
 } from '../limits/email-limit-service';
+import { isTransientError } from '../limits/error-codes';
 import { sendEmail } from '../email/service';
 import { decryptSecret } from '../security/encryption';
 import { createStorageService } from '../storage/storage.factory';
@@ -84,6 +85,14 @@ export async function processQueueJob(
     });
 
     if (!reservation.success) {
+      if (isTransientError(reservation.reason)) {
+        await prisma.emailJob.update({
+          where: { id: jobId },
+          data: { status: 'QUEUED' },
+        });
+        return;
+      }
+
       const nextAttempt = new Date();
       nextAttempt.setUTCDate(nextAttempt.getUTCDate() + 1);
       nextAttempt.setUTCHours(0, 0, 0, 0);

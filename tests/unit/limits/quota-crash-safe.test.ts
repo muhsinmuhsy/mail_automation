@@ -30,13 +30,14 @@ function makeModel(defaults: Record<string, unknown> = {}): Model {
 }
 
 function createQuotaPrisma() {
-  const systemSetting = makeModel({ findUnique: { email_sending_enabled: true, global_daily_email_limit: 500 } });
+  const systemSetting = makeModel({ findUnique: { email_sending_enabled: true, global_daily_email_limit: 500, default_daily_email_limit: 20 } });
   const user = makeModel({ findUnique: { id: 'user-1', is_active: true, daily_email_limit_override: null } });
   const emailUsageDaily = makeModel();
   const systemUsageDaily = makeModel();
   const campaignUsageDaily = makeModel();
   const emailSendReservation = makeModel();
   emailSendReservation.create.mockResolvedValue({ id: 'res-1' });
+  const campaign = makeModel();
 
   const prisma = {
     systemSetting,
@@ -45,12 +46,14 @@ function createQuotaPrisma() {
     systemUsageDaily,
     campaignUsageDaily,
     emailSendReservation,
+    campaign,
     $transaction: vi.fn(),
   } as unknown as PrismaClient & { $transaction: ReturnType<typeof vi.fn> };
 
   const tx = {
     systemSetting: { findUnique: systemSetting.findUnique },
     user: { findUnique: user.findUnique },
+    campaign: { findUnique: campaign.findUnique },
     emailUsageDaily: { upsert: emailUsageDaily.upsert, update: emailUsageDaily.update },
     systemUsageDaily: { upsert: systemUsageDaily.upsert, update: systemUsageDaily.update },
     campaignUsageDaily: { upsert: campaignUsageDaily.upsert, update: campaignUsageDaily.update },
@@ -63,10 +66,10 @@ function createQuotaPrisma() {
   };
 
   (prisma.$transaction as ReturnType<typeof vi.fn>).mockImplementation(
-    async (fn: (t: unknown) => Promise<unknown>) => fn(tx)
+    async (fn: (t: unknown) => Promise<unknown>, _opts?: unknown) => fn(tx)
   );
 
-  return { prisma, models: { systemSetting, user, emailUsageDaily, systemUsageDaily, campaignUsageDaily, emailSendReservation } };
+  return { prisma, models: { systemSetting, user, emailUsageDaily, systemUsageDaily, campaignUsageDaily, emailSendReservation, campaign } };
 }
 
 describe('lib/limits/email-limit-service (crash-safe)', () => {
@@ -100,12 +103,12 @@ describe('lib/limits/email-limit-service (crash-safe)', () => {
     expect(result.reason).toBe('Email sending is currently disabled.');
   });
 
-  it('fails when the daily limit is reached', async () => {
+  it('fails when the account daily limit is reached', async () => {
     const { prisma, models } = createQuotaPrisma();
     models.emailUsageDaily.upsert.mockResolvedValue({ sent_count: 500, reserved_count: 0 });
     const result = await reserveEmailCapacity(prisma, { userId: 'user-1', emailJobId: 'job-1' });
     expect(result.success).toBe(false);
-    expect(result.reason).toBe('Daily email limit reached.');
+    expect(result.reason).toContain('[ACCOUNT_DAILY_LIMIT]');
   });
 
   it('commits a reservation, moving it from reserved to sent', async () => {

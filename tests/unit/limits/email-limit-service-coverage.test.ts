@@ -35,7 +35,7 @@ interface LimitOpts {
 }
 
 function makeLimitPrisma(opts: LimitOpts = {}) {
-  const systemSetting = makeModel({ findUnique: { email_sending_enabled: true, global_daily_email_limit: 500 } });
+  const systemSetting = makeModel({ findUnique: { email_sending_enabled: true, global_daily_email_limit: 500, default_daily_email_limit: 20 } });
   const user = makeModel({ findUnique: { id: 'user-1', is_active: true, daily_email_limit_override: null } });
   const emailUsageDaily = makeModel();
   const systemUsageDaily = makeModel();
@@ -75,7 +75,7 @@ function makeLimitPrisma(opts: LimitOpts = {}) {
   };
 
 
-  (prisma.$transaction as Fn).mockImplementation(async (fn: (t: any) => Promise<any>) => fn(tx));
+  (prisma.$transaction as Fn).mockImplementation(async (fn: (t: any) => Promise<any>, _opts?: any) => fn(tx));
 
   return {
     prisma,
@@ -85,32 +85,32 @@ function makeLimitPrisma(opts: LimitOpts = {}) {
 
 describe('lib/limits/email-limit-service additional coverage', () => {
   describe('getEffectiveDailyEmailLimit', () => {
-    it('uses the global limit when the user override is NULL', async () => {
+    it('uses the default limit when the user override is NULL', async () => {
       const { prisma, models } = makeLimitPrisma();
       models.user.findUnique.mockResolvedValue({ daily_email_limit_override: null });
       models.campaign.findUnique.mockResolvedValue(null);
-      expect(await getEffectiveDailyEmailLimit(prisma, 'user-1')).toBe(500);
+      expect(await getEffectiveDailyEmailLimit(prisma, 'user-1')).toBe(20);
     });
 
-    it('uses the global limit when the user override is 0 (falsy)', async () => {
+    it('treats user override 0 as an active zero limit', async () => {
       const { prisma, models } = makeLimitPrisma();
       models.user.findUnique.mockResolvedValue({ daily_email_limit_override: 0 });
       models.campaign.findUnique.mockResolvedValue(null);
-      expect(await getEffectiveDailyEmailLimit(prisma, 'user-1')).toBe(500);
+      expect(await getEffectiveDailyEmailLimit(prisma, 'user-1')).toBe(0);
     });
 
-    it('uses the global limit when the campaign limit is NULL', async () => {
+    it('uses the default limit when the campaign limit is NULL', async () => {
       const { prisma, models } = makeLimitPrisma();
       models.user.findUnique.mockResolvedValue(null);
       models.campaign.findUnique.mockResolvedValue({ daily_limit: null });
-      expect(await getEffectiveDailyEmailLimit(prisma, 'user-1', 'camp-1')).toBe(500);
+      expect(await getEffectiveDailyEmailLimit(prisma, 'user-1', 'camp-1')).toBe(20);
     });
 
-    it('uses the global limit when the user is not found', async () => {
+    it('uses the default limit when the user is not found', async () => {
       const { prisma, models } = makeLimitPrisma();
       models.user.findUnique.mockResolvedValue(null);
       models.campaign.findUnique.mockResolvedValue(null);
-      expect(await getEffectiveDailyEmailLimit(prisma, 'missing')).toBe(500);
+      expect(await getEffectiveDailyEmailLimit(prisma, 'missing')).toBe(20);
     });
 
     it('returns the min of global, user override, and campaign limit', async () => {
@@ -143,7 +143,7 @@ describe('lib/limits/email-limit-service additional coverage', () => {
       expect(models.campaignUsageDaily.upsert).not.toHaveBeenCalled();
     });
 
-    it('fails at the campaign level when the campaign daily limit is exceeded', async () => {
+    it('fails at the account level when the user daily limit is exceeded', async () => {
       const { prisma, models } = makeLimitPrisma({ campaignDailyLimit: 50 });
       models.emailUsageDaily.upsert.mockResolvedValue({ sent_count: 50, reserved_count: 0 });
       const result = await reserveEmailCapacity(prisma, {
@@ -152,7 +152,7 @@ describe('lib/limits/email-limit-service additional coverage', () => {
         emailJobId: 'job-1',
       });
       expect(result.success).toBe(false);
-      expect(result.reason).toBe('Daily email limit reached.');
+      expect(result.reason).toContain('[ACCOUNT_DAILY_LIMIT]');
     });
 
     it('rejects when $transaction throws', async () => {

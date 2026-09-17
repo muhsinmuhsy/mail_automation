@@ -4,6 +4,7 @@ import { defineRoute, type RouteParams } from '@/lib/api/route';
 import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
 import { AppError, NotFoundError, ValidationError } from '@/lib/errors';
+import { isLimitError } from '@/lib/limits/error-codes';
 
 const _POST = defineRoute(async (_req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
@@ -25,7 +26,7 @@ const _POST = defineRoute(async (_req, ctx) => {
       ctx.requestId
     );
   }
-  if (job.error_message?.includes('Daily email limit reached')) {
+  if (isLimitError(job.error_message)) {
     return respondError(
       new AppError('Daily email limit reached. This email will be sent automatically tomorrow.', 409, 'BUSINESS_ERROR'),
       ctx.requestId
