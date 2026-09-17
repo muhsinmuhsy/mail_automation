@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -24,7 +24,7 @@ interface CampaignDetails {
   daily_limit: number | null;
   created_at: string;
   _count: { email_jobs: number };
-  email_jobs: { id: string; to_email: string; status: string; scheduled_at: string; sent_at: string | null }[];
+  email_jobs: { id: string; to_email: string; status: string; scheduled_at: string; sent_at: string | null; error_message: string | null; next_attempt_at: string | null }[];
   usageToday: CampaignUsageToday;
 }
 
@@ -41,10 +41,14 @@ export default function CampaignDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [retryingJobId, setRetryingJobId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'error' } | null>(null);
+  const toastIdRef = useRef(0);
 
-  const showToast = (message: string, type: 'success' | 'error') =>
-    setToast({ id: Date.now(), message, type });
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
+    toastIdRef.current += 1;
+    setToast({ id: toastIdRef.current, message, type });
+  }, []);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -99,6 +103,27 @@ export default function CampaignDetailPage() {
 
   const failedCount = details?.email_jobs.filter((j) => j.status === 'FAILED').length ?? 0;
   const canRetry = failedCount > 0 && details?.status !== 'CANCELLED';
+
+  const handleRetryJob = async (jobId: string) => {
+    setRetryingJobId(jobId);
+    try {
+      const response = await fetch(`/api/emails/${jobId}/retry`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const body = (await response.json()) as ApiEnvelope<null>;
+      if (body.success) {
+        showToast(body.message ?? 'Email queued for retry.', 'success');
+        await reload();
+      } else {
+        showToast(body.error?.message ?? 'Failed to retry email.', 'error');
+      }
+    } catch {
+      showToast('Failed to retry email.', 'error');
+    } finally {
+      setRetryingJobId(null);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -181,6 +206,7 @@ export default function CampaignDetailPage() {
                     <th className="p-2">Scheduled for</th>
                     <th className="p-2">Status</th>
                     <th className="p-2">Sent</th>
+                    <th className="p-2">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -188,8 +214,31 @@ export default function CampaignDetailPage() {
                     <tr key={job.id} className="border-t border-neutral-200">
                       <td className="p-2">{job.to_email}</td>
                       <td className="p-2">{formatScheduledTime(job.scheduled_at, details.timezone)}</td>
-                      <td className="p-2"><StatusBadge status={job.status} /></td>
+                      <td className="p-2">
+                        <StatusBadge status={job.status} />
+                        {job.error_message && job.status !== 'SENT' && (
+                          <p className="mt-1 text-caption text-text-secondary">{job.error_message}</p>
+                        )}
+                        {job.next_attempt_at && job.status === 'RETRY_WAIT' && (
+                          <p className="text-caption">Retry: {formatScheduledTime(job.next_attempt_at, details.timezone)}</p>
+                        )}
+                      </td>
                       <td className="p-2">{formatScheduledTime(job.sent_at, details.timezone)}</td>
+                      <td className="p-2">
+                        {job.status === 'FAILED' || job.status === 'RETRY_WAIT' ? (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            loading={retryingJobId === job.id}
+                            disabled={retryingJobId !== null && retryingJobId !== job.id}
+                            onClick={() => handleRetryJob(job.id)}
+                          >
+                            Retry
+                          </Button>
+                        ) : (
+                          <span className="text-text-secondary">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

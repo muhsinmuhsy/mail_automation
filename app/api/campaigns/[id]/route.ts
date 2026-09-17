@@ -19,7 +19,7 @@ const _GET = defineRoute(async (_req, ctx) => {
       include: {
         _count: { select: { email_jobs: true } },
         email_jobs: {
-          select: { id: true, to_email: true, status: true, scheduled_at: true, sent_at: true },
+          select: { id: true, to_email: true, status: true, scheduled_at: true, sent_at: true, error_message: true, next_attempt_at: true },
           orderBy: [{ scheduled_at: 'asc' }, { id: 'asc' }],
           take: 100,
         },

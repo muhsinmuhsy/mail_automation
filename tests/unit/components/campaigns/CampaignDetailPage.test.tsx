@@ -26,6 +26,8 @@ const mockCampaign = (overrides: Partial<{
     status: string;
     scheduled_at: string;
     sent_at: string | null;
+    error_message: string | null;
+    next_attempt_at: string | null;
   }>;
   usageToday: { sent: number; reserved: number; limit: number | null };
 }> = {}) => ({
@@ -38,8 +40,8 @@ const mockCampaign = (overrides: Partial<{
   created_at: '2026-08-01T10:00:00Z',
   _count: { email_jobs: 2 },
   email_jobs: [
-    { id: 'j1', to_email: 'alice@example.com', status: 'SENT', scheduled_at: '2026-09-06T06:21:00Z', sent_at: '2026-09-06T06:21:05Z' },
-    { id: 'j2', to_email: 'bob@example.com', status: 'SCHEDULED', scheduled_at: '2026-09-06T06:26:00Z', sent_at: null },
+    { id: 'j1', to_email: 'alice@example.com', status: 'SENT', scheduled_at: '2026-09-06T06:21:00Z', sent_at: '2026-09-06T06:21:05Z', error_message: null, next_attempt_at: null },
+    { id: 'j2', to_email: 'bob@example.com', status: 'SCHEDULED', scheduled_at: '2026-09-06T06:26:00Z', sent_at: null, error_message: null, next_attempt_at: null },
   ],
   ...overrides,
 });
@@ -112,6 +114,7 @@ describe('CampaignDetailPage', () => {
     expect(screen.getByRole('columnheader', { name: 'Scheduled for' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Status' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Sent' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Actions' })).toBeInTheDocument();
     expect(screen.getByText('alice@example.com')).toBeInTheDocument();
     expect(screen.getByText('bob@example.com')).toBeInTheDocument();
   });
@@ -161,7 +164,7 @@ describe('CampaignDetailPage', () => {
         mockCampaign({
           _count: { email_jobs: 1 },
           email_jobs: [
-            { id: 'j1', to_email: 'alice@example.com', status: 'SCHEDULED', scheduled_at: '2026-09-06T06:21:00Z', sent_at: null },
+            { id: 'j1', to_email: 'alice@example.com', status: 'SCHEDULED', scheduled_at: '2026-09-06T06:21:00Z', sent_at: null, error_message: null, next_attempt_at: null },
           ],
         })
       )
@@ -221,5 +224,83 @@ describe('CampaignDetailPage', () => {
       expect(screen.getByRole('heading', { name: 'Q3 Outreach', level: 1 })).toBeInTheDocument()
     );
     expect(screen.queryByText('Campaign daily usage')).not.toBeInTheDocument();
+  });
+
+  it('shows Retry button for FAILED and RETRY_WAIT rows, em-dash for others', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      mockCampaignResponse(
+        mockCampaign({
+          email_jobs: [
+            { id: 'j1', to_email: 'alice@example.com', status: 'SENT', scheduled_at: '2026-09-06T06:21:00Z', sent_at: '2026-09-06T06:21:05Z', error_message: null, next_attempt_at: null },
+            { id: 'j2', to_email: 'bob@example.com', status: 'FAILED', scheduled_at: '2026-09-06T06:26:00Z', sent_at: null, error_message: 'SMTP auth failed', next_attempt_at: null },
+            { id: 'j3', to_email: 'carol@example.com', status: 'RETRY_WAIT', scheduled_at: '2026-09-06T06:31:00Z', sent_at: null, error_message: null, next_attempt_at: '2026-09-06T07:00:00Z' },
+          ],
+        })
+      )
+    );
+
+    render(<CampaignDetailPage />);
+
+    await waitFor(() =>
+      expect(screen.getByText('bob@example.com')).toBeInTheDocument()
+    );
+    const retryButtons = screen.getAllByRole('button', { name: 'Retry' });
+    expect(retryButtons).toHaveLength(2);
+  });
+
+  it('shows error_message under status for FAILED rows', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      mockCampaignResponse(
+        mockCampaign({
+          email_jobs: [
+            { id: 'j1', to_email: 'bob@example.com', status: 'FAILED', scheduled_at: '2026-09-06T06:26:00Z', sent_at: null, error_message: 'Connection refused', next_attempt_at: null },
+          ],
+        })
+      )
+    );
+
+    render(<CampaignDetailPage />);
+
+    await waitFor(() =>
+      expect(screen.getByText('Connection refused')).toBeInTheDocument()
+    );
+  });
+
+  it('calls the retry API when per-row Retry is clicked', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    fetchMock.mockResolvedValueOnce(
+      mockCampaignResponse(
+        mockCampaign({
+          email_jobs: [
+            { id: 'j1', to_email: 'bob@example.com', status: 'FAILED', scheduled_at: '2026-09-06T06:26:00Z', sent_at: null, error_message: 'SMTP error', next_attempt_at: null },
+          ],
+        })
+      )
+    );
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, message: 'Email queued for retry.' }),
+    } as Response);
+    fetchMock.mockResolvedValueOnce(
+      mockCampaignResponse(
+        mockCampaign({
+          email_jobs: [
+            { id: 'j1', to_email: 'bob@example.com', status: 'SCHEDULED', scheduled_at: '2026-09-06T06:26:00Z', sent_at: null, error_message: null, next_attempt_at: null },
+          ],
+        })
+      )
+    );
+
+    render(<CampaignDetailPage />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
+    );
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/emails/j1/retry', expect.objectContaining({ method: 'POST' }))
+    );
   });
 });
