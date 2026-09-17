@@ -13,7 +13,7 @@ const _POST = defineRoute(async (_req, ctx) => {
 
   const job = await getPrisma().emailJob.findUnique({
     where: { id: parsed.data.id },
-    select: { id: true, status: true, campaign_id: true },
+    select: { id: true, status: true, campaign_id: true, error_message: true },
   });
 
   if (!job) {
@@ -22,6 +22,12 @@ const _POST = defineRoute(async (_req, ctx) => {
   if (job.status !== 'FAILED' && job.status !== 'RETRY_WAIT') {
     return respondError(
       new AppError('Only failed or waiting emails can be retried.', 409, 'BUSINESS_ERROR'),
+      ctx.requestId
+    );
+  }
+  if (job.error_message?.includes('Daily email limit reached')) {
+    return respondError(
+      new AppError('Daily email limit reached. This email will be sent automatically tomorrow.', 409, 'BUSINESS_ERROR'),
       ctx.requestId
     );
   }

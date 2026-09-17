@@ -205,6 +205,25 @@ describe('POST /api/emails/[id]/retry', () => {
     expect(body.error?.message).toBe('Only failed or waiting emails can be retried.');
   });
 
+  it('returns 409 when the error is daily email limit reached', async () => {
+    authenticated();
+    mockPrisma.emailJob.findUnique.mockResolvedValue({
+      id: JOB_ID, status: 'RETRY_WAIT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
+      error_message: 'Daily email limit reached.',
+    });
+
+    const response = await retryEmail(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: JOB_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(409);
+    expect(body.success).toBe(false);
+    expect(body.error?.type).toBe('BUSINESS_ERROR');
+    expect(body.error?.message).toBe('Daily email limit reached. This email will be sent automatically tomorrow.');
+    expect(mockPrisma.emailJob.update).not.toHaveBeenCalled();
+  });
+
   it('returns 409 when the campaign is CANCELLED', async () => {
     authenticated();
     mockPrisma.emailJob.findUnique.mockResolvedValue({
