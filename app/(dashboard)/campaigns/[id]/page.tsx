@@ -236,17 +236,17 @@ export default function CampaignDetailPage() {
             )}
           </div>
 
-          {details.usageToday && details.usageToday.configuredLimit !== null && details.status === 'ACTIVE' && (
+          {details.usageToday && details.usageToday.configuredLimit !== null && details.status === 'ACTIVE' && details.usageToday.limit < details._count.email_jobs && (
             <div>
               <UsageProgress
                 sent={details.usageToday.sent}
                 reserved={details.usageToday.reserved}
                 limit={details.usageToday.limit}
-                label="Campaign daily usage"
+                label={details.usageToday.limitingScope === 'ACCOUNT' || details.usageToday.limitingScope === 'SYSTEM' ? 'Account daily limit' : 'Campaign daily limit'}
               />
               {details.usageToday.limitingScope === 'ACCOUNT' && details.usageToday.limitingLimit !== null && (
                 <p className="mt-1 text-caption text-text-secondary">
-                  {'\u24D8'} Limited by your account daily limit of {details.usageToday.limitingLimit}
+                  {'\u24D8'} Your account daily limit is {details.usageToday.limitingLimit}, which is lower than this campaign&apos;s limit.
                 </p>
               )}
             </div>

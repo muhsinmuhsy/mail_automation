@@ -204,7 +204,13 @@ describe('CampaignDetailPage', () => {
   it('shows campaign daily usage progress when usageToday has a limit', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       mockCampaignResponse({
-        ...mockCampaign(),
+        ...mockCampaign({
+          _count: { email_jobs: 25 },
+          email_jobs: Array.from({ length: 25 }, (_, i) => ({
+            id: `j${i}`, to_email: `user${i}@example.com`, status: 'SCHEDULED',
+            scheduled_at: '2026-09-06T06:21:00Z2', sent_at: null, error_message: null, next_attempt_at: null,
+          })),
+        }),
         usageToday: { sent: 12, reserved: 3, limit: 20, configuredLimit: 20, limitingScope: null, limitingLimit: null },
       })
     );
@@ -212,7 +218,7 @@ describe('CampaignDetailPage', () => {
     render(<CampaignDetailPage />);
 
     await waitFor(() =>
-      expect(screen.getByText('Campaign daily usage')).toBeInTheDocument()
+      expect(screen.getByText('Campaign daily limit')).toBeInTheDocument()
     );
     expect(screen.getByText(/of 20/)).toBeInTheDocument();
     expect(screen.getByText(/5 remaining/)).toBeInTheDocument();
@@ -231,7 +237,24 @@ describe('CampaignDetailPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Q3 Outreach', level: 1 })).toBeInTheDocument()
     );
-    expect(screen.queryByText('Campaign daily usage')).not.toBeInTheDocument();
+    expect(screen.queryByText('Campaign daily limit')).not.toBeInTheDocument();
+  });
+
+  it('hides daily usage bar when limit exceeds total emails', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      mockCampaignResponse({
+        ...mockCampaign(),
+        usageToday: { sent: 0, reserved: 0, limit: 20, configuredLimit: 20, limitingScope: null, limitingLimit: null },
+      })
+    );
+
+    render(<CampaignDetailPage />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Q3 Outreach', level: 1 })).toBeInTheDocument()
+    );
+    expect(screen.queryByText('Campaign daily limit')).not.toBeInTheDocument();
+    expect(screen.queryByText('Account daily limit')).not.toBeInTheDocument();
   });
 
   it('shows Retry button for FAILED and RETRY_WAIT rows, em-dash for others', async () => {
