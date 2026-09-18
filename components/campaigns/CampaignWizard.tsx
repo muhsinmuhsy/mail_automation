@@ -725,7 +725,7 @@ export function CampaignWizard({
                           disabled={!r.canSelectFollowUp}
                           className="h-4 w-4 accent-information"
                         />
-                        <span>{contact?.label ?? r.contactId}</span>
+                        <span>{contact?.label ?? r.recipientEmail ?? r.contactId}</span>
                         {r.lastSentAt && <span className="text-caption text-text-secondary">Last sent: {new Date(r.lastSentAt).toLocaleDateString()}</span>}
                       </label>
                     );
