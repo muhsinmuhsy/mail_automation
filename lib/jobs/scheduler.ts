@@ -1,5 +1,5 @@
 import { campaignEmailTime } from '@/lib/scheduling/campaign';
-import { PrismaClient, Prisma } from '../generated/prisma/client';
+import { PrismaClient, type EmailJobStatus } from '../generated/prisma/client';
 import type { TransactionClient } from '@/lib/db';
 import { replaceTemplateVariables } from '@/lib/email/template';
 import { buildTemplateContact, type ContactFieldDefinition, type ContactFieldValueRow } from '@/lib/email/template-contact';
@@ -181,7 +181,7 @@ export async function recoverStuckJobs(prisma: PrismaClient): Promise<void> {
   });
 }
 
-const TERMINAL_JOB_STATUSES = ['SENT', 'FAILED', 'CANCELLED', 'DELIVERY_UNKNOWN'];
+const TERMINAL_JOB_STATUSES: EmailJobStatus[] = ['SENT', 'FAILED', 'CANCELLED', 'DELIVERY_UNKNOWN'];
 
 /**
  * Marks every `ACTIVE` campaign whose jobs are all in a terminal state as
@@ -189,17 +189,32 @@ const TERMINAL_JOB_STATUSES = ['SENT', 'FAILED', 'CANCELLED', 'DELIVERY_UNKNOWN'
  * a paused campaign can still be resumed. Runs idempotently each minute.
  */
 export async function completeFinishedCampaigns(prisma: PrismaClient): Promise<string[]> {
-  const finished = await prisma.$queryRaw<Array<{ id: string }>>`
-    UPDATE campaigns
-    SET status = 'COMPLETED', updated_at = now()
-    WHERE status = 'ACTIVE'
-      AND NOT EXISTS (
-        SELECT 1 FROM email_jobs
-        WHERE email_jobs.campaign_id = campaigns.id
-          AND email_jobs.status NOT IN (${Prisma.join(TERMINAL_JOB_STATUSES)})
-      )
-    RETURNING id
-  `;
+  const activeCampaigns = await prisma.campaign.findMany({
+    where: { status: 'ACTIVE' },
+    select: { id: true },
+  });
 
-  return finished.map((row: { id: string }) => row.id);
+  if (activeCampaigns.length === 0) return [];
+
+  const activeIds = activeCampaigns.map(c => c.id);
+
+  const campaignsPending = await prisma.emailJob.groupBy({
+    by: ['campaign_id'],
+    where: {
+      campaign_id: { in: activeIds },
+      status: { notIn: TERMINAL_JOB_STATUSES },
+    },
+  });
+
+  const pendingSet = new Set(campaignsPending.map(g => g.campaign_id));
+  const finishedIds = activeIds.filter(id => !pendingSet.has(id));
+
+  if (finishedIds.length === 0) return [];
+
+  await prisma.campaign.updateMany({
+    where: { id: { in: finishedIds } },
+    data: { status: 'COMPLETED' },
+  });
+
+  return finishedIds;
 }

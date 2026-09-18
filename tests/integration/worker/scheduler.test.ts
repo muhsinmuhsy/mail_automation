@@ -42,11 +42,18 @@ describe('integration/worker (scheduler, no real DB)', () => {
   it('completeFinishedCampaigns marks ACTIVE campaigns with only terminal jobs COMPLETED', async () => {
 
     const prisma = createMockPrisma() as any;
-    prisma.$queryRaw.mockResolvedValue([{ id: 'c-1' }]);
+    prisma.campaign.findMany.mockResolvedValue([{ id: 'c-1' }]);
+    prisma.emailJob.groupBy.mockResolvedValue([]);
+    prisma.campaign.updateMany.mockResolvedValue({ count: 1 });
 
     const ids = await completeFinishedCampaigns(prisma);
     expect(ids).toEqual(['c-1']);
-    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+    expect(prisma.campaign.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: ['c-1'] } },
+        data: { status: 'COMPLETED' },
+      })
+    );
   });
 
   it('generateCampaignJobs substitutes template variables per contact and persists jobs', async () => {

@@ -87,7 +87,8 @@ async function fail(res: any) {
 
 beforeEach(() => {
   resetPrisma();
-  prismaMock.$queryRaw.mockResolvedValue([]);
+  prismaMock.campaign.findMany.mockResolvedValue([]);
+  prismaMock.emailJob.groupBy.mockResolvedValue([]);
 });
 
 describe('app/api route handlers (unit coverage)', () => {

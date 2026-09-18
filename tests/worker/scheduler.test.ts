@@ -80,16 +80,23 @@ describe('lib/jobs/scheduler', () => {
   describe('completeFinishedCampaigns', () => {
     it('should mark ACTIVE campaigns with only terminal jobs as COMPLETED', async () => {
       const prisma = {
-        $queryRaw: vi.fn().mockResolvedValue([{ id: 'c-1' }, { id: 'c-2' }]),
+        campaign: {
+          findMany: vi.fn().mockResolvedValue([{ id: 'c-1' }, { id: 'c-2' }]),
+          updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+        },
+        emailJob: {
+          groupBy: vi.fn().mockResolvedValue([]),
+        },
       } as unknown as PrismaClient;
 
       const result = await completeFinishedCampaigns(prisma);
       expect(result).toEqual(['c-1', 'c-2']);
-      expect(prisma.$queryRaw).toHaveBeenCalled();
-      const query = (prisma.$queryRaw as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      const queryString = typeof query === 'string' ? query : String(query);
-      expect(queryString).toContain('COMPLETED');
-      expect(queryString).toContain('NOT EXISTS');
+      expect(prisma.campaign.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: { in: ['c-1', 'c-2'] } },
+          data: { status: 'COMPLETED' },
+        })
+      );
     });
   });
 

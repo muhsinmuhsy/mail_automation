@@ -285,21 +285,21 @@ describe('GET /api/campaigns', () => {
   it('applies a case-insensitive name search', async () => {
     await listCampaigns(new NextRequest('http://localhost/api/campaigns?search=%20spring%20'));
 
-    const where = mockPrisma.campaign.findMany.mock.calls[0][0].where;
+    const where = mockPrisma.campaign.findMany.mock.calls[1][0].where;
     expect(where.name).toEqual({ contains: 'spring', mode: 'insensitive' });
   });
 
   it('filters by a known status value', async () => {
     await listCampaigns(new NextRequest('http://localhost/api/campaigns?status=PAUSED'));
 
-    const where = mockPrisma.campaign.findMany.mock.calls[0][0].where;
+    const where = mockPrisma.campaign.findMany.mock.calls[1][0].where;
     expect(where.status).toBe('PAUSED');
   });
 
   it('ignores an unknown status value', async () => {
     await listCampaigns(new NextRequest('http://localhost/api/campaigns?status=BOGUS'));
 
-    const where = mockPrisma.campaign.findMany.mock.calls[0][0].where;
+    const where = mockPrisma.campaign.findMany.mock.calls[1][0].where;
     expect(where.status).toBeUndefined();
   });
 

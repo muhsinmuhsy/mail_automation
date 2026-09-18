@@ -139,6 +139,7 @@ export function createMockPrisma(): PrismaClient {
       delete: vi.fn(),
       deleteMany: vi.fn(),
       count: vi.fn(),
+      groupBy: vi.fn(),
       $on: undefined,
     },
     emailLog: {

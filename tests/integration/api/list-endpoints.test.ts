@@ -19,6 +19,7 @@ const mockPrisma = {
   campaign: {
     findMany: vi.fn(),
     count: vi.fn(),
+    updateMany: vi.fn().mockResolvedValue({ count: 0 }),
   },
   emailJob: {
     findMany: vi.fn(),
@@ -95,7 +96,7 @@ describe('API list endpoints — pagination & search', () => {
     const request = new NextRequest('http://localhost/api/campaigns?status=ACTIVE&search=launch');
     await campaignsGet(request);
 
-    const where = vi.mocked(mockPrisma.campaign.findMany).mock.calls[0][0].where;
+    const where = vi.mocked(mockPrisma.campaign.findMany).mock.calls[1][0].where;
     expect(where.status).toBe('ACTIVE');
     expect(where.name).toEqual({ contains: 'launch', mode: 'insensitive' });
   });
@@ -121,7 +122,7 @@ describe('API list endpoints — pagination & search', () => {
     const request = new NextRequest('http://localhost/api/campaigns?status=NOT_A_STATUS');
     await campaignsGet(request);
 
-    const where = vi.mocked(mockPrisma.campaign.findMany).mock.calls[0][0].where;
+    const where = vi.mocked(mockPrisma.campaign.findMany).mock.calls[1][0].where;
     expect(where.status).toBeUndefined();
   });
 });
