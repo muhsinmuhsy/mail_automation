@@ -13,7 +13,7 @@ describe('daily usage read helpers', () => {
       } as unknown as PrismaClient;
 
       const usage = await getUserDailyUsage(prisma, 'user-1');
-      expect(usage).toEqual({ sent: 0, reserved: 0, limit: 20, remaining: 20 });
+      expect(usage).toEqual({ sent: 0, reserved: 0, limit: 20, remaining: 20, limitingScope: 'ACCOUNT', limitingLimit: 20 });
     });
 
     it('returns sent and reserved counts with remaining', async () => {
@@ -25,7 +25,7 @@ describe('daily usage read helpers', () => {
       } as unknown as PrismaClient;
 
       const usage = await getUserDailyUsage(prisma, 'user-1');
-      expect(usage).toEqual({ sent: 30, reserved: 5, limit: 100, remaining: 65 });
+      expect(usage).toEqual({ sent: 30, reserved: 5, limit: 100, remaining: 65, limitingScope: 'ACCOUNT', limitingLimit: 100 });
     });
 
     it('clamps remaining to zero when over limit', async () => {

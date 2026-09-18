@@ -11,6 +11,8 @@ const _GET = defineRoute(async (_req, ctx) => {
     sentToday: usage.sent,
     reservedToday: usage.reserved,
     remaining: usage.remaining,
+    limitingScope: usage.limitingScope,
+    limitingLimit: usage.limitingLimit,
   }, ctx.requestId);
 }, { auth: 'user' });
 

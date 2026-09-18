@@ -84,7 +84,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [usage, setUsage] = useState<{ sent: number; reserved: number; limit: number } | null>(null);
+  const [usage, setUsage] = useState<{ sent: number; reserved: number; limit: number; limitingScope: 'SYSTEM' | 'ACCOUNT' } | null>(null);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -149,9 +149,9 @@ export default function DashboardPage() {
       try {
         const res = await fetch('/api/user/email-limit', { credentials: 'include', signal: controller.signal });
         if (!res.ok) return;
-        const body = await res.json() as { success?: boolean; data?: { sentToday?: number; reservedToday?: number; dailyEmailLimit?: number } };
+        const body = await res.json() as { success?: boolean; data?: { sentToday?: number; reservedToday?: number; dailyEmailLimit?: number; limitingScope?: 'SYSTEM' | 'ACCOUNT' } };
         if (body.success && body.data) {
-          setUsage({ sent: body.data.sentToday ?? 0, reserved: body.data.reservedToday ?? 0, limit: body.data.dailyEmailLimit ?? 0 });
+          setUsage({ sent: body.data.sentToday ?? 0, reserved: body.data.reservedToday ?? 0, limit: body.data.dailyEmailLimit ?? 0, limitingScope: body.data.limitingScope ?? 'ACCOUNT' });
         }
       } catch { /* aborted */ }
     })();
@@ -201,7 +201,12 @@ export default function DashboardPage() {
           )}
 
           {usage && (
-            <UsageProgress sent={usage.sent} reserved={usage.reserved} limit={usage.limit} />
+            <UsageProgress
+              sent={usage.sent}
+              reserved={usage.reserved}
+              limit={usage.limit}
+              label={usage.limitingScope === 'SYSTEM' ? 'System daily usage' : 'Account daily usage'}
+            />
           )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -87,6 +87,8 @@ describe('GET /api/user/email-limit', () => {
       sentToday: 15,
       reservedToday: 3,
       remaining: 2,
+      limitingScope: 'ACCOUNT',
+      limitingLimit: 20,
     });
   });
 
@@ -106,6 +108,8 @@ describe('GET /api/user/email-limit', () => {
       sentToday: 0,
       reservedToday: 0,
       remaining: 20,
+      limitingScope: 'ACCOUNT',
+      limitingLimit: 20,
     });
   });
 

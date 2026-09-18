@@ -55,6 +55,8 @@ export interface DailyUsageSummary {
   reserved: number;
   limit: number;
   remaining: number;
+  limitingScope: 'SYSTEM' | 'ACCOUNT';
+  limitingLimit: number;
 }
 
 export async function getUserDailyUsage(
@@ -62,16 +64,29 @@ export async function getUserDailyUsage(
   userId: string
 ): Promise<DailyUsageSummary> {
   const today = utcToday();
-  const [usage, limit] = await Promise.all([
+  const [usage, settings, user] = await Promise.all([
     prisma.emailUsageDaily.findUnique({
       where: { user_id_usage_date: { user_id: userId, usage_date: today } },
       select: { sent_count: true, reserved_count: true },
     }),
-    getEffectiveDailyEmailLimit(prisma, userId),
+    prisma.systemSetting.findUnique({ where: { id: 1 } }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { daily_email_limit_override: true },
+    }),
   ]);
+
+  const globalLimit = settings?.global_daily_email_limit ?? 500;
+  const defaultLimit = settings?.default_daily_email_limit ?? 20;
+  const userLimit = user?.daily_email_limit_override ?? defaultLimit;
+  const effectiveLimit = Math.min(globalLimit, userLimit);
+
   const sent = usage?.sent_count ?? 0;
   const reserved = usage?.reserved_count ?? 0;
-  return { sent, reserved, limit, remaining: Math.max(0, limit - sent - reserved) };
+  const limitingScope: 'SYSTEM' | 'ACCOUNT' = globalLimit <= userLimit ? 'SYSTEM' : 'ACCOUNT';
+  const limitingLimit = limitingScope === 'SYSTEM' ? globalLimit : userLimit;
+
+  return { sent, reserved, limit: effectiveLimit, remaining: Math.max(0, effectiveLimit - sent - reserved), limitingScope, limitingLimit };
 }
 
 export interface CampaignDailyUsage {
