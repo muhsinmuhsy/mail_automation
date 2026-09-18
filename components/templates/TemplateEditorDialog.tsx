@@ -272,8 +272,8 @@ export function TemplateEditorDialog({
                 />
               )}
             </div>
-            {!loading && (
-              <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
+              {!loading && (
                 <div role="tablist" aria-label="Editor mode" className="flex items-center gap-1">
                   <button
                     role="tab"
@@ -300,14 +300,16 @@ export function TemplateEditorDialog({
                     Plain text
                   </button>
                 </div>
-                <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>
-                  Cancel
-                </Button>
+              )}
+              <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>
+                Cancel
+              </Button>
+              {!loading && (
                 <Button onClick={handleSave} loading={saving} disabled={loading}>
                   Save template
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {!loading && (
