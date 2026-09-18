@@ -31,5 +31,8 @@ export function stripErrorCode(message: string | null | undefined): string {
       return message.slice(code.length).trim();
     }
   }
+  if (message.includes(LEGACY_LIMIT_MESSAGE)) {
+    return 'Account daily limit reached.';
+  }
   return message;
 }

@@ -89,8 +89,8 @@ describe('lib/limits/error-codes', () => {
       expect(stripErrorCode(message)).toBe('Could not reserve email capacity.');
     });
 
-    it('leaves legacy messages unchanged (no code prefix)', () => {
-      expect(stripErrorCode('Daily email limit reached.')).toBe('Daily email limit reached.');
+    it('normalizes legacy messages to account limit', () => {
+      expect(stripErrorCode('Daily email limit reached.')).toBe('Account daily limit reached.');
     });
 
     it('leaves unrelated messages unchanged', () => {

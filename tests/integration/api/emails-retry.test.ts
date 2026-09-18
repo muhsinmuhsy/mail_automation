@@ -220,7 +220,7 @@ describe('POST /api/emails/[id]/retry', () => {
     expect(response.status).toBe(409);
     expect(body.success).toBe(false);
     expect(body.error?.type).toBe('BUSINESS_ERROR');
-    expect(body.error?.message).toBe('Daily email limit reached. This email will be sent automatically tomorrow.');
+    expect(body.error?.message).toBe('Account daily limit reached. This email will be sent automatically tomorrow.');
     expect(mockPrisma.emailJob.update).not.toHaveBeenCalled();
   });
 
