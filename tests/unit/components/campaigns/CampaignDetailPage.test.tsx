@@ -31,6 +31,7 @@ const mockCampaign = (overrides: Partial<{
     error_message: string | null;
     next_attempt_at: string | null;
   }>;
+  emailJobsPagination: { total: number; page: number; pageSize: number; totalPages: number };
   usageToday: { sent: number; reserved: number; limit: number; configuredLimit: number | null; limitingScope: 'SYSTEM' | 'ACCOUNT' | null; limitingLimit: number | null; accountSent: number; accountReserved: number; accountLimit: number };
 }> = {}) => ({
   name: 'Q3 Outreach',
@@ -47,6 +48,7 @@ const mockCampaign = (overrides: Partial<{
     { status: 'SCHEDULED', count: 1 },
   ],
   _count: { email_jobs: 2 },
+  emailJobsPagination: { total: 2, page: 1, pageSize: 20, totalPages: 1 },
   email_jobs: [
     { id: 'j1', to_email: 'alice@example.com', status: 'SENT', scheduled_at: '2026-09-06T06:21:00Z', sent_at: '2026-09-06T06:21:05Z', error_message: null, next_attempt_at: null },
     { id: 'j2', to_email: 'bob@example.com', status: 'SCHEDULED', scheduled_at: '2026-09-06T06:26:00Z', sent_at: null, error_message: null, next_attempt_at: null },
@@ -90,7 +92,7 @@ describe('CampaignDetailPage', () => {
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
-        '/api/campaigns/c1',
+        '/api/campaigns/c1?page=1&limit=20',
         expect.objectContaining({ credentials: 'include' })
       )
     );
@@ -117,7 +119,6 @@ describe('CampaignDetailPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Delivery progress', level: 3 })).toBeInTheDocument()
     );
-    expect(screen.getByText(/Showing 2 of 2 emails/)).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Recipient' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Scheduled for' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Status' })).toBeInTheDocument();

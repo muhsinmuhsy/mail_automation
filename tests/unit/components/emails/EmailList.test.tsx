@@ -22,7 +22,7 @@ describe('EmailList', () => {
 
   it('renders table headers', () => {
     render(<EmailList emails={emails} />);
-    expect(screen.getByText('To')).toBeInTheDocument();
+    expect(screen.getByText('Recipient')).toBeInTheDocument();
     expect(screen.getByText('Subject')).toBeInTheDocument();
     expect(screen.getByText('Status')).toBeInTheDocument();
     expect(screen.getByText('Scheduled for')).toBeInTheDocument();
@@ -32,7 +32,7 @@ describe('EmailList', () => {
 
   it('renders an empty table for no emails', () => {
     render(<EmailList emails={[]} />);
-    expect(screen.getByText('To')).toBeInTheDocument();
+    expect(screen.getByText('Recipient')).toBeInTheDocument();
     expect(screen.getByText('Subject')).toBeInTheDocument();
   });
 

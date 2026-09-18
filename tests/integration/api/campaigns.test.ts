@@ -43,6 +43,8 @@ const mockPrisma = {
   emailJob: {
     updateMany: vi.fn(),
     groupBy: vi.fn().mockResolvedValue([]),
+    findMany: vi.fn().mockResolvedValue([]),
+    count: vi.fn().mockResolvedValue(0),
   },
   systemSetting: { findUnique: vi.fn().mockResolvedValue(null) },
   user: {

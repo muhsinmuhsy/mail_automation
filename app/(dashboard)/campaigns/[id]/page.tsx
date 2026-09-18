@@ -9,9 +9,27 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Toast } from '@/components/ui/Toast';
 import { UsageProgress } from '@/components/ui/UsageProgress';
 import { formatScheduledTime } from '@/lib/scheduling/time';
-import { stripErrorCode } from '@/lib/limits/error-codes';
 import { CampaignProgressBar } from '@/components/campaigns/CampaignProgressBar';
+import { EmailList, type EmailRow } from '@/components/emails/EmailList';
+import { ListToolbar } from '@/components/ui/ListToolbar';
+import { Pagination } from '@/components/ui/Pagination';
+import { Select } from '@/components/ui/Select';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { StatusCount } from '@/lib/campaigns/status-counts';
+
+const PAGE_SIZE = 20;
+
+const STATUS_OPTIONS = [
+  { value: '', label: 'All statuses' },
+  { value: 'SCHEDULED', label: 'Scheduled' },
+  { value: 'QUEUED', label: 'Queued' },
+  { value: 'PROCESSING', label: 'Sending' },
+  { value: 'RETRY_WAIT', label: 'Waiting to retry' },
+  { value: 'SENT', label: 'Sent' },
+  { value: 'FAILED', label: 'Failed' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+  { value: 'DELIVERY_UNKNOWN', label: 'Delivery status unknown' },
+];
 
 interface CampaignUsageToday {
   sent: number;
@@ -23,6 +41,13 @@ interface CampaignUsageToday {
   accountSent: number;
   accountReserved: number;
   accountLimit: number;
+}
+
+interface EmailJobsPagination {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 interface CampaignDetails {
@@ -37,7 +62,8 @@ interface CampaignDetails {
   email_account: { id: string; email: string; provider: string };
   _count: { email_jobs: number };
   status_counts?: StatusCount[];
-  email_jobs: { id: string; to_email: string; status: string; scheduled_at: string; sent_at: string | null; error_message: string | null; next_attempt_at: string | null }[];
+  email_jobs: EmailRow[];
+  emailJobsPagination: EmailJobsPagination;
   usageToday: CampaignUsageToday;
 }
 
@@ -60,10 +86,21 @@ export default function CampaignDetailPage() {
   const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'error' } | null>(null);
   const toastIdRef = useRef(0);
 
+  const [jobsPage, setJobsPage] = useState(1);
+  const [jobsSearch, setJobsSearch] = useState('');
+  const [jobsStatus, setJobsStatus] = useState('');
+
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     toastIdRef.current += 1;
     setToast({ id: toastIdRef.current, message, type });
   }, []);
+
+  const buildUrl = useCallback(() => {
+    const p = new URLSearchParams({ page: String(jobsPage), limit: String(PAGE_SIZE) });
+    if (jobsSearch.trim()) p.set('search', jobsSearch.trim());
+    if (jobsStatus) p.set('status', jobsStatus);
+    return `/api/campaigns/${campaignId}?${p.toString()}`;
+  }, [campaignId, jobsPage, jobsSearch, jobsStatus]);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -71,7 +108,7 @@ export default function CampaignDetailPage() {
     const timer = setTimeout(() => {
       const load = async () => {
         try {
-          const response = await fetch(`/api/campaigns/${campaignId}`, { credentials: 'include', signal: controller.signal });
+          const response = await fetch(buildUrl(), { credentials: 'include', signal: controller.signal });
           const body = (await response.json()) as ApiEnvelope<CampaignDetails>;
           if (!body.success) throw new Error(body.error?.message || 'Could not load campaign details.');
           if (!response.ok) throw new Error('Could not load campaign details.');
@@ -83,13 +120,13 @@ export default function CampaignDetailPage() {
       void load();
       const interval = setInterval(() => void load(), 15_000);
       return () => clearInterval(interval);
-    }, 0);
+    }, 250);
     return () => { controller.abort(); clearTimeout(timer); };
-  }, [campaignId]);
+  }, [buildUrl, campaignId]);
 
   const reload = async () => {
     try {
-      const response = await fetch(`/api/campaigns/${campaignId}`, { credentials: 'include' });
+      const response = await fetch(buildUrl(), { credentials: 'include' });
       const body = (await response.json()) as ApiEnvelope<CampaignDetails>;
       if (body.success) setDetails(body.data);
     } catch { /* keep stale data on reload failure */ }
@@ -116,13 +153,13 @@ export default function CampaignDetailPage() {
     }
   };
 
-  const failedCount = details?.email_jobs.filter((j) => j.status === 'FAILED').length ?? 0;
+  const failedCount = details?.status_counts?.find(c => c.status === 'FAILED')?.count ?? 0;
   const canRetry = failedCount > 0 && details?.status !== 'CANCELLED';
 
-  const handleRetryJob = async (jobId: string) => {
-    setRetryingJobId(jobId);
+  const handleRetryJob = async (job: EmailRow) => {
+    setRetryingJobId(job.id);
     try {
-      const response = await fetch(`/api/emails/${jobId}/retry`, {
+      const response = await fetch(`/api/emails/${job.id}/retry`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -161,6 +198,8 @@ export default function CampaignDetailPage() {
       setCancelOpen(false);
     }
   };
+
+  const jobsFiltered = Boolean(jobsSearch.trim() || jobsStatus);
 
   return (
     <div className="flex flex-col gap-8">
@@ -265,7 +304,7 @@ export default function CampaignDetailPage() {
           )}
 
           <div className="rounded-[var(--radius-lg)] border border-neutral-200 bg-background p-6">
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-text-primary">Delivery progress</h3>
               {canRetry && (
                 <Button variant="secondary" size="sm" loading={retrying} onClick={retryFailed}>
@@ -273,55 +312,54 @@ export default function CampaignDetailPage() {
                 </Button>
               )}
             </div>
-            <p className="mb-3 text-sm text-text-secondary">
-              Showing {details.email_jobs.length} of {details._count.email_jobs} emails. Statuses refresh every 15 seconds.
-            </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr>
-                    <th className="p-2">Recipient</th>
-                    <th className="p-2">Scheduled for</th>
-                    <th className="p-2">Status</th>
-                    <th className="p-2">Sent</th>
-                    <th className="p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {details.email_jobs.map((job) => (
-                    <tr key={job.id} className="border-t border-neutral-200">
-                      <td className="p-2">{job.to_email}</td>
-                      <td className="p-2">{formatScheduledTime(job.scheduled_at, details.timezone)}</td>
-                      <td className="p-2">
-                        <StatusBadge status={job.status} />
-                        {job.error_message && job.status !== 'SENT' && (
-                          <p className="mt-1 text-caption text-text-secondary">{stripErrorCode(job.error_message)}</p>
-                        )}
-                        {job.next_attempt_at && job.status === 'RETRY_WAIT' && (
-                          <p className="text-caption">Retry: {formatScheduledTime(job.next_attempt_at, details.timezone)}</p>
-                        )}
-                      </td>
-                      <td className="p-2">{formatScheduledTime(job.sent_at, details.timezone)}</td>
-                      <td className="p-2">
-                        {job.status === 'FAILED' || job.status === 'RETRY_WAIT' ? (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            loading={retryingJobId === job.id}
-                            disabled={retryingJobId !== null && retryingJobId !== job.id}
-                            onClick={() => handleRetryJob(job.id)}
-                          >
-                            Retry
-                          </Button>
-                        ) : (
-                          <span className="text-text-secondary">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            <div className="mb-4">
+              <ListToolbar
+                search={jobsSearch}
+                onSearchChange={(value) => { setJobsSearch(value); setJobsPage(1); }}
+                filters={
+                  <div className="sm:w-48">
+                    <Select
+                      label="Status"
+                      options={STATUS_OPTIONS}
+                      value={jobsStatus}
+                      onChange={(event) => { setJobsStatus(event.target.value); setJobsPage(1); }}
+                    />
+                  </div>
+                }
+              />
             </div>
+
+            {details.email_jobs.length === 0 ? (
+              <EmptyState
+                title={jobsFiltered ? 'No emails match these filters' : 'No emails in this campaign'}
+                description={jobsFiltered ? 'Try a different status or recipient.' : 'Emails will appear here once the campaign starts.'}
+              />
+            ) : (
+              <div className="flex flex-col gap-4">
+                <EmailList
+                  emails={details.email_jobs}
+                  onRetry={handleRetryJob}
+                  retryingId={retryingJobId}
+                  showSubject={false}
+                  showCreated={false}
+                  timezone={details.timezone}
+                />
+
+                {details.emailJobsPagination && details.emailJobsPagination.totalPages > 1 && (
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-supporting text-text-secondary">
+                      {details.emailJobsPagination.total} {details.emailJobsPagination.total === 1 ? 'email' : 'emails'}
+                    </p>
+                    <Pagination
+                      page={details.emailJobsPagination.page}
+                      totalPages={details.emailJobsPagination.totalPages}
+                      onPageChange={setJobsPage}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       ) : null}
