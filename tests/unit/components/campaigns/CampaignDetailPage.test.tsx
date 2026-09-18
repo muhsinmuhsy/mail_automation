@@ -42,6 +42,10 @@ const mockCampaign = (overrides: Partial<{
   created_at: '2026-08-01T10:00:00Z',
   template: { id: 't1', name: 'Welcome Email', subject: 'Welcome!' },
   email_account: { id: 'ea1', email: 'sender@gmail.com', provider: 'gmail' },
+  status_counts: [
+    { status: 'SENT', count: 1 },
+    { status: 'SCHEDULED', count: 1 },
+  ],
   _count: { email_jobs: 2 },
   email_jobs: [
     { id: 'j1', to_email: 'alice@example.com', status: 'SENT', scheduled_at: '2026-09-06T06:21:00Z', sent_at: '2026-09-06T06:21:05Z', error_message: null, next_attempt_at: null },

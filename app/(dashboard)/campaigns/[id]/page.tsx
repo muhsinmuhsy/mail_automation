@@ -9,6 +9,8 @@ import { Toast } from '@/components/ui/Toast';
 import { UsageProgress } from '@/components/ui/UsageProgress';
 import { formatScheduledTime } from '@/lib/scheduling/time';
 import { stripErrorCode } from '@/lib/limits/error-codes';
+import { EmailStatusBreakdown } from '@/components/campaigns/EmailStatusBreakdown';
+import type { StatusCount } from '@/lib/campaigns/status-counts';
 
 interface CampaignUsageToday {
   sent: number;
@@ -30,6 +32,7 @@ interface CampaignDetails {
   template: { id: string; name: string; subject: string };
   email_account: { id: string; email: string; provider: string };
   _count: { email_jobs: number };
+  status_counts?: StatusCount[];
   email_jobs: { id: string; to_email: string; status: string; scheduled_at: string; sent_at: string | null; error_message: string | null; next_attempt_at: string | null }[];
   usageToday: CampaignUsageToday;
 }
@@ -189,6 +192,12 @@ export default function CampaignDetailPage() {
                 <dd className="text-text-primary">{new Date(details.created_at).toLocaleDateString()}</dd>
               </div>
             </dl>
+
+            {details.status_counts && details.status_counts.length > 0 && (
+              <div className="mt-4 border-t border-neutral-200 pt-4">
+                <EmailStatusBreakdown counts={details.status_counts} variant="detail" />
+              </div>
+            )}
           </div>
 
           {details.usageToday && details.usageToday.configuredLimit !== null && (

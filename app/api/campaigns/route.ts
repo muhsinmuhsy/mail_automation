@@ -11,6 +11,7 @@ import { createCampaign } from '@/lib/campaigns/create';
 import { ValidationError, ForbiddenError, UnsupportedFieldError } from '@/lib/errors';
 import { attachmentSelectionError } from '@/lib/email/attachment-limits';
 import { completeFinishedCampaigns } from '@/lib/jobs/scheduler';
+import { toStatusCounts } from '@/lib/campaigns/status-counts';
 
 const CAMPAIGN_STATUSES = ['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'] as const;
 
@@ -45,7 +46,29 @@ const _GET = defineRoute(async (req, ctx) => {
     prisma.campaign.count({ where }),
   ]);
 
-  return respondList(campaigns, total, page, limit, ctx.requestId);
+  const campaignIds = campaigns.map(c => c.id);
+  const statusRows = campaignIds.length > 0
+    ? await prisma.emailJob.groupBy({
+        by: ['campaign_id', 'status'],
+        where: { campaign_id: { in: campaignIds } },
+        _count: true,
+      })
+    : [];
+
+  const countsByCampaign = new Map<string, Array<{ status: string; _count: number }>>();
+  for (const row of statusRows) {
+    if (!row.campaign_id) continue;
+    const arr = countsByCampaign.get(row.campaign_id) ?? [];
+    arr.push({ status: row.status, _count: row._count });
+    countsByCampaign.set(row.campaign_id, arr);
+  }
+
+  const campaignsWithCounts = campaigns.map(c => ({
+    ...c,
+    status_counts: toStatusCounts(countsByCampaign.get(c.id) ?? []),
+  }));
+
+  return respondList(campaignsWithCounts, total, page, limit, ctx.requestId);
 }, { auth: 'user' });
 
 const _POST = defineRoute(async (req, ctx) => {

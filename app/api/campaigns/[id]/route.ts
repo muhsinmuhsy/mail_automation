@@ -6,6 +6,7 @@ import { idParamSchema } from '@/lib/validation/common';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { getCampaignDailyUsage } from '@/lib/limits/email-limit-service';
 import { completeFinishedCampaigns } from '@/lib/jobs/scheduler';
+import { toStatusCounts } from '@/lib/campaigns/status-counts';
 
 const _GET = defineRoute(async (_req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
@@ -36,7 +37,13 @@ const _GET = defineRoute(async (_req, ctx) => {
     return respondError(new NotFoundError('Campaign not found.'), ctx.requestId);
   }
 
-  return respondOk({ ...campaign, usageToday }, ctx.requestId);
+  const statusRows = await prisma.emailJob.groupBy({
+    by: ['status'],
+    where: { campaign_id: parsed.data.id },
+    _count: true,
+  });
+
+  return respondOk({ ...campaign, status_counts: toStatusCounts(statusRows), usageToday }, ctx.requestId);
 }, {
   auth: {
     ownership: async (params) => {
