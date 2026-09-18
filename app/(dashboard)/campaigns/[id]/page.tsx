@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Toast } from '@/components/ui/Toast';
@@ -51,6 +52,8 @@ export default function CampaignDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [retryingJobId, setRetryingJobId] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'error' } | null>(null);
   const toastIdRef = useRef(0);
 
@@ -134,6 +137,28 @@ export default function CampaignDetailPage() {
     }
   };
 
+  const runAction = async (action: 'pause' | 'resume' | 'cancel') => {
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/${action}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const body = (await response.json()) as ApiEnvelope<null>;
+      if (body.success) {
+        showToast(body.message ?? 'Campaign updated.', 'success');
+        await reload();
+      } else {
+        showToast(body.error?.message ?? 'Failed to update campaign.', 'error');
+      }
+    } catch {
+      showToast('Failed to update campaign.', 'error');
+    } finally {
+      setActionLoading(false);
+      setCancelOpen(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
@@ -141,7 +166,18 @@ export default function CampaignDetailPage() {
           <h1 className="text-3xl font-semibold">{details?.name ?? 'Campaign'}</h1>
           <p className="mt-2 text-text-secondary">Campaign details and delivery progress.</p>
         </div>
-        <Button variant="secondary" onClick={() => router.push('/campaigns')}>Back</Button>
+        <div className="flex items-center gap-2">
+          {details?.status === 'ACTIVE' && (
+            <Button variant="secondary" size="sm" disabled={actionLoading} onClick={() => void runAction('pause')}>Pause</Button>
+          )}
+          {details?.status === 'PAUSED' && (
+            <Button variant="secondary" size="sm" disabled={actionLoading} onClick={() => void runAction('resume')}>Resume</Button>
+          )}
+          {details && !['CANCELLED', 'COMPLETED'].includes(details.status) && (
+            <Button variant="destructive" size="sm" disabled={actionLoading} onClick={() => setCancelOpen(true)}>Cancel</Button>
+          )}
+          <Button variant="secondary" onClick={() => router.push('/campaigns')}>Back</Button>
+        </div>
       </div>
 
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
@@ -277,6 +313,18 @@ export default function CampaignDetailPage() {
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        title="Cancel campaign"
+        description={details ? `Are you sure you want to cancel "${details.name}"? This action cannot be undone.` : ''}
+        confirmLabel="Cancel campaign"
+        cancelLabel="Keep campaign"
+        variant="destructive"
+        loading={actionLoading}
+        onConfirm={() => void runAction('cancel')}
+      />
 
       {toast && (
         <Toast key={toast.id} message={toast.message} type={toast.type} onClose={() => setToast(null)} />
