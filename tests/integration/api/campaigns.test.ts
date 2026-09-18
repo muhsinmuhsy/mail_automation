@@ -73,6 +73,7 @@ const mockPrisma = {
   campaignUsageDaily: {
     findUnique: vi.fn().mockResolvedValue(null),
   },
+  $queryRaw: vi.fn().mockResolvedValue([]),
   $disconnect: vi.fn(),
 };
 mockPrisma.campaign.findUnique = mockPrisma.campaign.findFirst;

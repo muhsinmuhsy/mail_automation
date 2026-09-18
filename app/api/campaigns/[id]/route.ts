@@ -5,6 +5,7 @@ import { respondError, respondOk } from '@/lib/api/respond';
 import { idParamSchema } from '@/lib/validation/common';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { getCampaignDailyUsage } from '@/lib/limits/email-limit-service';
+import { completeFinishedCampaigns } from '@/lib/jobs/scheduler';
 
 const _GET = defineRoute(async (_req, ctx) => {
   const parsed = idParamSchema.safeParse({ id: ctx.params.id });
@@ -13,6 +14,7 @@ const _GET = defineRoute(async (_req, ctx) => {
   }
 
   const prisma = getPrisma();
+  await completeFinishedCampaigns(prisma);
   const [campaign, usageToday] = await Promise.all([
     prisma.campaign.findUnique({
       where: { id: parsed.data.id },

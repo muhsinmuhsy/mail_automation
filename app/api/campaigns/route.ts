@@ -10,11 +10,15 @@ import {
 import { createCampaign } from '@/lib/campaigns/create';
 import { ValidationError, ForbiddenError, UnsupportedFieldError } from '@/lib/errors';
 import { attachmentSelectionError } from '@/lib/email/attachment-limits';
+import { completeFinishedCampaigns } from '@/lib/jobs/scheduler';
 
 const CAMPAIGN_STATUSES = ['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'] as const;
 
 const _GET = defineRoute(async (req, ctx) => {
   const { page, limit, search, startDate, endDate } = parseListQuery(req, { search: true, dateRange: true });
+
+  const prisma = getPrisma();
+  await completeFinishedCampaigns(prisma);
 
   const { searchParams } = new URL(req.url);
   const statusParam = searchParams.get('status');
@@ -31,14 +35,14 @@ const _GET = defineRoute(async (req, ctx) => {
   };
 
   const [campaigns, total] = await Promise.all([
-    getPrisma().campaign.findMany({
+    prisma.campaign.findMany({
       where,
       select: { _count: { select: { email_jobs: true } }, id: true, name: true, status: true, created_at: true, start_at: true, timezone: true, interval_minutes: true, daily_limit: true },
       orderBy: { created_at: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
     }),
-    getPrisma().campaign.count({ where }),
+    prisma.campaign.count({ where }),
   ]);
 
   return respondList(campaigns, total, page, limit, ctx.requestId);
