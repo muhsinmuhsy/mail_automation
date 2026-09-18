@@ -1,6 +1,10 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, afterEach } from 'vitest';
+
+const router = { push: vi.fn() };
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
+
 import CustomFieldsPage from '@/app/(dashboard)/contacts/fields/page';
 
 interface ContactField {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { FieldForm, type FieldFormValues } from '@/components/settings/FieldForm';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -47,6 +48,7 @@ const BUILTIN_FIELDS: Array<{ name: string; label: string; field_type: FieldType
 ];
 
 export default function CustomFieldsPage() {
+  const router = useRouter();
   const [fields, setFields] = useState<ContactField[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [page, setPage] = useState(1);
@@ -223,12 +225,15 @@ export default function CustomFieldsPage() {
             Define custom merge fields for your contacts. Use them in templates as <code>{`{{token}}`}</code>.
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
-        >
-          {showForm ? 'Cancel' : 'Add field'}
-        </button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => router.push('/contacts')}>Back</Button>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-information px-4 py-2 text-sm font-medium text-white hover:bg-information/90"
+          >
+            {showForm ? 'Cancel' : 'Add field'}
+          </button>
+        </div>
       </div>
 
       {showForm && (
