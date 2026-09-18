@@ -18,6 +18,8 @@ const _GET = defineRoute(async (_req, ctx) => {
       where: { id: parsed.data.id },
       include: {
         _count: { select: { email_jobs: true } },
+        template: { select: { id: true, name: true, subject: true } },
+        email_account: { select: { id: true, email: true, provider: true } },
         email_jobs: {
           select: { id: true, to_email: true, status: true, scheduled_at: true, sent_at: true, error_message: true, next_attempt_at: true },
           orderBy: [{ scheduled_at: 'asc' }, { id: 'asc' }],

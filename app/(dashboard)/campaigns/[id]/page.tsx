@@ -27,6 +27,8 @@ interface CampaignDetails {
   interval_minutes: number;
   daily_limit: number | null;
   created_at: string;
+  template: { id: string; name: string; subject: string };
+  email_account: { id: string; email: string; provider: string };
   _count: { email_jobs: number };
   email_jobs: { id: string; to_email: string; status: string; scheduled_at: string; sent_at: string | null; error_message: string | null; next_attempt_at: string | null }[];
   usageToday: CampaignUsageToday;
@@ -154,6 +156,14 @@ export default function CampaignDetailPage() {
             </div>
 
             <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="flex gap-2 text-sm">
+                <dt className="text-text-secondary">Template:</dt>
+                <dd className="text-text-primary">{details.template.name}</dd>
+              </div>
+              <div className="flex gap-2 text-sm">
+                <dt className="text-text-secondary">Sending account:</dt>
+                <dd className="text-text-primary">{details.email_account.email} <span className="text-text-secondary">({details.email_account.provider})</span></dd>
+              </div>
               <div className="flex gap-2 text-sm">
                 <dt className="text-text-secondary">Start time:</dt>
                 <dd className="text-text-primary">{formatScheduledTime(details.start_at, details.timezone)}</dd>

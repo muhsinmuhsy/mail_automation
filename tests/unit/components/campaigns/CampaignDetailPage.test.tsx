@@ -19,6 +19,8 @@ const mockCampaign = (overrides: Partial<{
   interval_minutes: number;
   daily_limit: number | null;
   created_at: string;
+  template: { id: string; name: string; subject: string };
+  email_account: { id: string; email: string; provider: string };
   _count: { email_jobs: number };
   email_jobs: Array<{
     id: string;
@@ -38,6 +40,8 @@ const mockCampaign = (overrides: Partial<{
   interval_minutes: 5,
   daily_limit: 20,
   created_at: '2026-08-01T10:00:00Z',
+  template: { id: 't1', name: 'Welcome Email', subject: 'Welcome!' },
+  email_account: { id: 'ea1', email: 'sender@gmail.com', provider: 'gmail' },
   _count: { email_jobs: 2 },
   email_jobs: [
     { id: 'j1', to_email: 'alice@example.com', status: 'SENT', scheduled_at: '2026-09-06T06:21:00Z', sent_at: '2026-09-06T06:21:05Z', error_message: null, next_attempt_at: null },
