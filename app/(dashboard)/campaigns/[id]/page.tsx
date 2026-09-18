@@ -10,7 +10,7 @@ import { Toast } from '@/components/ui/Toast';
 import { UsageProgress } from '@/components/ui/UsageProgress';
 import { formatScheduledTime } from '@/lib/scheduling/time';
 import { stripErrorCode } from '@/lib/limits/error-codes';
-import { EmailStatusBreakdown } from '@/components/campaigns/EmailStatusBreakdown';
+import { CampaignProgressBar } from '@/components/campaigns/CampaignProgressBar';
 import type { StatusCount } from '@/lib/campaigns/status-counts';
 
 interface CampaignUsageToday {
@@ -229,14 +229,14 @@ export default function CampaignDetailPage() {
               </div>
             </dl>
 
-            {details.status_counts && details.status_counts.length > 0 && (
+            {details.status_counts && details.status_counts.length > 0 && details._count.email_jobs > 0 && (
               <div className="mt-4 border-t border-neutral-200 pt-4">
-                <EmailStatusBreakdown counts={details.status_counts} variant="detail" />
+                <CampaignProgressBar counts={details.status_counts} total={details._count.email_jobs} variant="detail" />
               </div>
             )}
           </div>
 
-          {details.usageToday && details.usageToday.configuredLimit !== null && (
+          {details.usageToday && details.usageToday.configuredLimit !== null && details.status === 'ACTIVE' && (
             <div>
               <UsageProgress
                 sent={details.usageToday.sent}

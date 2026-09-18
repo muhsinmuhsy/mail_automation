@@ -3,7 +3,7 @@
 import { formatScheduledTime } from '@/lib/scheduling/time';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { EmailStatusBreakdown } from './EmailStatusBreakdown';
+import { CampaignProgressBar } from './CampaignProgressBar';
 import type { StatusCount } from '@/lib/campaigns/status-counts';
 
 const CLOSED_STATUSES = ['CANCELLED', 'COMPLETED'];
@@ -39,9 +39,9 @@ export function CampaignCard({ campaign, busy = false, onView, onPause, onResume
           Starts {formatScheduledTime(campaign.start_at, campaign.timezone)}
           <br />{campaign._count?.email_jobs === 1 ? '1 scheduled email' : <>One email every {campaign.interval_minutes} minutes. Emails per day: {campaign.daily_limit ?? 'No campaign limit'}</>}
         </p>
-        {campaign.status_counts && campaign.status_counts.length > 0 && (
-          <div className="mt-1.5">
-            <EmailStatusBreakdown counts={campaign.status_counts} />
+        {campaign.status_counts && campaign.status_counts.length > 0 && campaign._count?.email_jobs && (
+          <div className="mt-2">
+            <CampaignProgressBar counts={campaign.status_counts} total={campaign._count.email_jobs} />
           </div>
         )}
       </div>
