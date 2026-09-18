@@ -155,6 +155,95 @@ describe('lib/limits/email-limit-service additional coverage', () => {
       expect(result.reason).toContain('[ACCOUNT_DAILY_LIMIT]');
     });
 
+    it('fails at the system level when the global daily limit is exceeded', async () => {
+      const { prisma, models } = makeLimitPrisma();
+      models.systemUsageDaily.upsert.mockResolvedValue({ sent_count: 500, reserved_count: 0 });
+      const result = await reserveEmailCapacity(prisma, { userId: 'user-1', emailJobId: 'job-1' });
+      expect(result.success).toBe(false);
+      expect(result.reason).toContain('[SYSTEM_DAILY_LIMIT]');
+    });
+
+    it('fails at the campaign level when the campaign daily limit is exceeded', async () => {
+      const { prisma, models } = makeLimitPrisma({ campaignDailyLimit: 2 });
+      models.campaignUsageDaily.upsert.mockResolvedValue({ sent_count: 2, reserved_count: 0 });
+      models.emailUsageDaily.upsert.mockResolvedValue({ sent_count: 0, reserved_count: 0 });
+      models.systemUsageDaily.upsert.mockResolvedValue({ sent_count: 0, reserved_count: 0 });
+      const result = await reserveEmailCapacity(prisma, {
+        userId: 'user-1',
+        campaignId: 'camp-1',
+        emailJobId: 'job-1',
+      });
+      expect(result.success).toBe(false);
+      expect(result.reason).toContain('[CAMPAIGN_DAILY_LIMIT]');
+    });
+
+    it('succeeds when all limits are within bounds', async () => {
+      const { prisma, models } = makeLimitPrisma({ campaignDailyLimit: 50 });
+      models.emailUsageDaily.upsert.mockResolvedValue({ sent_count: 5, reserved_count: 2 });
+      models.systemUsageDaily.upsert.mockResolvedValue({ sent_count: 100, reserved_count: 10 });
+      models.campaignUsageDaily.upsert.mockResolvedValue({ sent_count: 10, reserved_count: 5 });
+      const result = await reserveEmailCapacity(prisma, {
+        userId: 'user-1',
+        campaignId: 'camp-1',
+        emailJobId: 'job-1',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('succeeds when usage is 0 of 20 (limit not reached after reset)', async () => {
+      const { prisma, models } = makeLimitPrisma();
+      models.emailUsageDaily.upsert.mockResolvedValue({ sent_count: 0, reserved_count: 0 });
+      models.systemUsageDaily.upsert.mockResolvedValue({ sent_count: 0, reserved_count: 0 });
+      const result = await reserveEmailCapacity(prisma, { userId: 'user-1', emailJobId: 'job-1' });
+      expect(result.success).toBe(true);
+    });
+
+    it('fails at account level when user override is 0 (active zero limit)', async () => {
+      const { prisma, models } = makeLimitPrisma();
+      models.user.findUnique.mockResolvedValue({ is_active: true, daily_email_limit_override: 0 });
+      const result = await reserveEmailCapacity(prisma, { userId: 'user-1', emailJobId: 'job-1' });
+      expect(result.success).toBe(false);
+      expect(result.reason).toContain('[ACCOUNT_DAILY_LIMIT]');
+    });
+
+    it('fails at campaign level when campaign daily_limit is 0 (active zero limit)', async () => {
+      const { prisma, models } = makeLimitPrisma({ campaignDailyLimit: 0 });
+      models.emailUsageDaily.upsert.mockResolvedValue({ sent_count: 0, reserved_count: 0 });
+      models.systemUsageDaily.upsert.mockResolvedValue({ sent_count: 0, reserved_count: 0 });
+      const result = await reserveEmailCapacity(prisma, {
+        userId: 'user-1',
+        campaignId: 'camp-1',
+        emailJobId: 'job-1',
+      });
+      expect(result.success).toBe(false);
+      expect(result.reason).toContain('[CAMPAIGN_DAILY_LIMIT]');
+    });
+
+    it('checks system limit before account limit', async () => {
+      const { prisma, models } = makeLimitPrisma();
+      models.systemUsageDaily.upsert.mockResolvedValue({ sent_count: 500, reserved_count: 0 });
+      models.emailUsageDaily.upsert.mockResolvedValue({ sent_count: 50, reserved_count: 0 });
+      const result = await reserveEmailCapacity(prisma, { userId: 'user-1', emailJobId: 'job-1' });
+      expect(result.success).toBe(false);
+      expect(result.reason).toContain('[SYSTEM_DAILY_LIMIT]');
+      expect(result.reason).not.toContain('[ACCOUNT_DAILY_LIMIT]');
+    });
+
+    it('checks account limit before campaign limit', async () => {
+      const { prisma, models } = makeLimitPrisma({ campaignDailyLimit: 2 });
+      models.emailUsageDaily.upsert.mockResolvedValue({ sent_count: 20, reserved_count: 0 });
+      models.systemUsageDaily.upsert.mockResolvedValue({ sent_count: 0, reserved_count: 0 });
+      models.campaignUsageDaily.upsert.mockResolvedValue({ sent_count: 2, reserved_count: 0 });
+      const result = await reserveEmailCapacity(prisma, {
+        userId: 'user-1',
+        campaignId: 'camp-1',
+        emailJobId: 'job-1',
+      });
+      expect(result.success).toBe(false);
+      expect(result.reason).toContain('[ACCOUNT_DAILY_LIMIT]');
+      expect(result.reason).not.toContain('[CAMPAIGN_DAILY_LIMIT]');
+    });
+
     it('rejects when $transaction throws', async () => {
       const { prisma } = makeLimitPrisma();
       (prisma.$transaction as Fn).mockImplementation(async () => {

@@ -205,46 +205,91 @@ describe('POST /api/emails/[id]/retry', () => {
     expect(body.error?.message).toBe('Only failed or waiting emails can be retried.');
   });
 
-  it('returns 409 when the error is daily email limit reached (legacy)', async () => {
+  it('allows retry even when error_message says legacy "Daily email limit reached" — consumer re-checks actual limit', async () => {
     authenticated();
     mockPrisma.emailJob.findUnique.mockResolvedValue({
       id: JOB_ID, status: 'RETRY_WAIT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
       error_message: 'Daily email limit reached.',
     });
+    mockPrisma.campaign.findUnique.mockResolvedValue({ status: 'ACTIVE' });
 
     const response = await retryEmail(new NextRequest(url, { method: 'POST' }), {
       params: Promise.resolve({ id: JOB_ID }),
     });
     const body = (await response.json()) as ApiBody;
 
-    expect(response.status).toBe(409);
-    expect(body.success).toBe(false);
-    expect(body.error?.type).toBe('BUSINESS_ERROR');
-    expect(body.error?.message).toBe('Account daily limit reached. This email will be sent automatically tomorrow.');
-    expect(mockPrisma.emailJob.update).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(mockPrisma.emailJob.update).toHaveBeenCalledWith({
+      where: { id: JOB_ID },
+      data: {
+        status: 'SCHEDULED',
+        attempt_count: 0,
+        error_message: null,
+        processing_started_at: null,
+        next_attempt_at: null,
+      },
+    });
   });
 
-  it('returns 409 when the error has SYSTEM_DAILY_LIMIT code prefix', async () => {
+  it('allows retry when error has SYSTEM_DAILY_LIMIT code — consumer re-checks actual limit', async () => {
     authenticated();
     mockPrisma.emailJob.findUnique.mockResolvedValue({
       id: JOB_ID, status: 'RETRY_WAIT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
       error_message: '[SYSTEM_DAILY_LIMIT] System daily limit reached (500 of 500). Try again tomorrow.',
     });
+    mockPrisma.campaign.findUnique.mockResolvedValue({ status: 'ACTIVE' });
 
     const response = await retryEmail(new NextRequest(url, { method: 'POST' }), {
       params: Promise.resolve({ id: JOB_ID }),
     });
     const body = (await response.json()) as ApiBody;
 
-    expect(response.status).toBe(409);
-    expect(body.success).toBe(false);
-    expect(mockPrisma.emailJob.update).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(mockPrisma.emailJob.update).toHaveBeenCalled();
   });
 
-  it('returns 409 when the error has ACCOUNT_DAILY_LIMIT code prefix', async () => {
+  it('allows retry when error has ACCOUNT_DAILY_LIMIT code — consumer re-checks actual limit', async () => {
     authenticated();
     mockPrisma.emailJob.findUnique.mockResolvedValue({
       id: JOB_ID, status: 'RETRY_WAIT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
+      error_message: '[ACCOUNT_DAILY_LIMIT] Account daily limit reached (20 of 20). Resets at midnight UTC.',
+    });
+    mockPrisma.campaign.findUnique.mockResolvedValue({ status: 'ACTIVE' });
+
+    const response = await retryEmail(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: JOB_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(mockPrisma.emailJob.update).toHaveBeenCalled();
+  });
+
+  it('allows retry when error has CAMPAIGN_DAILY_LIMIT code — consumer re-checks actual limit', async () => {
+    authenticated();
+    mockPrisma.emailJob.findUnique.mockResolvedValue({
+      id: JOB_ID, status: 'RETRY_WAIT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
+      error_message: '[CAMPAIGN_DAILY_LIMIT] Campaign daily limit reached (2 of 2). Resets at midnight UTC.',
+    });
+    mockPrisma.campaign.findUnique.mockResolvedValue({ status: 'ACTIVE' });
+
+    const response = await retryEmail(new NextRequest(url, { method: 'POST' }), {
+      params: Promise.resolve({ id: JOB_ID }),
+    });
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(mockPrisma.emailJob.update).toHaveBeenCalled();
+  });
+
+  it('clears error_message and resets attempt_count on retry from RETRY_WAIT with limit error', async () => {
+    authenticated();
+    mockPrisma.emailJob.findUnique.mockResolvedValue({
+      id: JOB_ID, status: 'RETRY_WAIT', campaign_id: null, user_id: 'user-1',
       error_message: '[ACCOUNT_DAILY_LIMIT] Account daily limit reached (20 of 20). Resets at midnight UTC.',
     });
 
@@ -253,26 +298,18 @@ describe('POST /api/emails/[id]/retry', () => {
     });
     const body = (await response.json()) as ApiBody;
 
-    expect(response.status).toBe(409);
-    expect(body.success).toBe(false);
-    expect(mockPrisma.emailJob.update).not.toHaveBeenCalled();
-  });
-
-  it('returns 409 when the error has CAMPAIGN_DAILY_LIMIT code prefix', async () => {
-    authenticated();
-    mockPrisma.emailJob.findUnique.mockResolvedValue({
-      id: JOB_ID, status: 'RETRY_WAIT', campaign_id: CAMPAIGN_ID, user_id: 'user-1',
-      error_message: '[CAMPAIGN_DAILY_LIMIT] Campaign daily limit reached (2 of 2). Resets at midnight UTC.',
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(mockPrisma.emailJob.update).toHaveBeenCalledWith({
+      where: { id: JOB_ID },
+      data: {
+        status: 'SCHEDULED',
+        attempt_count: 0,
+        error_message: null,
+        processing_started_at: null,
+        next_attempt_at: null,
+      },
     });
-
-    const response = await retryEmail(new NextRequest(url, { method: 'POST' }), {
-      params: Promise.resolve({ id: JOB_ID }),
-    });
-    const body = (await response.json()) as ApiBody;
-
-    expect(response.status).toBe(409);
-    expect(body.success).toBe(false);
-    expect(mockPrisma.emailJob.update).not.toHaveBeenCalled();
   });
 
   it('allows retry when the error is QUOTA_TRANSACTION_CONFLICT (transient)', async () => {
