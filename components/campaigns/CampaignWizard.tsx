@@ -17,6 +17,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import { SortSelect } from '@/components/ui/SortSelect';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import { CustomFieldFilter, type ActiveFilter, type CustomFieldDef } from '@/components/contacts/CustomFieldFilter';
+import { FilterChip } from '@/components/contacts/FilterChip';
 
 const steps = ['Campaign', 'Content', 'Contacts', 'Schedule', 'Review'];
 
@@ -150,6 +152,8 @@ export function CampaignWizard({
   const [contactSortOrder, setContactSortOrder] = useState<'desc' | 'asc'>('desc');
   const [contactStartDate, setContactStartDate] = useState('');
   const [contactEndDate, setContactEndDate] = useState('');
+  const [contactFieldDefs, setContactFieldDefs] = useState<CustomFieldDef[]>([]);
+  const [contactFilters, setContactFilters] = useState<ActiveFilter[]>([]);
   const [fetchedContacts, setFetchedContacts] = useState<CampaignSelectOption[]>([]);
   const [contactTotal, setContactTotal] = useState(0);
   const [contactTotalPages, setContactTotalPages] = useState(1);
@@ -389,6 +393,10 @@ export function CampaignWizard({
       if (contactSearch.trim()) params.set('search', contactSearch.trim());
       if (contactStartDate) params.set('startDate', contactStartDate);
       if (contactEndDate) params.set('endDate', contactEndDate);
+      if (contactFilters.length > 0) {
+        const cf = contactFilters.map(f => `${f.fieldId}:${f.op}:${f.value}`).join(',');
+        params.set('cf', cf);
+      }
       fetch(`/api/contacts?${params.toString()}`, { credentials: 'include', signal: controller.signal })
         .then(async res => {
           if (controller.signal.aborted) return;
@@ -402,7 +410,28 @@ export function CampaignWizard({
         .finally(() => { setContactsLoading(false); });
     }, usePaginatedContacts ? 250 : 0);
     return () => { if (contactSearchDebounce.current) clearTimeout(contactSearchDebounce.current); };
-  }, [usePaginatedContacts, step, contactPage, contactSearch, contactSortOrder, contactStartDate, contactEndDate]);
+  }, [usePaginatedContacts, step, contactPage, contactSearch, contactSortOrder, contactStartDate, contactEndDate, contactFilters]);
+
+  useEffect(() => {
+    if (step !== 2 || contactFieldDefs.length > 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/api/contact-fields', { credentials: 'include' });
+        const body = await res.json() as { success: boolean; data?: Array<{ id: string; name: string; label: string; field_type: string; options?: Array<{ value: string; label: string }> | null }> };
+        if (!cancelled && body.success && Array.isArray(body.data)) {
+          setContactFieldDefs(body.data.map(f => ({
+            id: f.id,
+            name: f.name,
+            label: f.label,
+            field_type: f.field_type as CustomFieldDef['field_type'],
+            ...(f.options ? { options: f.options } : {}),
+          })));
+        }
+      } catch { /* non-fatal */ }
+    })();
+    return () => { cancelled = true; };
+  }, [step, contactFieldDefs.length]);
 
   useEffect(() => {
     if (step !== 2 || !effectiveTemplateId || !effectiveEmailAccountId) {
@@ -760,9 +789,25 @@ export function CampaignWizard({
                     onEndChange={(v) => { setContactEndDate(v); setContactPage(1); }}
                     onClear={() => { setContactStartDate(''); setContactEndDate(''); setContactPage(1); }}
                   />
+                  <CustomFieldFilter
+                    fields={contactFieldDefs}
+                    activeFilters={contactFilters}
+                    onAdd={(filter) => { setContactFilters(prev => [...prev, filter]); setContactPage(1); }}
+                  />
                 </>
               )}
             </div>
+            {contactFilters.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {contactFilters.map((filter, index) => (
+                  <FilterChip
+                    key={`${filter.fieldId}:${filter.op}:${filter.value}`}
+                    label={`${filter.fieldLabel} ${filter.opLabel} ${filter.valueLabel}`}
+                    onRemove={() => { setContactFilters(prev => prev.filter((_, i) => i !== index)); setContactPage(1); }}
+                  />
+                ))}
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span>{contactIds.length} selected{usePaginatedContacts ? ` · ${contactTotal} total` : ` of ${contacts.length}`}</span>
               <Button variant="secondary" size="sm" onClick={() => setContactIds(prev => { const pageIds = displayContacts.map(c => c.id); const merged = [...new Set([...prev, ...pageIds])]; return merged.slice(0, MAX_CAMPAIGN_CONTACTS); })} disabled={displayContacts.length === 0}>Select this page</Button>
