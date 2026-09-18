@@ -23,6 +23,7 @@ const mockPrisma = {
   emailJob: {
     findMany: vi.fn(),
     count: vi.fn(),
+    groupBy: vi.fn().mockResolvedValue([]),
   },
   emailAccount: {
     findMany: vi.fn(),
@@ -32,6 +33,7 @@ const mockPrisma = {
   user: {
     upsert: vi.fn().mockResolvedValue({ id: 'user-1' }),
   },
+  $queryRaw: vi.fn().mockResolvedValue([]),
 };
 
 vi.mock('@/lib/auth/neon-auth', () => ({

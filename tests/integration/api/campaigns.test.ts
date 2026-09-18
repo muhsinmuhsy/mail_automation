@@ -74,6 +74,9 @@ const mockPrisma = {
   campaignUsageDaily: {
     findUnique: vi.fn().mockResolvedValue(null),
   },
+  emailUsageDaily: {
+    findUnique: vi.fn().mockResolvedValue(null),
+  },
   $queryRaw: vi.fn().mockResolvedValue([]),
   $disconnect: vi.fn(),
 };

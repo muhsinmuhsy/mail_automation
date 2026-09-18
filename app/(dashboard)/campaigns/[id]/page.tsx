@@ -20,6 +20,9 @@ interface CampaignUsageToday {
   configuredLimit: number | null;
   limitingScope: 'SYSTEM' | 'ACCOUNT' | null;
   limitingLimit: number | null;
+  accountSent: number;
+  accountReserved: number;
+  accountLimit: number;
 }
 
 interface CampaignDetails {
@@ -238,12 +241,21 @@ export default function CampaignDetailPage() {
 
           {details.usageToday && details.usageToday.configuredLimit !== null && details.status === 'ACTIVE' && details.usageToday.limit < details._count.email_jobs && (
             <div>
-              <UsageProgress
-                sent={details.usageToday.sent}
-                reserved={details.usageToday.reserved}
-                limit={details.usageToday.limit}
-                label={details.usageToday.limitingScope === 'ACCOUNT' || details.usageToday.limitingScope === 'SYSTEM' ? 'Account daily limit' : 'Campaign daily limit'}
-              />
+              {details.usageToday.accountSent + details.usageToday.accountReserved >= details.usageToday.accountLimit ? (
+                <UsageProgress
+                  sent={details.usageToday.accountSent}
+                  reserved={details.usageToday.accountReserved}
+                  limit={details.usageToday.accountLimit}
+                  label="Account daily limit"
+                />
+              ) : (
+                <UsageProgress
+                  sent={details.usageToday.sent}
+                  reserved={details.usageToday.reserved}
+                  limit={details.usageToday.limit}
+                  label={details.usageToday.limitingScope === 'ACCOUNT' || details.usageToday.limitingScope === 'SYSTEM' ? 'Account daily limit' : 'Campaign daily limit'}
+                />
+              )}
               {details.usageToday.limitingScope === 'ACCOUNT' && details.usageToday.limitingLimit !== null && (
                 <p className="mt-1 text-caption text-text-secondary">
                   {'\u24D8'} Your account daily limit is {details.usageToday.limitingLimit}, which is lower than this campaign&apos;s limit.

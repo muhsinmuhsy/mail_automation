@@ -31,7 +31,7 @@ const mockCampaign = (overrides: Partial<{
     error_message: string | null;
     next_attempt_at: string | null;
   }>;
-  usageToday: { sent: number; reserved: number; limit: number; configuredLimit: number | null; limitingScope: 'SYSTEM' | 'ACCOUNT' | null; limitingLimit: number | null };
+  usageToday: { sent: number; reserved: number; limit: number; configuredLimit: number | null; limitingScope: 'SYSTEM' | 'ACCOUNT' | null; limitingLimit: number | null; accountSent: number; accountReserved: number; accountLimit: number };
 }> = {}) => ({
   name: 'Q3 Outreach',
   status: 'ACTIVE',
@@ -211,7 +211,7 @@ describe('CampaignDetailPage', () => {
             scheduled_at: '2026-09-06T06:21:00Z2', sent_at: null, error_message: null, next_attempt_at: null,
           })),
         }),
-        usageToday: { sent: 12, reserved: 3, limit: 20, configuredLimit: 20, limitingScope: null, limitingLimit: null },
+        usageToday: { sent: 12, reserved: 3, limit: 20, configuredLimit: 20, limitingScope: null, limitingLimit: null, accountSent: 0, accountReserved: 0, accountLimit: 20 },
       })
     );
 
@@ -228,7 +228,7 @@ describe('CampaignDetailPage', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       mockCampaignResponse({
         ...mockCampaign({ daily_limit: null }),
-        usageToday: { sent: 5, reserved: 0, limit: 20, configuredLimit: null, limitingScope: null, limitingLimit: null },
+        usageToday: { sent: 5, reserved: 0, limit: 20, configuredLimit: null, limitingScope: null, limitingLimit: null, accountSent: 0, accountReserved: 0, accountLimit: 20 },
       })
     );
 
@@ -244,7 +244,7 @@ describe('CampaignDetailPage', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       mockCampaignResponse({
         ...mockCampaign(),
-        usageToday: { sent: 0, reserved: 0, limit: 20, configuredLimit: 20, limitingScope: null, limitingLimit: null },
+        usageToday: { sent: 0, reserved: 0, limit: 20, configuredLimit: 20, limitingScope: null, limitingLimit: null, accountSent: 0, accountReserved: 0, accountLimit: 20 },
       })
     );
 

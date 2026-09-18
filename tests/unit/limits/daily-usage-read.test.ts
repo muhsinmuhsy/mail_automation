@@ -51,7 +51,7 @@ describe('daily usage read helpers', () => {
       } as unknown as PrismaClient;
 
       const usage = await getCampaignDailyUsage(prisma, 'camp-1');
-      expect(usage).toEqual({ sent: 0, reserved: 0, limit: 0, configuredLimit: null, limitingScope: null, limitingLimit: null });
+      expect(usage).toEqual({ sent: 0, reserved: 0, limit: 0, configuredLimit: null, limitingScope: null, limitingLimit: null, accountSent: 0, accountReserved: 0, accountLimit: 0 });
     });
 
     it('returns effective limit and usage counts', async () => {
@@ -60,6 +60,7 @@ describe('daily usage read helpers', () => {
         campaign: { findUnique: vi.fn().mockResolvedValue({ daily_limit: 50, user_id: 'user-1' }) },
         systemSetting: { findUnique: vi.fn().mockResolvedValue({ global_daily_email_limit: 500, default_daily_email_limit: 20 }) },
         user: { findUnique: vi.fn().mockResolvedValue({ daily_email_limit_override: 100 }) },
+        emailUsageDaily: { findUnique: vi.fn().mockResolvedValue(null) },
       } as unknown as PrismaClient;
 
       const usage = await getCampaignDailyUsage(prisma, 'camp-1');
@@ -76,6 +77,7 @@ describe('daily usage read helpers', () => {
         campaign: { findUnique: vi.fn().mockResolvedValue({ daily_limit: null, user_id: 'user-1' }) },
         systemSetting: { findUnique: vi.fn().mockResolvedValue({ global_daily_email_limit: 500, default_daily_email_limit: 20 }) },
         user: { findUnique: vi.fn().mockResolvedValue({ daily_email_limit_override: null }) },
+        emailUsageDaily: { findUnique: vi.fn().mockResolvedValue(null) },
       } as unknown as PrismaClient;
 
       const usage = await getCampaignDailyUsage(prisma, 'camp-1');
@@ -91,6 +93,7 @@ describe('daily usage read helpers', () => {
         campaign: { findUnique: vi.fn().mockResolvedValue({ daily_limit: 100, user_id: 'user-1' }) },
         systemSetting: { findUnique: vi.fn().mockResolvedValue({ global_daily_email_limit: 500, default_daily_email_limit: 20 }) },
         user: { findUnique: vi.fn().mockResolvedValue({ daily_email_limit_override: 50 }) },
+        emailUsageDaily: { findUnique: vi.fn().mockResolvedValue(null) },
       } as unknown as PrismaClient;
 
       const usage = await getCampaignDailyUsage(prisma, 'camp-1');
@@ -105,6 +108,7 @@ describe('daily usage read helpers', () => {
         campaign: { findUnique: vi.fn().mockResolvedValue({ daily_limit: 100, user_id: 'user-1' }) },
         systemSetting: { findUnique: vi.fn().mockResolvedValue({ global_daily_email_limit: 15, default_daily_email_limit: 20 }) },
         user: { findUnique: vi.fn().mockResolvedValue({ daily_email_limit_override: 20 }) },
+        emailUsageDaily: { findUnique: vi.fn().mockResolvedValue(null) },
       } as unknown as PrismaClient;
 
       const usage = await getCampaignDailyUsage(prisma, 'camp-1');
@@ -119,6 +123,7 @@ describe('daily usage read helpers', () => {
         campaign: { findUnique: vi.fn().mockResolvedValue({ daily_limit: 100, user_id: 'user-1' }) },
         systemSetting: { findUnique: vi.fn().mockResolvedValue({ global_daily_email_limit: 50, default_daily_email_limit: 20 }) },
         user: { findUnique: vi.fn().mockResolvedValue({ daily_email_limit_override: 50 }) },
+        emailUsageDaily: { findUnique: vi.fn().mockResolvedValue(null) },
       } as unknown as PrismaClient;
 
       const usage = await getCampaignDailyUsage(prisma, 'camp-1');
@@ -133,6 +138,7 @@ describe('daily usage read helpers', () => {
         campaign: { findUnique: vi.fn().mockResolvedValue({ daily_limit: 20, user_id: 'user-1' }) },
         systemSetting: { findUnique: vi.fn().mockResolvedValue({ global_daily_email_limit: 500, default_daily_email_limit: 20 }) },
         user: { findUnique: vi.fn().mockResolvedValue({ daily_email_limit_override: null }) },
+        emailUsageDaily: { findUnique: vi.fn().mockResolvedValue(null) },
       } as unknown as PrismaClient;
 
       const usage = await getCampaignDailyUsage(prisma, 'camp-1');
@@ -146,6 +152,7 @@ describe('daily usage read helpers', () => {
         campaign: { findUnique: vi.fn().mockResolvedValue({ daily_limit: 20, user_id: 'user-1' }) },
         systemSetting: { findUnique: vi.fn().mockResolvedValue({ global_daily_email_limit: 20, default_daily_email_limit: 20 }) },
         user: { findUnique: vi.fn().mockResolvedValue({ daily_email_limit_override: 50 }) },
+        emailUsageDaily: { findUnique: vi.fn().mockResolvedValue(null) },
       } as unknown as PrismaClient;
 
       const usage = await getCampaignDailyUsage(prisma, 'camp-1');
@@ -159,6 +166,7 @@ describe('daily usage read helpers', () => {
         campaign: { findUnique: vi.fn().mockResolvedValue({ daily_limit: 10, user_id: 'user-1' }) },
         systemSetting: { findUnique: vi.fn().mockResolvedValue({ global_daily_email_limit: 0, default_daily_email_limit: 20 }) },
         user: { findUnique: vi.fn().mockResolvedValue({ daily_email_limit_override: 20 }) },
+        emailUsageDaily: { findUnique: vi.fn().mockResolvedValue(null) },
       } as unknown as PrismaClient;
 
       const usage = await getCampaignDailyUsage(prisma, 'camp-1');
@@ -172,6 +180,7 @@ describe('daily usage read helpers', () => {
         campaign: { findUnique: vi.fn().mockResolvedValue({ daily_limit: 10, user_id: 'user-1' }) },
         systemSetting: { findUnique: vi.fn().mockResolvedValue({ global_daily_email_limit: 500, default_daily_email_limit: 20 }) },
         user: { findUnique: vi.fn().mockResolvedValue({ daily_email_limit_override: 0 }) },
+        emailUsageDaily: { findUnique: vi.fn().mockResolvedValue(null) },
       } as unknown as PrismaClient;
 
       const usage = await getCampaignDailyUsage(prisma, 'camp-1');

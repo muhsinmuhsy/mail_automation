@@ -87,6 +87,7 @@ async function fail(res: any) {
 
 beforeEach(() => {
   resetPrisma();
+  prismaMock.$queryRaw.mockResolvedValue([]);
 });
 
 describe('app/api route handlers (unit coverage)', () => {
@@ -241,6 +242,7 @@ describe('app/api route handlers (unit coverage)', () => {
 
   it('campaigns/[id] GET returns the campaign', async () => {
     prismaMock.campaign.findUnique.mockResolvedValue({ id: UUID });
+    prismaMock.emailJob.groupBy.mockResolvedValue([]);
     await ok((await (campaignById as any).GET(makeReq(), CTX({ id: UUID }))));
   });
 

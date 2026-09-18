@@ -96,6 +96,9 @@ export interface CampaignDailyUsage {
   configuredLimit: number | null;
   limitingScope: 'SYSTEM' | 'ACCOUNT' | null;
   limitingLimit: number | null;
+  accountSent: number;
+  accountReserved: number;
+  accountLimit: number;
 }
 
 export async function getCampaignDailyUsage(
@@ -119,7 +122,7 @@ export async function getCampaignDailyUsage(
   const configuredLimit = campaign?.daily_limit ?? null;
 
   if (!campaign) {
-    return { sent, reserved, limit: 0, configuredLimit: null, limitingScope: null, limitingLimit: null };
+    return { sent, reserved, limit: 0, configuredLimit: null, limitingScope: null, limitingLimit: null, accountSent: 0, accountReserved: 0, accountLimit: 0 };
   }
 
   const settings = await prisma.systemSetting.findUnique({ where: { id: 1 } });
@@ -150,7 +153,22 @@ export async function getCampaignDailyUsage(
     }
   }
 
-  return { sent, reserved, limit: effective, configuredLimit, limitingScope, limitingLimit };
+  const accountUsage = await prisma.emailUsageDaily.findUnique({
+    where: { user_id_usage_date: { user_id: campaign.user_id, usage_date: today } },
+    select: { sent_count: true, reserved_count: true },
+  });
+
+  return {
+    sent,
+    reserved,
+    limit: effective,
+    configuredLimit,
+    limitingScope,
+    limitingLimit,
+    accountSent: accountUsage?.sent_count ?? 0,
+    accountReserved: accountUsage?.reserved_count ?? 0,
+    accountLimit: userLimit,
+  };
 }
 
 export async function getSystemDailyUsage(
