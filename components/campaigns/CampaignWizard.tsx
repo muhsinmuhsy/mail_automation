@@ -768,7 +768,18 @@ export function CampaignWizard({
               <Button variant="secondary" size="sm" onClick={() => { setContactIds([]); setResendRecipients([]); }} disabled={!contactIds.length}>Clear contacts</Button>
             </div>
             {contactsLoading ? (
-              <p className="text-supporting text-text-secondary">Loading contacts…</p>
+              <div role="status" aria-label="Loading contacts" className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex items-start gap-3 rounded-[var(--radius-md)] border border-neutral-200 bg-background p-3">
+                    <span className="mt-1 h-4 w-4 shrink-0 animate-pulse rounded-[var(--radius-sm)] bg-neutral-200" />
+                    <span className="flex-1 space-y-2">
+                      <span className="block h-4 w-32 animate-pulse rounded bg-neutral-200" />
+                      <span className="block h-3 w-48 animate-pulse rounded bg-neutral-200" />
+                      <span className="inline-block h-5 w-20 animate-pulse rounded-full bg-neutral-200" />
+                    </span>
+                  </div>
+                ))}
+              </div>
             ) : displayContacts.length === 0 ? (
               <p className="text-supporting text-text-secondary">{usePaginatedContacts ? 'No contacts found. Try a different search.' : 'Add at least one contact before launching a campaign.'}</p>
             ) : (
