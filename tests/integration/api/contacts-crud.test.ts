@@ -201,7 +201,7 @@ describe('GET /api/contacts', () => {
     const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
     expect(where.AND).toEqual([
       {
-        contactFieldValues: {
+        contact_field_values: {
           some: {
             field_id: 'f1',
             value: { contains: 'manager', mode: 'insensitive' },
@@ -220,7 +220,7 @@ describe('GET /api/contacts', () => {
     const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
     expect(where.AND).toHaveLength(2);
     expect(where.AND[0]).toEqual({
-      contactFieldValues: {
+      contact_field_values: {
         some: {
           field_id: 'f1',
           value: { contains: 'manager', mode: 'insensitive' },
@@ -228,12 +228,12 @@ describe('GET /api/contacts', () => {
       },
     });
     expect(where.AND[1]).toEqual({
-      contactFieldValues: {
-        some: {
-          field_id: 'f2',
-          value: { gt: '100' },
+        contact_field_values: {
+          some: {
+            field_id: 'f2',
+            value: { gt: '100' },
+          },
         },
-      },
     });
   });
 
@@ -246,7 +246,7 @@ describe('GET /api/contacts', () => {
     const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
     expect(where.AND).toEqual([
       {
-        contactFieldValues: {
+        contact_field_values: {
           some: {
             field_id: 'f1',
             value: { equals: 'active' },
@@ -265,7 +265,7 @@ describe('GET /api/contacts', () => {
     const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
     expect(where.AND).toEqual([
       {
-        contactFieldValues: {
+        contact_field_values: {
           some: {
             field_id: 'f1',
             value: { equals: 'true' },
@@ -283,20 +283,20 @@ describe('GET /api/contacts', () => {
 
     const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
     expect(where.AND[0]).toEqual({
-      contactFieldValues: {
-        some: {
-          field_id: 'f1',
-          value: { lt: '2024-01-01' },
+        contact_field_values: {
+          some: {
+            field_id: 'f1',
+            value: { lt: '2024-01-01' },
+          },
         },
-      },
     });
     expect(where.AND[1]).toEqual({
-      contactFieldValues: {
-        some: {
-          field_id: 'f1b',
-          value: { gt: '2023-01-01' },
+        contact_field_values: {
+          some: {
+            field_id: 'f1b',
+            value: { gt: '2023-01-01' },
+          },
         },
-      },
     });
   });
 

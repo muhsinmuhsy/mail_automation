@@ -76,7 +76,7 @@ describe('customFieldFilterWhere', () => {
     expect(result).toEqual({
       AND: [
         {
-          contactFieldValues: {
+          contact_field_values: {
             some: {
               field_id: 'f1',
               value: { contains: 'manager', mode: 'insensitive' },
@@ -93,7 +93,7 @@ describe('customFieldFilterWhere', () => {
     ]);
     expect(result.AND).toEqual([
       expect.objectContaining({
-        contactFieldValues: {
+        contact_field_values: {
           some: {
             field_id: 'f1',
             value: { equals: 'hello' },
@@ -109,7 +109,7 @@ describe('customFieldFilterWhere', () => {
     ]);
     expect(result.AND).toEqual([
       expect.objectContaining({
-        contactFieldValues: {
+        contact_field_values: {
           some: {
             field_id: 'f1',
             value: { lt: '2024-01-01' },
@@ -125,7 +125,7 @@ describe('customFieldFilterWhere', () => {
     ]);
     expect(result.AND).toEqual([
       expect.objectContaining({
-        contactFieldValues: {
+        contact_field_values: {
           some: {
             field_id: 'f1',
             value: { gt: '2024-01-01' },
@@ -141,7 +141,7 @@ describe('customFieldFilterWhere', () => {
     ]);
     expect(result.AND).toEqual([
       expect.objectContaining({
-        contactFieldValues: {
+        contact_field_values: {
           some: {
             field_id: 'f1',
             value: { equals: 'true' },

@@ -113,7 +113,7 @@ export function customFieldFilterWhere(
   if (filters.length === 0) return {};
   return {
     AND: filters.map((f) => ({
-      contactFieldValues: {
+      contact_field_values: {
         some: {
           field_id: f.fieldId,
           value: buildValueFilter(f.op, f.value),
