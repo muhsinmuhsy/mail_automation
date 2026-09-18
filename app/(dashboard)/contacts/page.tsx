@@ -3,6 +3,8 @@
 import { ContactList } from '@/components/contacts/ContactList';
 import { ContactForm, type ContactFieldDef } from '@/components/contacts/ContactForm';
 import { ContactImport } from '@/components/contacts/ContactImport';
+import { CustomFieldFilter, type ActiveFilter } from '@/components/contacts/CustomFieldFilter';
+import { FilterChip } from '@/components/contacts/FilterChip';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { NoticeDialog } from '@/components/ui/NoticeDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -43,6 +45,7 @@ export default function ContactsPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [fieldDefs, setFieldDefs] = useState<ContactFieldDef[]>([]);
+  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
   const [unknownColumns, setUnknownColumns] = useState<string[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
@@ -78,6 +81,10 @@ export default function ContactsPage() {
     if (search) params.set('search', search);
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
+    if (activeFilters.length > 0) {
+      const cf = activeFilters.map((f) => `${f.fieldId}:${f.op}:${f.value}`).join(',');
+      params.set('cf', cf);
+    }
     try {
       const response = await fetch(`/api/contacts?${params.toString()}`);
       const payload = (await response.json()) as ApiResponse<Contact[]>;
@@ -90,7 +97,7 @@ export default function ContactsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, sortOrder, startDate, endDate]);
+  }, [page, search, sortOrder, startDate, endDate, activeFilters]);
 
   useEffect(() => {
     const timer = setTimeout(() => void load(), 0);
@@ -115,6 +122,16 @@ export default function ContactsPage() {
   const handleDateClear = () => {
     setStartDate('');
     setEndDate('');
+    setPage(1);
+  };
+
+  const handleAddFilter = (filter: ActiveFilter) => {
+    setActiveFilters((prev) => [...prev, filter]);
+    setPage(1);
+  };
+
+  const handleRemoveFilter = (index: number) => {
+    setActiveFilters((prev) => prev.filter((_, i) => i !== index));
     setPage(1);
   };
 
@@ -238,15 +255,40 @@ export default function ContactsPage() {
           sortOrder={sortOrder}
           onSortOrderChange={handleSortOrderChange}
           filters={
-            <DateRangeFilter
-              startDate={startDate}
-              endDate={endDate}
-              onStartChange={(v) => { setStartDate(v); setPage(1); }}
-              onEndChange={(v) => { setEndDate(v); setPage(1); }}
-              onClear={handleDateClear}
-            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <DateRangeFilter
+                startDate={startDate}
+                endDate={endDate}
+                onStartChange={(v) => { setStartDate(v); setPage(1); }}
+                onEndChange={(v) => { setEndDate(v); setPage(1); }}
+                onClear={handleDateClear}
+              />
+              <CustomFieldFilter
+                fields={fieldDefs.map((f) => ({
+                  id: f.id,
+                  name: f.name,
+                  label: f.label,
+                  field_type: f.field_type,
+                  ...(f.options ? { options: f.options } : {}),
+                }))}
+                activeFilters={activeFilters}
+                onAdd={handleAddFilter}
+              />
+            </div>
           }
         />
+      )}
+
+      {!showAddContact && !showImport && activeFilters.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {activeFilters.map((filter, index) => (
+            <FilterChip
+              key={`${filter.fieldId}:${filter.op}:${filter.value}`}
+              label={`${filter.fieldLabel} ${filter.opLabel} ${filter.valueLabel}`}
+              onRemove={() => handleRemoveFilter(index)}
+            />
+          ))}
+        </div>
       )}
 
       {showAddContact && (

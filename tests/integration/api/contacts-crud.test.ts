@@ -190,6 +190,149 @@ describe('GET /api/contacts', () => {
     );
   });
 
+  it('applies custom-field contains filter to the where clause', async () => {
+    const response = await listContacts(
+      new NextRequest('http://localhost/api/contacts?cf=f1:contains:manager')
+    );
+    const body = (await response.json()) as ApiBody;
+
+    expect(response.status).toBe(200);
+    expect(body.success).toBe(true);
+    const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
+    expect(where.AND).toEqual([
+      {
+        contactFieldValues: {
+          some: {
+            field_id: 'f1',
+            value: { contains: 'manager', mode: 'insensitive' },
+          },
+        },
+      },
+    ]);
+  });
+
+  it('applies multiple custom-field filters with AND', async () => {
+    const response = await listContacts(
+      new NextRequest('http://localhost/api/contacts?cf=f1:contains:manager,f2:gt:100')
+    );
+    await response.json();
+
+    const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
+    expect(where.AND).toHaveLength(2);
+    expect(where.AND[0]).toEqual({
+      contactFieldValues: {
+        some: {
+          field_id: 'f1',
+          value: { contains: 'manager', mode: 'insensitive' },
+        },
+      },
+    });
+    expect(where.AND[1]).toEqual({
+      contactFieldValues: {
+        some: {
+          field_id: 'f2',
+          value: { gt: '100' },
+        },
+      },
+    });
+  });
+
+  it('applies custom-field eq filter for dropdown fields', async () => {
+    const response = await listContacts(
+      new NextRequest('http://localhost/api/contacts?cf=f1:eq:active')
+    );
+    await response.json();
+
+    const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
+    expect(where.AND).toEqual([
+      {
+        contactFieldValues: {
+          some: {
+            field_id: 'f1',
+            value: { equals: 'active' },
+          },
+        },
+      },
+    ]);
+  });
+
+  it('applies custom-field is filter for boolean fields', async () => {
+    const response = await listContacts(
+      new NextRequest('http://localhost/api/contacts?cf=f1:is:true')
+    );
+    await response.json();
+
+    const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
+    expect(where.AND).toEqual([
+      {
+        contactFieldValues: {
+          some: {
+            field_id: 'f1',
+            value: { equals: 'true' },
+          },
+        },
+      },
+    ]);
+  });
+
+  it('applies custom-field before/after filters for date fields', async () => {
+    const response = await listContacts(
+      new NextRequest('http://localhost/api/contacts?cf=f1:before:2024-01-01,f1b:after:2023-01-01')
+    );
+    await response.json();
+
+    const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
+    expect(where.AND[0]).toEqual({
+      contactFieldValues: {
+        some: {
+          field_id: 'f1',
+          value: { lt: '2024-01-01' },
+        },
+      },
+    });
+    expect(where.AND[1]).toEqual({
+      contactFieldValues: {
+        some: {
+          field_id: 'f1b',
+          value: { gt: '2023-01-01' },
+        },
+      },
+    });
+  });
+
+  it('combines search and custom-field filters', async () => {
+    const response = await listContacts(
+      new NextRequest('http://localhost/api/contacts?search=ada&cf=f1:contains:manager')
+    );
+    await response.json();
+
+    const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
+    expect(where.OR).toBeDefined();
+    expect(where.AND).toBeDefined();
+    expect(where.AND).toHaveLength(1);
+  });
+
+  it('ignores malformed cf param', async () => {
+    const response = await listContacts(
+      new NextRequest('http://localhost/api/contacts?cf=badformat')
+    );
+    await response.json();
+
+    const where = mockPrisma.contact.findMany.mock.calls[0][0].where;
+    expect(where.AND).toBeUndefined();
+  });
+
+  it('passes the same where clause to count for correct pagination', async () => {
+    const response = await listContacts(
+      new NextRequest('http://localhost/api/contacts?cf=f1:contains:manager')
+    );
+    await response.json();
+
+    const findManyWhere = mockPrisma.contact.findMany.mock.calls[0][0].where;
+    const countWhere = mockPrisma.contact.count.mock.calls[0][0].where;
+    expect(findManyWhere.AND).toEqual(countWhere.AND);
+  });
+
   it('returns 401 when not authenticated', async () => {
     unauthenticated();
 

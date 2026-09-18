@@ -9,6 +9,7 @@ import {
   type ContactFieldDefinition,
 } from '@/lib/validation/contact';
 import { ConflictError, ValidationError, fromPrismaError } from '@/lib/errors';
+import { parseCustomFieldFilters, customFieldFilterWhere } from '@/lib/contacts/custom-field-filter';
 
 /**
  * Contacts API (Path C, Phase 4).
@@ -23,6 +24,9 @@ import { ConflictError, ValidationError, fromPrismaError } from '@/lib/errors';
 const _GET = defineRoute(async (req, ctx) => {
   const { page, limit, search, sortBy, sortOrder, startDate, endDate } = parseListQuery(req, { search: true, sortable: ['created_at'], dateRange: true });
 
+  const cfParam = new URL(req.url).searchParams.get('cf');
+  const customFilters = parseCustomFieldFilters(cfParam);
+
   const where = {
     user_id: ctx.user.id,
     ...dateRangeWhere('created_at', startDate, endDate),
@@ -34,6 +38,7 @@ const _GET = defineRoute(async (req, ctx) => {
           ],
         }
       : {}),
+    ...customFieldFilterWhere(customFilters),
   };
 
   // 3-query pattern (§8 item 5): field defs once → contacts → values.
