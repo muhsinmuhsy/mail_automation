@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
@@ -49,10 +49,10 @@ export function TemplatePreviewDialog({
     }
   }
 
-  const loadPreview = useCallback(async (id: string) => {
-    setLoading(true);
-    setError(null);
-    setPreview(null);
+  useEffect(() => {
+    if (!open || !templateId) return;
+    let cancelled = false;
+    async function loadPreview(id: string) {
     try {
       const response = await fetch(`/api/templates/${id}/preview`, {
         method: 'POST',
@@ -60,21 +60,20 @@ export function TemplatePreviewDialog({
         body: JSON.stringify({}),
       });
       const payload = (await response.json()) as ApiEnvelope<PreviewData>;
+      if (cancelled) return;
       if (!payload.success || !payload.data) {
         throw new Error(payload.error?.message ?? 'Unable to load preview.');
       }
       setPreview(payload.data);
     } catch (cause) {
-      setError((cause as Error).message);
+      if (!cancelled) setError((cause as Error).message);
     } finally {
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    if (!open || !templateId) return;
+    }
     void loadPreview(templateId);
-  }, [open, templateId, loadPreview]);
+    return () => { cancelled = true; };
+  }, [open, templateId]);
 
   useEffect(() => {
     if (open) {

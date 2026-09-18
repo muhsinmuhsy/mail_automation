@@ -73,6 +73,25 @@ function createQuotaPrisma() {
 }
 
 describe('lib/limits/email-limit-service (crash-safe)', () => {
+  it('allows campaign reservations beyond the default five-second transaction deadline', async () => {
+    const { prisma, models } = createQuotaPrisma();
+    const transaction = vi.mocked(prisma.$transaction);
+    const runTransaction = transaction.getMockImplementation()!;
+    transaction.mockImplementation(async (callback, options) => {
+      // Model six seconds of database round trips, as observed with Neon.
+      if ((options?.timeout ?? 5_000) < 6_000) {
+        throw Object.assign(new Error('Transaction expired'), { code: 'P2028' });
+      }
+      return runTransaction(callback, options);
+    });
+    const result = await reserveEmailCapacity(prisma, {
+      userId: 'user-1', emailJobId: 'job-1', campaignId: 'campaign-1',
+    });
+    expect(result.success).toBe(true);
+    expect(models.campaignUsageDaily.upsert).toHaveBeenCalled();
+    expect(transaction).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({ isolationLevel: 'Serializable' }));
+  });
+
   it('reserves capacity and increments reserved counters', async () => {
     const { prisma, models } = createQuotaPrisma();
     const result = await reserveEmailCapacity(prisma, { userId: 'user-1', emailJobId: 'job-1' });
@@ -93,6 +112,30 @@ describe('lib/limits/email-limit-service (crash-safe)', () => {
     expect(result.success).toBe(true);
     expect(result.reservationId).toBe('res-1');
     expect(models.emailSendReservation.create).not.toHaveBeenCalled();
+  });
+
+  it('allocates a fresh reservation after manual retry resets the job attempt count', async () => {
+    const { prisma, models } = createQuotaPrisma();
+    models.emailSendReservation.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ attempt_number: 3 });
+    const result = await reserveEmailCapacity(prisma, { userId: 'user-1', emailJobId: 'job-1', attemptNumber: 1 });
+    expect(result.success).toBe(true);
+    expect(models.emailSendReservation.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ email_job_id: 'job-1', attempt_number: 4, status: 'RESERVED' }),
+    });
+  });
+
+  it('reuses an outstanding reservation whose sequence differs from the reset job attempt', async () => {
+    const { prisma, models } = createQuotaPrisma();
+    models.emailSendReservation.findFirst.mockResolvedValue({ id: 'res-4', attempt_number: 4, status: 'RESERVED' });
+    const result = await reserveEmailCapacity(prisma, { userId: 'user-1', emailJobId: 'job-1', attemptNumber: 1 });
+    expect(result.reservationId).toBe('res-4');
+    expect(models.emailSendReservation.findFirst).toHaveBeenCalledWith({
+      where: { email_job_id: 'job-1', status: 'RESERVED' },
+    });
+    expect(models.emailSendReservation.create).not.toHaveBeenCalled();
+    expect(models.emailUsageDaily.update).not.toHaveBeenCalled();
   });
 
   it('fails when email sending is disabled', async () => {

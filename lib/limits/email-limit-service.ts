@@ -174,9 +174,9 @@ export async function getSystemDailyUsage(
 /**
  * Reserves one send for the given job attempt. All quota checks and the
  * per-day counter increments happen inside a single transaction. The
- * reservation is keyed by `(email_job_id, attempt_number)` so a retried job
- * (new attempt number) creates a fresh reservation while a re-driven identical
- * attempt is idempotent (reuses the existing reservation, no double count).
+ * Reservations use monotonically increasing attempt keys, including when a
+ * manual retry resets the job's retry budget. An outstanding reservation is
+ * reused on redelivery so capacity is never counted twice.
  *
  * Three independent checks run inside a Serializable transaction:
  *   1. System  — systemUsageDaily vs global_daily_email_limit
@@ -220,11 +220,20 @@ export async function reserveEmailCapacity(
           }
 
           const existing = await t.emailSendReservation.findFirst({
-            where: { email_job_id: params.emailJobId, attempt_number: attemptNumber, status: 'RESERVED' },
+            where: { email_job_id: params.emailJobId, status: 'RESERVED' },
           });
           if (existing) {
             return { success: true, reservationId: existing.id };
           }
+
+          // Manual retry resets the job's retry budget, but reservation history
+          // remains. Never reuse a resolved reservation's unique attempt key.
+          const latest = await t.emailSendReservation.findFirst({
+            where: { email_job_id: params.emailJobId },
+            orderBy: { attempt_number: 'desc' },
+            select: { attempt_number: true },
+          });
+          const reservationAttempt = Math.max(attemptNumber, (latest?.attempt_number ?? 0) + 1);
 
           const globalLimit = settings.global_daily_email_limit ?? HARDCODED_GLOBAL_FALLBACK;
           const defaultLimit = settings.default_daily_email_limit ?? HARDCODED_DEFAULT_FALLBACK;
@@ -300,7 +309,7 @@ export async function reserveEmailCapacity(
           const reservation = await t.emailSendReservation.create({
             data: {
               email_job_id: params.emailJobId,
-              attempt_number: attemptNumber,
+              attempt_number: reservationAttempt,
               user_id: params.userId,
               campaign_id: params.campaignId ?? null,
               usage_date: today,
@@ -310,7 +319,9 @@ export async function reserveEmailCapacity(
 
           return { success: true, reservationId: reservation.id };
         },
-        { isolationLevel: 'Serializable' }
+        // Campaign reservations require several database round trips. Neon's
+        // cold starts/network latency can exceed Prisma's 5-second default.
+        { isolationLevel: 'Serializable', maxWait: 10_000, timeout: 30_000 }
       );
     } catch (error) {
       const code = (error as { code?: string })?.code;

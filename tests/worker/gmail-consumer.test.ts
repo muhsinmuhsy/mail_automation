@@ -24,6 +24,7 @@ beforeEach(() => {
   db.emailJob.findUnique.mockResolvedValue({ id: 'job', user_id: 'user', email_account_id: 'account', attachment_id: 'attachment', to_email: 'recipient@example.com', subject: 'subject', body: 'body', attempt_count: 0 });
   db.emailJob.updateMany.mockResolvedValue({ count: 1 });
   db.emailJob.update.mockReset().mockResolvedValue({});
+  db.emailLog.create.mockResolvedValue({});
   db.user.findUnique.mockResolvedValue({ is_active: true });
   db.emailAccount.findUnique.mockResolvedValue(account);
   db.attachment.findUnique.mockResolvedValue({ filename: 'file.pdf', storage_key: 'file' });

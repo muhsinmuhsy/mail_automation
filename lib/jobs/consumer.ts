@@ -56,6 +56,7 @@ export async function processQueueJob(
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   let deliveryMayHaveOccurred = false;
+  let preparationStage = 'account';
 
   try {
     const user = await prisma.user.findUnique({ where: { id: job.user_id } });
@@ -77,6 +78,7 @@ export async function processQueueJob(
       }
     }
 
+    preparationStage = 'quota';
     const reservation = await reserveEmailCapacity(prisma, {
       userId: job.user_id,
       campaignId: job.campaign_id ?? undefined,
@@ -108,6 +110,7 @@ export async function processQueueJob(
       return;
     }
 
+    preparationStage = 'account';
     const emailAccount = await prisma.emailAccount.findUnique({
       where: { id: job.email_account_id },
     });
@@ -125,6 +128,7 @@ export async function processQueueJob(
       return;
     }
 
+    preparationStage = 'attachments';
     const policy = getAttachmentPolicy(emailAccount.provider);
     if (!policy) throw new Error('Attachment policy is not configured for this provider.');
     const attachmentIds = job.attachment_ids?.length ? job.attachment_ids : (job.attachment_id ? [job.attachment_id] : []);
@@ -186,7 +190,7 @@ export async function processQueueJob(
         deliveryMayHaveOccurred = true;
         await prisma.emailJob.update({
           where: { id: jobId },
-          data: { status: 'SENT', sent_at: new Date() },
+          data: { status: 'SENT', sent_at: new Date(), error_message: null, next_attempt_at: null },
         });
 
         await prisma.emailLog.create({
@@ -330,6 +334,13 @@ export async function processQueueJob(
       campaignId: job.campaign_id ?? undefined,
       emailJobId: jobId,
     }).catch(() => {});
+    const willRetry = attemptNumber < MAX_ATTEMPTS;
+    const failure = preparationStage === 'quota'
+      ? 'Email capacity could not be reserved because the database operation failed or timed out.'
+      : preparationStage === 'account'
+        ? 'Email account information could not be loaded from the database.'
+        : 'An email attachment could not be loaded. Check that the attachment exists and storage is accessible.';
+    const errorMessage = `${failure} ${willRetry ? 'Will retry automatically.' : 'Retry limit reached.'}`;
     await prisma.emailJob
       .update({
         where: { id: jobId },
@@ -338,9 +349,17 @@ export async function processQueueJob(
           next_attempt_at: attemptNumber < MAX_ATTEMPTS
             ? new Date(Date.now() + (attemptNumber === 1 ? 2 : 5) * 60_000)
             : null,
-          error_message: 'A required email resource could not be loaded.',
+          error_message: errorMessage,
         },
       })
       .catch(() => {});
+    await prisma.emailLog.create({
+      data: {
+        email_job_id: jobId,
+        status: 'PREPARATION_FAILED',
+        smtp_response: null,
+        error_message: errorMessage,
+      },
+    }).catch(() => {});
   }
 }

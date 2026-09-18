@@ -85,7 +85,6 @@ export function TemplateEditorDialog({
       setError(null);
       setFieldErrors({});
       setLoading(templateId ? true : false);
-      contentRef.current = null;
       setStep(templateId ? 'editor' : 'gallery');
     }
   }
@@ -116,12 +115,16 @@ export function TemplateEditorDialog({
     return () => { cancelled = true; };
   }, [open]);
 
-  const loadTemplate = useCallback(async (id: string) => {
-    setLoading(true);
-    setError(null);
+  useEffect(() => {
+    if (!open) return;
+    contentRef.current = null;
+    if (!templateId) return;
+    let cancelled = false;
+    async function loadTemplate(id: string) {
     try {
       const response = await fetch(`/api/templates/${id}`);
       const payload = (await response.json()) as ApiEnvelope<TemplateDetail>;
+      if (cancelled) return;
       if (!payload.success || !payload.data) {
         throw new Error(payload.error?.message ?? 'Unable to load template.');
       }
@@ -143,16 +146,14 @@ export function TemplateEditorDialog({
         setMode('plaintext');
       }
     } catch (cause) {
-      setError((cause as Error).message);
+      if (!cancelled) setError((cause as Error).message);
     } finally {
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    if (!open || !templateId) return;
+    }
     void loadTemplate(templateId);
-  }, [open, templateId, loadTemplate]);
+    return () => { cancelled = true; };
+  }, [open, templateId]);
 
   useEffect(() => {
     if (open) {

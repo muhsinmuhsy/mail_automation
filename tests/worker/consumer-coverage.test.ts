@@ -116,6 +116,31 @@ afterEach(() => {
 });
 
 describe('worker/consumer additional coverage', () => {
+  it.each([0, 2])('reports quota transaction timeouts without blaming attachments (attempt %i)', async (attempt) => {
+    const prisma = buildPrisma({ job: { attachment_id: null, attachment_ids: [], attempt_count: attempt } });
+    reserveEmailCapacity.mockRejectedValue(Object.assign(new Error('private database details'), { code: 'P2028' }));
+    await processQueueJob(prisma, createMockEnv(), 'job-1');
+    const data = getUpdate(prisma, attempt === 0 ? 'RETRY_WAIT' : 'FAILED');
+    expect(data.error_message).toContain('Email capacity could not be reserved');
+    expect(data.error_message).not.toContain('private database details');
+    expect(data.next_attempt_at).toEqual(attempt === 0 ? expect.any(Date) : null);
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(createStorageService).not.toHaveBeenCalled();
+    expect(releaseReservation).toHaveBeenCalled();
+    expect(prisma.emailLog.create).toHaveBeenCalledWith({ data: {
+      email_job_id: 'job-1', status: 'PREPARATION_FAILED', smtp_response: null, error_message: data.error_message,
+    } });
+  });
+
+  it('sends without attachments and clears stale retry errors on success', async () => {
+    const prisma = buildPrisma({ job: { attachment_id: null, attachment_ids: [], error_message: 'Previous failure', next_attempt_at: new Date() } });
+    await processQueueJob(prisma, createMockEnv(), 'job-1');
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ attachments: [] }));
+    expect(createStorageService).not.toHaveBeenCalled();
+    expect(getUpdate(prisma, 'SENT')).toMatchObject({ error_message: null, next_attempt_at: null });
+    expect(commitReservation).toHaveBeenCalled();
+  });
+
   it('returns early when the job is not found', async () => {
     const prisma = buildPrisma();
     prisma.emailJob.findUnique.mockResolvedValue(null);
@@ -226,7 +251,7 @@ describe('worker/consumer additional coverage', () => {
     expect(releaseReservation).toHaveBeenCalled();
     expect(getUpdate(prisma, 'RETRY_WAIT')).toMatchObject({
       status: 'RETRY_WAIT',
-      error_message: 'A required email resource could not be loaded.',
+      error_message: 'An email attachment could not be loaded. Check that the attachment exists and storage is accessible. Will retry automatically.',
     });
   });
 
@@ -237,7 +262,7 @@ describe('worker/consumer additional coverage', () => {
     expect(releaseReservation).toHaveBeenCalled();
     expect(getUpdate(prisma, 'FAILED')).toMatchObject({
       status: 'FAILED',
-      error_message: 'A required email resource could not be loaded.',
+      error_message: 'An email attachment could not be loaded. Check that the attachment exists and storage is accessible. Retry limit reached.',
     });
   });
 

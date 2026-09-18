@@ -31,6 +31,7 @@ const eslintConfig = defineConfig([
     ".wrangler/**",
     "lib/generated/**",
     ".codeartsdoer/**",
+    ".kilo/**",
   ]),
 ]);
 
