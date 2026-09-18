@@ -746,7 +746,7 @@ describe('CampaignWizard', () => {
     }, { timeout: 5000 });
   });
 
-  it('replaces summary card header with Updating… and hides old content during stale refetch', async () => {
+  it('shows Updating… badge alongside stale content during refetch (stale-while-revalidate)', async () => {
     let preCheckCallCount = 0;
     vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
       if (url === '/api/campaigns/pre-check' && init?.body) {
@@ -786,12 +786,12 @@ describe('CampaignWizard', () => {
     await user.click(screen.getByLabelText(/Grace Hopper/));
 
     await waitFor(() => {
-      expect(screen.getByText('Updating…')).toBeInTheDocument();
-      expect(screen.queryByText(/will be scheduled/)).not.toBeInTheDocument();
+      expect(screen.getAllByText('Updating…').length).toBeGreaterThan(0);
+      expect(screen.getByText(/will be scheduled/)).toBeInTheDocument();
     }, { timeout: 5000 });
   });
 
-  it('replaces error card header with Updating… and hides exclusion details during stale refetch', async () => {
+  it('shows Updating… badge alongside stale error card during refetch (stale-while-revalidate)', async () => {
     let preCheckCallCount = 0;
     vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
       if (url === '/api/campaigns/pre-check' && init?.body) {
@@ -834,8 +834,8 @@ describe('CampaignWizard', () => {
 
     await waitFor(() => {
       expect(screen.getAllByText('Updating…').length).toBeGreaterThan(0);
-      expect(screen.queryByText('No emails will be scheduled')).not.toBeInTheDocument();
-      expect(screen.queryByText(/All selected contacts are excluded/)).not.toBeInTheDocument();
+      expect(screen.getByText('No emails will be scheduled')).toBeInTheDocument();
+      expect(screen.getByText(/All selected contacts are excluded/)).toBeInTheDocument();
     }, { timeout: 5000 });
   });
 

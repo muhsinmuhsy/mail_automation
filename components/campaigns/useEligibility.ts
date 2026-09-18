@@ -77,8 +77,8 @@ export function useEligibility(params: UseEligibilityParams) {
         abortRef.current = null;
       }
       requestIdRef.current += 1;
-      if (status !== 'idle') {
-        const t = setTimeout(() => { setStatus('idle'); }, 0);
+      if (result !== null || errorMessage !== null || status !== 'idle') {
+        const t = setTimeout(() => { setStatus('idle'); setResult(null); setErrorMessage(null); }, 0);
         return () => clearTimeout(t);
       }
       return;
@@ -113,6 +113,7 @@ export function useEligibility(params: UseEligibilityParams) {
         if (reqId !== requestIdRef.current) return;
         if (!response.ok || !body.success) {
           setStatus('error');
+          setResult(null);
           setErrorMessage(body?.error?.message ?? 'Could not check recipients. Try again.');
           return;
         }
@@ -123,6 +124,7 @@ export function useEligibility(params: UseEligibilityParams) {
       } catch {
         if (controller.signal.aborted || reqId !== requestIdRef.current) return;
         setStatus('error');
+        setResult(null);
         setErrorMessage('Could not check recipients. Try again.');
       }
     })();
