@@ -90,7 +90,7 @@ describe('lib/validation/common', () => {
   describe('sortSchema', () => {
     it('applies defaults', () => {
       const result = sortSchema.parse({});
-      expect(result.sortOrder).toBe('asc');
+      expect(result.sortOrder).toBe('desc');
     });
 
     it('accepts valid sort orders', () => {

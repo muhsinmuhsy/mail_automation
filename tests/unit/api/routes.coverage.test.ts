@@ -70,6 +70,7 @@ import * as emailAccountTest from '@/app/api/email-accounts/[id]/test/route';
 import * as emails from '@/app/api/emails/route';
 import * as emailById from '@/app/api/emails/[id]/route';
 import * as emailRetry from '@/app/api/emails/[id]/retry/route';
+import * as emailCancel from '@/app/api/emails/[id]/cancel/route';
 import * as attachments from '@/app/api/attachments/route';
 import * as attachmentById from '@/app/api/attachments/[id]/route';
 import * as attachmentDefault from '@/app/api/attachments/[id]/default/route';
@@ -421,6 +422,57 @@ describe('app/api route handlers (unit coverage)', () => {
     prismaMock.emailJob.findUnique.mockResolvedValue({ id: UUID, status: 'FAILED', campaign_id: null });
     prismaMock.emailJob.update.mockResolvedValue({ id: UUID });
     await ok((await (emailRetry as any).POST(makeReq(), CTX({ id: UUID }))));
+  });
+
+  it('emails/[id]/cancel returns 200 and cancels a SCHEDULED job', async () => {
+    prismaMock.emailJob.findUnique.mockResolvedValue({ id: UUID, status: 'SCHEDULED', campaign_id: null });
+    prismaMock.emailJob.update.mockResolvedValue({ id: UUID });
+    const res = await (emailCancel as any).POST(makeReq(), CTX({ id: UUID }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.message).toBe('Email cancelled.');
+    expect(prismaMock.emailJob.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: UUID },
+        data: expect.objectContaining({
+          status: 'CANCELLED',
+          next_attempt_at: null,
+          processing_started_at: null,
+        }),
+      })
+    );
+  });
+
+  it('emails/[id]/cancel returns 409 for a SENT job', async () => {
+    prismaMock.emailJob.findUnique.mockResolvedValue({ id: UUID, status: 'SENT', campaign_id: null });
+    const res = await (emailCancel as any).POST(makeReq(), CTX({ id: UUID }));
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.error.type).toBe('BUSINESS_ERROR');
+    expect(prismaMock.emailJob.update).not.toHaveBeenCalled();
+  });
+
+  it('emails/[id]/cancel returns 409 for a job in a CANCELLED campaign', async () => {
+    prismaMock.emailJob.findUnique.mockResolvedValue({ id: UUID, status: 'SCHEDULED', campaign_id: 'camp-1' });
+    prismaMock.campaign.findUnique.mockResolvedValue({ status: 'CANCELLED' });
+    const res = await (emailCancel as any).POST(makeReq(), CTX({ id: UUID }));
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.error.type).toBe('BUSINESS_ERROR');
+    expect(prismaMock.emailJob.update).not.toHaveBeenCalled();
+  });
+
+  it('emails/[id]/cancel returns 404 for a missing job', async () => {
+    prismaMock.emailJob.findUnique.mockResolvedValue(null);
+    const res = await (emailCancel as any).POST(makeReq(), CTX({ id: UUID }));
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.error.type).toBe('NOT_FOUND');
+    expect(prismaMock.emailJob.update).not.toHaveBeenCalled();
   });
 
   it('campaigns/[id]/retry-failed resets all FAILED jobs', async () => {

@@ -15,7 +15,9 @@ describe('lib/api/list', () => {
         limit: 20,
         search: undefined,
         sortBy: undefined,
-        sortOrder: 'asc',
+        sortOrder: 'desc',
+        startDate: undefined,
+        endDate: undefined,
       });
     });
 
