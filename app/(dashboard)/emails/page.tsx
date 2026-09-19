@@ -51,6 +51,7 @@ export default function EmailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error') =>
@@ -140,6 +141,32 @@ export default function EmailsPage() {
     }
   };
 
+  const cancelEmail = async (email: EmailRow) => {
+    setCancellingId(email.id);
+    try {
+      const response = await fetch(`/api/emails/${email.id}/cancel`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const body = await response.json() as Envelope<null>;
+
+      if (response.status === 401) {
+        router.replace('/login');
+        return;
+      }
+      if (body.success) {
+        showToast(body.message ?? 'Email cancelled.', 'success');
+        await load();
+      } else {
+        showToast(body.error.message, 'error');
+      }
+    } catch {
+      showToast('Failed to cancel email.', 'error');
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
   const filtered = Boolean(status || search.trim());
 
   return (
@@ -198,7 +225,7 @@ export default function EmailsPage() {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <EmailList emails={emails} onRetry={retryEmail} retryingId={retryingId} />
+          <EmailList emails={emails} onRetry={retryEmail} retryingId={retryingId} onCancel={cancelEmail} cancellingId={cancellingId} />
 
           {meta && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

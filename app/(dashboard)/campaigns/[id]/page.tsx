@@ -81,6 +81,7 @@ export default function CampaignDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [retryingJobId, setRetryingJobId] = useState<string | null>(null);
+  const [cancellingJobId, setCancellingJobId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'error' } | null>(null);
@@ -174,6 +175,27 @@ export default function CampaignDetailPage() {
       showToast('Failed to retry email.', 'error');
     } finally {
       setRetryingJobId(null);
+    }
+  };
+
+  const handleCancelJob = async (job: EmailRow) => {
+    setCancellingJobId(job.id);
+    try {
+      const response = await fetch(`/api/emails/${job.id}/cancel`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const body = (await response.json()) as ApiEnvelope<null>;
+      if (body.success) {
+        showToast(body.message ?? 'Email cancelled.', 'success');
+        await reload();
+      } else {
+        showToast(body.error?.message ?? 'Failed to cancel email.', 'error');
+      }
+    } catch {
+      showToast('Failed to cancel email.', 'error');
+    } finally {
+      setCancellingJobId(null);
     }
   };
 
@@ -341,6 +363,8 @@ export default function CampaignDetailPage() {
                   emails={details.email_jobs}
                   onRetry={handleRetryJob}
                   retryingId={retryingJobId}
+                  onCancel={handleCancelJob}
+                  cancellingId={cancellingJobId}
                   showSubject={false}
                   showCreated={false}
                   timezone={details.timezone}

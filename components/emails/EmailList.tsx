@@ -25,10 +25,15 @@ function formatDateTime(value: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString();
 }
 
+const RETRYABLE_STATUSES = ['FAILED', 'RETRY_WAIT'];
+const CANCELLABLE_STATUSES = ['SCHEDULED', 'QUEUED', 'RETRY_WAIT'];
+
 interface EmailListProps {
   emails: EmailRow[];
   onRetry?: (email: EmailRow) => void;
   retryingId?: string | null;
+  onCancel?: (email: EmailRow) => void;
+  cancellingId?: string | null;
   showSubject?: boolean;
   showCreated?: boolean;
   timezone?: string;
@@ -38,11 +43,14 @@ export function EmailList({
   emails,
   onRetry,
   retryingId = null,
+  onCancel,
+  cancellingId = null,
   showSubject = true,
   showCreated = true,
   timezone,
 }: EmailListProps) {
   const tz = (email: EmailRow) => email.campaign?.timezone ?? timezone;
+  const busyId = retryingId ?? cancellingId;
 
   const columns = [
     {
@@ -96,18 +104,37 @@ export function EmailList({
     {
       key: 'actions',
       header: 'Actions',
-      render: (email: EmailRow) =>
-        (email.status === 'FAILED' || email.status === 'RETRY_WAIT') && onRetry ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            loading={retryingId === email.id}
-            disabled={retryingId !== null && retryingId !== email.id}
-            onClick={() => onRetry(email)}
-          >
-            Retry
-          </Button>
-        ) : <span className="text-text-secondary">—</span>,
+      render: (email: EmailRow) => {
+        const canRetry = RETRYABLE_STATUSES.includes(email.status) && onRetry;
+        const canCancel = CANCELLABLE_STATUSES.includes(email.status) && onCancel;
+        if (!canRetry && !canCancel) return <span className="text-text-secondary">—</span>;
+        return (
+          <div className="flex items-center gap-2">
+            {canRetry && (
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={retryingId === email.id}
+                disabled={busyId !== null && busyId !== email.id}
+                onClick={() => onRetry!(email)}
+              >
+                Retry
+              </Button>
+            )}
+            {canCancel && (
+              <Button
+                variant="destructive"
+                size="sm"
+                loading={cancellingId === email.id}
+                disabled={busyId !== null && busyId !== email.id}
+                onClick={() => onCancel!(email)}
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
