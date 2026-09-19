@@ -16,7 +16,7 @@ const EMAIL_JOB_STATUSES = [
 ] as const;
 
 const _GET = defineRoute(async (req, ctx) => {
-  const { page, limit, search, startDate, endDate } = parseListQuery(req, { search: true, dateRange: true });
+  const { page, limit, search, sortBy, sortOrder, startDate, endDate } = parseListQuery(req, { search: true, sortable: ['created_at'], dateRange: true });
 
   const { searchParams } = new URL(req.url);
   const statusParam = searchParams.get('status');
@@ -36,7 +36,7 @@ const _GET = defineRoute(async (req, ctx) => {
     getPrisma().emailJob.findMany({
       where,
       select: { id: true, to_email: true, subject: true, status: true, sent_at: true, created_at: true, scheduled_at: true, next_attempt_at: true, error_message: true, campaign: { select: { timezone: true, name: true } } },
-      orderBy: { created_at: 'desc' },
+      orderBy: { [sortBy ?? 'created_at']: sortOrder },
       skip: (page - 1) * limit,
       take: limit,
     }),

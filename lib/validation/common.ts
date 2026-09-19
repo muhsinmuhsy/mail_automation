@@ -13,7 +13,7 @@ export const paginationSchema = z.object({
 
 export const sortSchema = z.object({
   sortBy: z.string().optional(),
-  sortOrder: z.enum(['asc', 'desc']).default('asc'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
 export const idParamSchema = z.object({

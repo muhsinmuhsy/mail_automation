@@ -16,7 +16,7 @@ import { toStatusCounts } from '@/lib/campaigns/status-counts';
 const CAMPAIGN_STATUSES = ['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'] as const;
 
 const _GET = defineRoute(async (req, ctx) => {
-  const { page, limit, search, startDate, endDate } = parseListQuery(req, { search: true, dateRange: true });
+  const { page, limit, search, sortBy, sortOrder, startDate, endDate } = parseListQuery(req, { search: true, sortable: ['created_at'], dateRange: true });
 
   const prisma = getPrisma();
   await completeFinishedCampaigns(prisma);
@@ -39,7 +39,7 @@ const _GET = defineRoute(async (req, ctx) => {
     prisma.campaign.findMany({
       where,
       select: { _count: { select: { email_jobs: true } }, id: true, name: true, status: true, created_at: true, start_at: true, timezone: true, interval_minutes: true, daily_limit: true },
-      orderBy: { created_at: 'desc' },
+      orderBy: { [sortBy ?? 'created_at']: sortOrder },
       skip: (page - 1) * limit,
       take: limit,
     }),

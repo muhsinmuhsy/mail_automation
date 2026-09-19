@@ -45,6 +45,7 @@ export default function EmailsPage() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
@@ -60,6 +61,7 @@ export default function EmailsPage() {
       const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
       if (status) params.set('status', status);
       if (search.trim()) params.set('search', search.trim());
+      params.set('sortOrder', sortOrder);
       if (startDate) params.set('startDate', startDate);
       if (endDate) params.set('endDate', endDate);
 
@@ -90,7 +92,7 @@ export default function EmailsPage() {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [page, router, search, status, startDate, endDate]
+    [page, router, search, sortOrder, status, startDate, endDate]
   );
 
   useEffect(() => {
@@ -148,6 +150,11 @@ export default function EmailsPage() {
         search={search}
         onSearchChange={(value) => {
           setSearch(value);
+          setPage(1);
+        }}
+        sortOrder={sortOrder}
+        onSortOrderChange={(value) => {
+          setSortOrder(value);
           setPage(1);
         }}
         filters={
