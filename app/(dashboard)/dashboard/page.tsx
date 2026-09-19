@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert } from '@/components/ui/Alert';
-import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -226,11 +225,6 @@ export default function DashboardPage() {
               <EmptyState
                 title="No campaigns yet"
                 description="Create your first campaign to get started."
-                action={
-                  <Button variant="primary" onClick={() => router.push('/campaigns')}>
-                    Create campaign
-                  </Button>
-                }
               />
             ) : (
               <div className="mt-4 divide-y divide-neutral-200 rounded-[var(--radius-lg)] border border-neutral-200 bg-background">
