@@ -17,11 +17,11 @@ export function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-neutral-200 bg-surface">
-      <div className="p-6">
+    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-neutral-200 bg-surface">
+      <div className="shrink-0 p-6">
         <h2 className="text-lg font-semibold">Mail Automation</h2>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 px-3 py-2" aria-label="Dashboard navigation">
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 py-2" aria-label="Dashboard navigation">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
@@ -46,7 +46,7 @@ export function DashboardSidebar() {
           );
         })}
       </nav>
-      <div className="border-t border-neutral-200 p-4">
+      <div className="shrink-0 border-t border-neutral-200 p-4">
         <p className="text-xs text-text-secondary">2026 Mail Automation</p>
       </div>
     </aside>

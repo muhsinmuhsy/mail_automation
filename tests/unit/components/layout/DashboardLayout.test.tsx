@@ -69,7 +69,7 @@ describe('DashboardLayout', () => {
         <span>x</span>
       </DashboardLayout>
     );
-    expect(container.firstChild).toHaveClass('min-h-screen', 'flex', 'flex-col', 'md:flex-row');
+    expect(container.firstChild).toHaveClass('h-dvh', 'overflow-hidden', 'flex', 'flex-col', 'md:flex-row');
   });
 
   it('makes the main content area scrollable with responsive padding', () => {

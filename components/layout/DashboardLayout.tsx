@@ -17,14 +17,14 @@ const mobileNavItems = [
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen min-w-0 flex-col md:flex-row">
-      <div className="hidden md:block">
+    <div className="flex h-dvh min-w-0 flex-col overflow-hidden md:flex-row">
+      <div className="hidden h-full shrink-0 md:block">
         <DashboardSidebar />
       </div>
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <DashboardHeader />
         <nav
-          className="flex gap-2 overflow-x-auto border-b border-neutral-200 bg-surface px-4 py-2 md:hidden"
+          className="flex shrink-0 gap-2 overflow-x-auto border-b border-neutral-200 bg-surface px-4 py-2 md:hidden"
           aria-label="Mobile dashboard navigation"
         >
           {mobileNavItems.map((item) => (
@@ -37,7 +37,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
-        <main className="flex-1 overflow-auto p-4 md:p-8">
+        <main className="min-h-0 flex-1 overflow-auto p-4 md:p-8">
           {children}
         </main>
       </div>
