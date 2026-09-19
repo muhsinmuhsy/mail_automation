@@ -168,14 +168,9 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-page-title font-semibold">Dashboard</h1>
-          <p className="mt-2 text-body text-text-secondary">Here&apos;s what&apos;s happening today.</p>
-        </div>
-        <Button variant="primary" size="md" onClick={() => router.push('/campaigns')}>
-          Create campaign
-        </Button>
+      <div>
+        <h1 className="text-page-title font-semibold">Dashboard</h1>
+        <p className="mt-2 text-body text-text-secondary">Here&apos;s what&apos;s happening today.</p>
       </div>
 
       {loading ? (
